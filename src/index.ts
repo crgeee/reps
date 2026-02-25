@@ -2,10 +2,35 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { v4 as uuidv4 } from 'uuid';
-import { loadTasks, saveTask, deleteTask, addNote } from './store.js';
+import {
+  loadTasks,
+  saveTask,
+  deleteTask,
+  addNote,
+  isApiMode,
+  getApiConfig,
+  saveApiConfig,
+  loadTasksAsync,
+  saveTaskAsync,
+  deleteTaskAsync,
+  addNoteAsync,
+  submitReview,
+  syncTasks,
+  getAgentQuestion,
+  evaluateAnswer,
+  validateApiConnection,
+} from './api-client.js';
+import { loadTasks as localLoadTasks } from './store.js';
 import { calculateSM2 } from './spaced-repetition.js';
 import { formatTask, formatDashboard } from './display.js';
 import type { Task, Topic, Quality } from './types.js';
+import type { EvaluationResult } from './api-client.js';
+
+function formatScore(score: number): string {
+  const filled = Math.round(score);
+  const bar = chalk.green('*'.repeat(filled)) + chalk.dim('*'.repeat(5 - filled));
+  return `${bar} ${score}/5`;
+}
 
 const program = new Command();
 
@@ -98,7 +123,8 @@ program
   .command('review')
   .description('Review due tasks')
   .action(async () => {
-    const tasks = loadTasks();
+    const apiMode = isApiMode();
+    const tasks = apiMode ? await loadTasksAsync() : loadTasks();
     const today = new Date().toISOString().split('T')[0];
     const due = tasks.filter((t) => !t.completed && t.nextReview <= today);
 
@@ -120,19 +146,77 @@ program
         console.log(chalk.dim(`  Notes: ${task.notes[task.notes.length - 1].text}`));
       }
 
-      const answer = await ask('  Rate (0-5, or s to skip): ');
-      if (answer.toLowerCase() === 's') continue;
+      // API mode: show AI-generated question and offer evaluation
+      if (apiMode) {
+        try {
+          const { question } = await getAgentQuestion(task.id);
+          console.log(chalk.bold.cyan('\n  AI Interview Question:'));
+          console.log(chalk.white(`  ${question}\n`));
 
-      const quality = parseInt(answer, 10) as Quality;
+          const wantEval = await ask('  Write your answer for AI evaluation? (y/n): ');
+          if (wantEval.toLowerCase() === 'y') {
+            console.log(chalk.dim('  Enter your answer (press Ctrl+D when done):'));
+            const lines: string[] = [];
+            const answerRl = readline.createInterface({ input: process.stdin });
+            await new Promise<void>((resolve) => {
+              answerRl.on('line', (line: string) => lines.push(line));
+              answerRl.on('close', () => resolve());
+            });
+
+            const userAnswer = lines.join('\n');
+            if (userAnswer.trim()) {
+              console.log(chalk.dim('\n  Evaluating...'));
+              try {
+                const evalResult: EvaluationResult = await evaluateAnswer(task.id, userAnswer);
+                console.log(chalk.bold('\n  Evaluation Scores:'));
+                console.log(`    Clarity:           ${formatScore(evalResult.clarity)}`);
+                console.log(`    Specificity:       ${formatScore(evalResult.specificity)}`);
+                console.log(`    Mission Alignment: ${formatScore(evalResult.missionAlignment)}`);
+                console.log(chalk.bold('\n  Feedback:'));
+                console.log(`    ${evalResult.feedback}`);
+                console.log(chalk.bold('\n  Suggested Improvement:'));
+                console.log(`    ${evalResult.suggestedImprovement}\n`);
+              } catch (evalErr) {
+                const msg = evalErr instanceof Error ? evalErr.message : String(evalErr);
+                console.log(chalk.red(`  Evaluation failed: ${msg}`));
+              }
+            }
+
+            // Recreate rl since answerRl consumed stdin close
+            // We need to reopen for remaining tasks
+          }
+        } catch (qErr) {
+          const msg = qErr instanceof Error ? qErr.message : String(qErr);
+          console.log(chalk.dim(`  (Could not fetch AI question: ${msg})`));
+        }
+      }
+
+      const ratingAnswer = await ask('  Rate (0-5, or s to skip): ');
+      if (ratingAnswer.toLowerCase() === 's') continue;
+
+      const quality = parseInt(ratingAnswer, 10) as Quality;
       if (isNaN(quality) || quality < 0 || quality > 5) {
         console.log(chalk.red('  Invalid rating, skipping.'));
         continue;
       }
 
-      const result = calculateSM2(task, quality);
-      Object.assign(task, result, { lastReviewed: today });
-      saveTask(task);
-      console.log(chalk.green(`  Next review: ${result.nextReview}`));
+      if (apiMode) {
+        try {
+          const updated = await submitReview(task.id, quality);
+          console.log(chalk.green(`  Next review: ${updated.nextReview}`));
+        } catch (err) {
+          // Fall back to local SM-2 calculation
+          const result = calculateSM2(task, quality);
+          Object.assign(task, result, { lastReviewed: today });
+          saveTask(task);
+          console.log(chalk.green(`  Next review: ${result.nextReview} (local)`));
+        }
+      } else {
+        const result = calculateSM2(task, quality);
+        Object.assign(task, result, { lastReviewed: today });
+        saveTask(task);
+        console.log(chalk.green(`  Next review: ${result.nextReview}`));
+      }
     }
 
     rl.close();
@@ -213,6 +297,81 @@ program
       saveTask(task);
       console.log(chalk.green(`Seeded: ${task.title}`));
     }
+  });
+
+program
+  .command('config')
+  .description('Configure API connection')
+  .action(async () => {
+    const readline = await import('node:readline');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ask = (q: string): Promise<string> =>
+      new Promise((resolve) => rl.question(q, resolve));
+
+    const currentConfig = getApiConfig();
+    const defaultUrl = currentConfig?.apiUrl ?? 'http://localhost:3000';
+
+    const apiUrl = (await ask(`API URL [${defaultUrl}]: `)) || defaultUrl;
+    const apiKey = await ask('API Key: ');
+
+    if (!apiKey) {
+      console.log(chalk.red('API key is required.'));
+      rl.close();
+      return;
+    }
+
+    saveApiConfig({ apiUrl, apiKey });
+    console.log(chalk.dim('Config saved. Validating connection...'));
+
+    const valid = await validateApiConnection();
+    if (valid) {
+      console.log(chalk.green('Connected to API successfully.'));
+    } else {
+      console.log(chalk.red('Could not connect to API. Config saved but connection failed.'));
+    }
+    rl.close();
+  });
+
+program
+  .command('sync')
+  .description('Sync local tasks to API')
+  .action(async () => {
+    const tasks = localLoadTasks();
+
+    if (tasks.length === 0) {
+      console.log(chalk.dim('No local tasks to sync.'));
+      return;
+    }
+
+    const config = getApiConfig();
+    if (!config) {
+      console.log(chalk.red('API not configured. Run `reps config` first.'));
+      return;
+    }
+
+    console.log(chalk.dim(`Syncing ${tasks.length} task(s) to API...`));
+
+    try {
+      const result = await syncTasks(tasks);
+      console.log(chalk.green(`Synced ${result.count} task(s) successfully.`));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(chalk.red(`Sync failed: ${message}`));
+      return;
+    }
+
+    const readline = await import('node:readline');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ask = (q: string): Promise<string> =>
+      new Promise((resolve) => rl.question(q, resolve));
+
+    const answer = await ask('Switch to API mode? (y/n): ');
+    if (answer.toLowerCase() === 'y') {
+      console.log(chalk.green('Already configured for API mode.'));
+    } else {
+      console.log(chalk.dim('Staying in local mode. Run `reps config` to switch later.'));
+    }
+    rl.close();
   });
 
 program.parse();

@@ -1,1 +1,13 @@
-// TODO: React app entry — web-builder owns this file
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import './app.css';
+
+const root = document.getElementById('root');
+if (!root) throw new Error('Root element not found');
+
+createRoot(root).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
