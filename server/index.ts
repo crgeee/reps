@@ -19,11 +19,12 @@ startCronJobs();
 type AppEnv = { Variables: { userId: string } };
 const app = new Hono<AppEnv>();
 
-// CORS — restrict to our domain, enable credentials for cookies
+// CORS — restrict to configured domain, enable credentials for cookies
+const corsOrigin = process.env.APP_URL ?? "http://localhost:5173";
 app.use(
   "/*",
   cors({
-    origin: ["https://reps-prep.duckdns.org"],
+    origin: [corsOrigin],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Authorization", "Content-Type"],
     credentials: true,

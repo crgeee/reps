@@ -307,6 +307,16 @@ export default function App() {
             +
           </button>
 
+          <a
+            href="https://buymeacoffee.com/crgeee"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center text-sm transition-colors bg-zinc-800 text-zinc-400 hover:bg-amber-900/40 hover:text-amber-400"
+            title="Buy me a coffee"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21V19H20V21H2ZM20 8V5H18V8H20ZM20 3C20.5523 3 21 3.44772 21 4V9C21 9.55228 20.5523 10 20 10H18V11C18 13.7614 15.7614 16 13 16H9C6.23858 16 4 13.7614 4 11V4C4 3.44772 4.44772 3 5 3H20ZM16 5H6V11C6 12.6569 7.34315 14 9 14H13C14.6569 14 16 12.6569 16 11V5Z"/></svg>
+          </a>
+
           <button
             onClick={logout}
             className="hidden md:block text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0"
@@ -356,6 +366,14 @@ export default function App() {
                   >
                     + Add Task
                   </button>
+                  <a
+                    href="https://buymeacoffee.com/crgeee"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full text-left px-4 py-2.5 text-sm text-amber-400/70 hover:text-amber-400 hover:bg-zinc-800 transition-colors block"
+                  >
+                    Buy me a coffee
+                  </a>
                   <button
                     onClick={() => {
                       logout();

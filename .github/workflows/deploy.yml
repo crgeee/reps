@@ -18,6 +18,8 @@ jobs:
           script: cd /var/www/reps && bash deploy/deploy.sh
 
       - name: Health check
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
         run: |
           sleep 5
-          curl -sf https://reps-prep.duckdns.org/health || exit 1
+          curl -sf "$APP_URL/health" || exit 1
