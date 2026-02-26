@@ -20,10 +20,13 @@ import FocusWidget from './components/FocusWidget';
 import LoginPage from './components/LoginPage';
 import Settings from './components/Settings';
 import DeviceApproval from './components/DeviceApproval';
+import Footer from './components/Footer';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 
-type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock' | 'export' | 'settings' | 'device-approve';
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock' | 'export' | 'settings' | 'device-approve' | 'privacy' | 'terms';
 
-const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock', 'export', 'settings', 'device-approve']);
+const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock', 'export', 'settings', 'device-approve', 'privacy', 'terms']);
 
 function getViewFromHash(): View {
   const hash = window.location.hash.slice(1);
@@ -238,9 +241,15 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             onClick={() => setView('dashboard')}
-            className="text-2xl font-extrabold tracking-tight flex-shrink-0 wordmark transition-opacity hover:opacity-80"
+            className="flex items-center gap-1.5 flex-shrink-0 transition-opacity hover:opacity-80"
           >
-            reps
+            <svg className="w-7 h-7" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="6" fill="#09090b"/>
+              <text x="16" y="23" fontFamily="system-ui" fontWeight="800" fontSize="22" fill="#f59e0b" textAnchor="middle">r</text>
+              <path d="M24 8 C26 10, 26 13, 24 15" stroke="#f59e0b" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6"/>
+              <path d="M26 7 C29 10, 29 14, 26 17" stroke="#f59e0b" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.3"/>
+            </svg>
+            <span className="text-2xl font-extrabold tracking-tight wordmark">reps</span>
           </button>
 
           <CollectionSwitcher
@@ -526,10 +535,13 @@ export default function App() {
               <Settings user={user} onUserUpdate={handleUserUpdate} />
             )}
             {view === 'device-approve' && <DeviceApproval />}
+            {view === 'privacy' && <PrivacyPolicy />}
+            {view === 'terms' && <TermsOfService />}
             </div>
           </ErrorBoundary>
         )}
       </main>
+      <Footer onNavigate={(v) => setView(v as View)} />
       <FocusWidget />
     </div>
   );
