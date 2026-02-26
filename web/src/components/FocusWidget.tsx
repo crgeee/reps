@@ -26,9 +26,7 @@ export default function FocusWidget() {
   const [activePlaylist, setActivePlaylist] = useState<string | null>(() =>
     getStoredState('reps_focus_playlist', null),
   );
-  const [soundEnabled, setSoundEnabled] = useState(() =>
-    getStoredState('reps_focus_sound', true),
-  );
+  const [soundEnabled, setSoundEnabled] = useState(() => getStoredState('reps_focus_sound', true));
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [timerDisplay, setTimerDisplay] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
