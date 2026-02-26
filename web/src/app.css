@@ -60,3 +60,98 @@ body::before {
   background: rgba(245, 158, 11, 0.25);
   color: #fef3c7;
 }
+
+/* ═══════════════════════════════════════
+   Animations
+   ═══════════════════════════════════════ */
+
+/* ── Slide up (focus widget expand, modals) ── */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-slide-up {
+  animation: slide-up 0.2s ease-out both;
+}
+
+/* ── Slide down (dropdowns, expanding sections) ── */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-slide-down {
+  animation: slide-down 0.15s ease-out both;
+}
+
+/* ── Slide down & expand (collapsible content) ── */
+@keyframes expand-down {
+  from { opacity: 0; transform: translateY(-4px) scaleY(0.96); transform-origin: top; }
+  to   { opacity: 1; transform: translateY(0) scaleY(1); transform-origin: top; }
+}
+.anim-expand-down {
+  animation: expand-down 0.15s ease-out both;
+}
+
+/* ── Fade in (page content, backdrop) ── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.anim-fade-in {
+  animation: fade-in 0.15s ease-out both;
+}
+
+/* ── Page slide (view transitions) ── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-page-enter {
+  animation: page-enter 0.2s ease-out both;
+}
+
+/* ── Scale in (pills, badges) ── */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.anim-scale-in {
+  animation: scale-in 0.15s ease-out both;
+}
+
+/* ── Dropdown up (for menus that open upward, like playlist) ── */
+@keyframes slide-up-dropdown {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-slide-up-dropdown {
+  animation: slide-up-dropdown 0.15s ease-out both;
+}
+
+/* ── Modal backdrop ── */
+@keyframes backdrop-in {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(4px); }
+}
+.anim-backdrop {
+  animation: backdrop-in 0.2s ease-out both;
+}
+
+/* ── Modal content (slide up + scale) ── */
+@keyframes modal-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.anim-modal-enter {
+  animation: modal-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Stagger children (for lists) ── */
+.anim-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.anim-stagger > *:nth-child(2) { animation-delay: 30ms; }
+.anim-stagger > *:nth-child(3) { animation-delay: 60ms; }
+.anim-stagger > *:nth-child(4) { animation-delay: 90ms; }
+.anim-stagger > *:nth-child(5) { animation-delay: 120ms; }
+.anim-stagger > *:nth-child(6) { animation-delay: 150ms; }
+.anim-stagger > *:nth-child(7) { animation-delay: 180ms; }
+.anim-stagger > *:nth-child(8) { animation-delay: 210ms; }

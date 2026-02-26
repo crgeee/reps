@@ -12,7 +12,7 @@ import {
   getAdminStats,
 } from '../api';
 
-const TIMEZONES = Intl.supportedValuesOf('timeZone');
+const TIMEZONES: string[] = (Intl as unknown as { supportedValuesOf(key: string): string[] }).supportedValuesOf('timeZone');
 const THEMES = [
   { value: 'dark', label: 'Dark' },
   { value: 'light', label: 'Light' },
@@ -39,7 +39,7 @@ export default function Settings({ user, onUserUpdate }: Props) {
   const [topics, setTopics] = useState<CustomTopic[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [newTopicName, setNewTopicName] = useState('');
-  const [newTopicColor, setNewTopicColor] = useState(COLOR_SWATCHES[0]);
+  const [newTopicColor, setNewTopicColor] = useState<string>(COLOR_SWATCHES[0]);
   const [topicError, setTopicError] = useState<string | null>(null);
 
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
@@ -435,8 +435,8 @@ function parseUserAgent(ua: string | null): string {
   if (ua.includes('reps-cli')) return 'reps CLI';
   const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0];
   const os = ua.match(/(Mac OS X|Windows NT|Linux|Android|iOS)[\s/]?[\d._]*/)?.[0]?.replace(/_/g, '.');
-  if (browser && os) return `${browser.split('/')[0]} on ${os}`;
-  if (browser) return browser.split('/')[0];
+  if (browser && os) return `${browser.split('/')[0] ?? browser} on ${os}`;
+  if (browser) return browser.split('/')[0] ?? browser;
   return ua.length > 60 ? ua.slice(0, 60) + '...' : ua;
 }
 
