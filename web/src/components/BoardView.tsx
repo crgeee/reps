@@ -12,7 +12,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task, TaskStatus, Collection, Tag, CollectionStatus } from '../types';
-import { STATUSES, STATUS_LABELS } from '../types';
+import { STATUSES, STATUS_LABELS, formatStatusLabel } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
@@ -74,33 +74,23 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
   );
 
   // Derive status list from collection statuses or fall back to defaults
-  const statusList = useMemo(() => {
+  const { statusList, statusLabels, statusColors } = useMemo(() => {
     if (collectionStatuses && collectionStatuses.length > 0) {
-      return collectionStatuses.map(s => s.name);
-    }
-    return STATUSES as string[];
-  }, [collectionStatuses]);
-
-  const statusLabels = useMemo(() => {
-    if (collectionStatuses && collectionStatuses.length > 0) {
-      const map: Record<string, string> = {};
+      const list: string[] = [];
+      const labels: Record<string, string> = {};
+      const colors: Record<string, string> = {};
       for (const s of collectionStatuses) {
-        map[s.name] = s.name.charAt(0).toUpperCase() + s.name.slice(1);
+        list.push(s.name);
+        labels[s.name] = formatStatusLabel(s.name);
+        colors[s.name] = s.color ?? '#3f3f46';
       }
-      return map;
+      return { statusList: list, statusLabels: labels, statusColors: colors };
     }
-    return STATUS_LABELS as Record<string, string>;
-  }, [collectionStatuses]);
-
-  const statusColors = useMemo(() => {
-    if (collectionStatuses && collectionStatuses.length > 0) {
-      const map: Record<string, string> = {};
-      for (const s of collectionStatuses) {
-        map[s.name] = s.color ?? '#3f3f46';
-      }
-      return map;
-    }
-    return DEFAULT_STATUS_COLORS as Record<string, string>;
+    return {
+      statusList: STATUSES as string[],
+      statusLabels: STATUS_LABELS as Record<string, string>,
+      statusColors: DEFAULT_STATUS_COLORS as Record<string, string>,
+    };
   }, [collectionStatuses]);
 
   const columns = useMemo(() => {

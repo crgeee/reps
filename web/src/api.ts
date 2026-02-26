@@ -57,11 +57,11 @@ export async function getDueTasks(): Promise<Task[]> {
 }
 
 export async function getTasksByCollection(collectionId: string): Promise<Task[]> {
-  return request<Task[]>(`/tasks?collectionId=${collectionId}`);
+  return request<Task[]>(`/tasks?collection=${collectionId}`);
 }
 
 export async function getDueTasksByCollection(collectionId: string): Promise<Task[]> {
-  return request<Task[]>(`/tasks/due?collectionId=${collectionId}`);
+  return request<Task[]>(`/tasks/due?collection=${collectionId}`);
 }
 
 export async function createTask(input: CreateTaskInput): Promise<Task> {

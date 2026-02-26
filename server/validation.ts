@@ -62,3 +62,16 @@ export const mockRespondSchema = z.object({
   sessionId: uuidStr,
   answer: z.string().min(1).max(10000),
 });
+
+export function buildUpdates(
+  body: Record<string, unknown>,
+  fieldMap: Record<string, string>
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+  for (const [camel, snake] of Object.entries(fieldMap)) {
+    if (camel in body) {
+      updates[snake] = body[camel];
+    }
+  }
+  return updates;
+}

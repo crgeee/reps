@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronRight, Plus, Pencil } from 'lucide-react';
 import type { Collection } from '../types';
+import { COLOR_SWATCHES } from '../types';
 import { createCollection } from '../api';
+import { useClickOutside } from '../hooks/useClickOutside';
 import CollectionEditModal from './CollectionEditModal';
 
 interface CollectionSwitcherProps {
@@ -12,8 +14,6 @@ interface CollectionSwitcherProps {
   onCollectionUpdated?: (collection: Collection) => void;
   onCollectionDeleted?: (id: string) => void;
 }
-
-const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'];
 
 export default function CollectionSwitcher({
   collections,
@@ -27,7 +27,7 @@ export default function CollectionSwitcher({
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState(COLOR_SWATCHES[0]!);
+  const [newColor, setNewColor] = useState<string>(COLOR_SWATCHES[0]);
   const [newSrEnabled, setNewSrEnabled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -35,16 +35,7 @@ export default function CollectionSwitcher({
 
   const active = collections.find((c) => c.id === activeId) ?? null;
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setCreating(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(ref, useCallback(() => { setOpen(false); setCreating(false); }, []));
 
   useEffect(() => {
     if (creating) nameInputRef.current?.focus();

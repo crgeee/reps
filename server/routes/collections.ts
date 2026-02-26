@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import sql from "../db/client.js";
-import { validateUuid, collectionSchema, patchCollectionSchema, collectionStatusSchema, patchCollectionStatusSchema } from "../validation.js";
+import { validateUuid, buildUpdates, collectionSchema, patchCollectionSchema, collectionStatusSchema, patchCollectionStatusSchema } from "../validation.js";
 
 const collections = new Hono();
 
@@ -88,18 +88,13 @@ collections.patch("/:id", async (c) => {
   if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
   const body = parsed.data;
 
-  const fieldMap: Record<string, string> = {
+  const updates = buildUpdates(body as Record<string, unknown>, {
     name: "name",
     icon: "icon",
     color: "color",
     srEnabled: "sr_enabled",
     sortOrder: "sort_order",
-  };
-
-  const updates: Record<string, unknown> = {};
-  for (const [camel, snake] of Object.entries(fieldMap)) {
-    if (camel in body) updates[snake] = (body as Record<string, unknown>)[camel];
-  }
+  });
 
   if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
 
@@ -164,16 +159,11 @@ collections.patch("/:id/statuses/:sid", async (c) => {
   if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
   const body = parsed.data;
 
-  const fieldMap: Record<string, string> = {
+  const updates = buildUpdates(body as Record<string, unknown>, {
     name: "name",
     color: "color",
     sortOrder: "sort_order",
-  };
-
-  const updates: Record<string, unknown> = {};
-  for (const [camel, snake] of Object.entries(fieldMap)) {
-    if (camel in body) updates[snake] = (body as Record<string, unknown>)[camel];
-  }
+  });
 
   if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
 

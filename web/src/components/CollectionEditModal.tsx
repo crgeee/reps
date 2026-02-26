@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { Collection, CollectionStatus } from '../types';
+import { COLOR_SWATCHES } from '../types';
 import {
   updateCollection,
   deleteCollection,
@@ -15,9 +16,6 @@ interface CollectionEditModalProps {
   onDeleted: (id: string) => void;
   onClose: () => void;
 }
-
-const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'];
-const STATUS_COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'];
 
 export default function CollectionEditModal({
   collection,
@@ -182,7 +180,7 @@ export default function CollectionEditModal({
                   />
                   {statusColorPicker === status.id && (
                     <div className="absolute top-6 left-0 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-2 flex gap-1">
-                      {STATUS_COLOR_SWATCHES.map((c) => (
+                      {COLOR_SWATCHES.map((c) => (
                         <button
                           key={c}
                           onClick={() => handleUpdateStatusColor(status.id, c)}
