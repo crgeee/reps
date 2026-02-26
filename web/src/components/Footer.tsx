@@ -13,7 +13,7 @@ export default function Footer({ onNavigate }: FooterProps) {
 
   return (
     <footer className="border-t border-zinc-800/50 mt-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 sm:pr-16 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
         <span>&copy; {new Date().getFullYear()} reps</span>
         <div className="flex items-center gap-3">
           <button
