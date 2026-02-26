@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { User } from '../types';
-import { getMe, logout as apiLogout } from '../api';
+import { getMe, logout as apiLogout, updateProfile } from '../api';
 
 interface AuthState {
   user: User | null;
@@ -14,12 +14,26 @@ export function useAuth() {
     loading: true,
     error: null,
   });
+  const tzSynced = useRef(false);
 
   const checkAuth = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const user = await getMe();
       setState({ user, loading: false, error: null });
+
+      // Auto-detect timezone on first login (when still default "UTC")
+      if (!tzSynced.current && user.timezone === 'UTC') {
+        tzSynced.current = true;
+        const { detectBrowserTimezone } = await import('../utils/timezone');
+        const detected = detectBrowserTimezone();
+        if (detected && detected !== 'UTC') {
+          try {
+            const updated = await updateProfile({ timezone: detected } as Partial<User>);
+            setState({ user: updated, loading: false, error: null });
+          } catch { /* ignore — not critical */ }
+        }
+      }
     } catch {
       setState({ user: null, loading: false, error: null });
     }
