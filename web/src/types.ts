@@ -20,7 +20,7 @@ export interface Task {
   title: string;
   notes: Note[];
   completed: boolean;
-  status: TaskStatus;
+  status: string;
   deadline?: string;
   repetitions: number;
   interval: number;
@@ -30,6 +30,8 @@ export interface Task {
   createdAt: string;
   collectionId?: string;
   tags?: Tag[];
+  description?: string;
+  priority: Priority;
 }
 
 export interface Collection {
@@ -40,6 +42,15 @@ export interface Collection {
   srEnabled: boolean;
   sortOrder: number;
   createdAt: string;
+  statuses: CollectionStatus[];
+}
+
+export interface CollectionStatus {
+  id: string;
+  collectionId: string;
+  name: string;
+  color: string | null;
+  sortOrder: number;
 }
 
 export interface EvaluationResult {
@@ -57,6 +68,8 @@ export interface CreateTaskInput {
   note?: string;
   collectionId?: string;
   tagIds?: string[];
+  description?: string;
+  priority?: Priority;
 }
 
 export interface ReviewInput {
@@ -123,6 +136,37 @@ export const TOPIC_COLORS: Record<Topic, string> = {
   custom: 'bg-slate-500',
 };
 
+export interface User {
+  id: string;
+  email: string;
+  displayName: string | null;
+  emailVerified: boolean;
+  isAdmin: boolean;
+  timezone: string;
+  theme: string;
+  notifyDaily: boolean;
+  notifyWeekly: boolean;
+  dailyReviewGoal: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionInfo {
+  id: string;
+  userId: string;
+  expiresAt: string;
+  createdAt: string;
+  lastUsedAt: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+}
+
+export interface CustomTopic {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export const STATUSES: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -131,3 +175,27 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
   'review': 'Review',
   'done': 'Done',
 };
+
+export type Priority = 'none' | 'low' | 'medium' | 'high';
+
+export const PRIORITIES: Priority[] = ['none', 'low', 'medium', 'high'];
+
+export const PRIORITY_LABELS: Record<Priority, string> = {
+  none: 'None',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+};
+
+export const PRIORITY_COLORS: Record<Priority, string> = {
+  none: 'text-zinc-500',
+  low: 'text-blue-400',
+  medium: 'text-amber-400',
+  high: 'text-red-400',
+};
+
+export const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'] as const;
+
+export function formatStatusLabel(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');
+}

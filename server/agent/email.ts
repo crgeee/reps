@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 import { getDailyBriefingData } from "./shared.js";
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 let resendClient: Resend | null = null;
 
 function getResend(): Resend | null {
@@ -9,18 +13,18 @@ function getResend(): Resend | null {
   return resendClient;
 }
 
-export async function sendDailyDigest(): Promise<void> {
+export async function sendDailyDigest(userId?: string, userEmail?: string): Promise<void> {
   const client = getResend();
-  const to = process.env.DIGEST_EMAIL_TO;
+  const to = userEmail ?? process.env.DIGEST_EMAIL_TO;
 
   if (!client || !to) {
-    console.log("[email] Resend not configured (missing RESEND_API_KEY or DIGEST_EMAIL_TO), skipping daily digest");
+    console.log("[email] Resend not configured (missing RESEND_API_KEY or email), skipping daily digest");
     return;
   }
 
   let data;
   try {
-    data = await getDailyBriefingData();
+    data = await getDailyBriefingData(undefined, userId);
   } catch (err) {
     console.error("[email] Failed to fetch briefing data:", err);
     return;
@@ -29,7 +33,7 @@ export async function sendDailyDigest(): Promise<void> {
   const dueList =
     data.dueToday.length > 0
       ? data.dueToday
-          .map((t) => `<li><strong>[${t.topic}]</strong> ${t.title}</li>`)
+          .map((t) => `<li><strong>[${escapeHtml(t.topic)}]</strong> ${escapeHtml(t.title)}</li>`)
           .join("")
       : "<li>No reviews due today!</li>";
 
@@ -39,7 +43,7 @@ export async function sendDailyDigest(): Promise<void> {
       : "Start a new streak today!";
 
   const weakestText = data.weakestTopic
-    ? `Your weakest area is <strong>${data.weakestTopic.topic}</strong> (avg ease: ${data.weakestTopic.avgEase}).`
+    ? `Your weakest area is <strong>${escapeHtml(data.weakestTopic.topic)}</strong> (avg ease: ${data.weakestTopic.avgEase}).`
     : "";
 
   const dateStr = new Date().toLocaleDateString("en-US", {

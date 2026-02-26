@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS collections (
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS collection_id UUID REFERENCES collections(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_tasks_collection ON tasks(collection_id);
 
--- Seed default collection and assign existing tasks
+-- Seed default collection and assign existing tasks (skip if already exists)
 INSERT INTO collections (id, name, icon, sr_enabled, sort_order)
-VALUES ('00000000-0000-0000-0000-000000000001', 'Interview Prep', NULL, true, 0)
-ON CONFLICT (id) DO NOTHING;
+SELECT '00000000-0000-0000-0000-000000000001', 'Interview Prep', NULL, true, 0
+WHERE NOT EXISTS (SELECT 1 FROM collections WHERE id = '00000000-0000-0000-0000-000000000001');
 
 UPDATE tasks SET collection_id = '00000000-0000-0000-0000-000000000001' WHERE collection_id IS NULL;
 

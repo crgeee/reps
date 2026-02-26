@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import type { Task, Topic, Streaks } from '../types';
+import type { Task, Streaks } from '../types';
 import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
 import { getStreaks, getHeatmap } from '../api';
-import StreakBadge from './StreakBadge';
+import { Flame } from 'lucide-react';
 import Heatmap from './Heatmap';
 
 type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
@@ -17,6 +17,12 @@ interface DashboardProps {
 
 function isOverdue(task: Task): boolean {
   return new Date(task.nextReview) < new Date(new Date().toISOString().split('T')[0]!);
+}
+
+function daysUntil(dateStr: string): number {
+  const today = new Date(new Date().toISOString().split('T')[0]!);
+  const target = new Date(dateStr);
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
 }
 
 export default function Dashboard({
@@ -44,178 +50,185 @@ export default function Dashboard({
 
   const topicStats = TOPICS.map((topic) => {
     const topicTasks = tasks.filter((t) => t.topic === topic);
-    const completed = topicTasks.filter((t) => t.completed).length;
+    const done = topicTasks.filter((t) => t.completed).length;
+    const due = topicTasks.filter((t) => !t.completed && new Date(t.nextReview) <= new Date()).length;
     const total = topicTasks.length;
-    return { topic, completed, total, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
+    const avgEF = topicTasks.length > 0
+      ? topicTasks.reduce((s, t) => s + t.easeFactor, 0) / topicTasks.length
+      : 0;
+    return { topic, done, due, total, pct: total > 0 ? Math.round((done / total) * 100) : 0, avgEF };
   }).filter((s) => s.total > 0);
 
+  const streakActive = streaks && streaks.currentStreak > 0;
+
   return (
-    <div className="space-y-8">
-      {/* Hero */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-1">Dashboard</h1>
-        <p className="text-zinc-400">
-          {activeTasks.length} active tasks, {completedTasks.length} completed
-        </p>
-      </div>
-
-      {/* Overdue alert */}
-      {overdueTasks.length > 0 && (
-        <div className="p-4 bg-red-950/50 border border-red-800/60 rounded-lg">
-          <p className="text-red-300 font-medium">
-            {overdueTasks.length} overdue {overdueTasks.length === 1 ? 'review' : 'reviews'}
-          </p>
-          <p className="text-red-400/80 text-sm mt-1">
-            {overdueTasks.map((t) => t.title).join(', ')}
-          </p>
-        </div>
-      )}
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <StatCard label="Due Today" value={dueTasks.length} accent={dueTasks.length > 0} />
-        <StatCard label="Overdue" value={overdueTasks.length} accent={overdueTasks.length > 0} />
-        <StatCard label="Active" value={activeTasks.length} />
-        <StatCard label="Completed" value={completedTasks.length} />
+    <div className="space-y-5">
+      {/* ── Stat strip ── */}
+      <div className="flex items-stretch border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-x divide-zinc-800">
+        <StatCell label="Due" value={dueTasks.length} accent={dueTasks.length > 0} />
+        <StatCell label="Overdue" value={overdueTasks.length} accent={overdueTasks.length > 0} warn />
+        <StatCell label="Active" value={activeTasks.length} />
+        <StatCell label="Done" value={completedTasks.length} />
         {streaks && (
-          <div className="col-span-2 sm:col-span-1">
-            <StreakBadge current={streaks.currentStreak} longest={streaks.longestStreak} />
+          <div className="flex items-center gap-1.5 px-4 py-2.5 flex-1 min-w-0">
+            <Flame className={`w-3.5 h-3.5 flex-shrink-0 ${streakActive ? 'text-amber-400' : 'text-zinc-600'}`} />
+            <span className={`text-lg font-bold font-mono tabular-nums leading-none ${streakActive ? 'text-amber-400' : 'text-zinc-500'}`}>
+              {streaks.currentStreak}
+            </span>
+            <span className="text-[10px] text-zinc-600 uppercase tracking-wider">streak</span>
+            <span className="text-[10px] text-zinc-700 font-mono ml-auto hidden sm:inline">best {streaks.longestStreak}</span>
           </div>
         )}
       </div>
 
-      {/* Start Review CTA */}
+      {/* ── Overdue banner ── */}
+      {overdueTasks.length > 0 && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-red-950/40 border border-red-900/40 rounded-lg text-sm">
+          <span className="text-red-400 font-mono font-bold">{overdueTasks.length}</span>
+          <span className="text-red-400/80">overdue —</span>
+          <span className="text-red-400/60 truncate flex-1 font-mono text-xs">
+            {overdueTasks.map((t) => t.title).join(' · ')}
+          </span>
+          <button
+            onClick={onStartReview}
+            className="text-xs text-red-300 hover:text-red-100 font-medium flex-shrink-0 underline decoration-red-800 hover:decoration-red-400 transition-colors"
+          >
+            Review now
+          </button>
+        </div>
+      )}
+
+      {/* ── Review CTA ── */}
       {dueTasks.length > 0 && (
         <button
           onClick={onStartReview}
-          className="w-full py-4 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-lg"
+          className="w-full flex items-center justify-between px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg hover:bg-amber-500/15 transition-all group"
         >
-          Start Review ({dueTasks.length} {dueTasks.length === 1 ? 'task' : 'tasks'} due)
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-amber-200 font-semibold text-sm">Start Review Session</span>
+          </div>
+          <span className="text-amber-400/80 font-mono text-sm group-hover:text-amber-300 transition-colors">
+            {dueTasks.length} {dueTasks.length === 1 ? 'task' : 'tasks'}
+            <span className="ml-2 text-amber-400/40">→</span>
+          </span>
         </button>
       )}
 
-      {/* Topic progress */}
+      {/* ── Topic breakdown ── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Progress by Topic</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Topics</h2>
           <button
             onClick={() => onNavigate('progress')}
-            className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors uppercase tracking-wider"
           >
-            View details
+            Details →
           </button>
         </div>
-        <div className="space-y-3">
-          {topicStats.map(({ topic, completed, total, pct }) => (
-            <TopicBar
-              key={topic}
-              topic={topic}
-              completed={completed}
-              total={total}
-              pct={pct}
-            />
+        <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
+          {topicStats.map(({ topic, done, due, total, pct, avgEF }) => (
+            <div key={topic} className="flex items-center gap-3 px-3 py-2 text-xs">
+              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[topic]}`} />
+              <span className="text-zinc-300 w-24 truncate">{TOPIC_LABELS[topic]}</span>
+              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${TOPIC_COLORS[topic]} opacity-80`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-zinc-500 font-mono tabular-nums w-12 text-right">{done}/{total}</span>
+              <span className="text-zinc-600 font-mono tabular-nums w-10 text-right hidden sm:inline">{pct}%</span>
+              {due > 0 && (
+                <span className="text-amber-500/80 font-mono tabular-nums text-[10px]">{due} due</span>
+              )}
+              <span className="text-zinc-700 font-mono tabular-nums w-12 text-right hidden md:inline" title="Avg ease factor">
+                EF {avgEF.toFixed(1)}
+              </span>
+            </div>
           ))}
           {topicStats.length === 0 && (
-            <p className="text-zinc-500 text-sm">
-              No tasks yet.{' '}
-              <button
-                onClick={() => onNavigate('add')}
-                className="text-zinc-300 underline hover:no-underline"
-              >
-                Add your first task
+            <div className="px-3 py-4 text-center text-zinc-600 text-xs">
+              No tasks.{' '}
+              <button onClick={() => onNavigate('add')} className="text-zinc-400 underline hover:no-underline">
+                Add one
               </button>
-            </p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Heatmap */}
+      {/* ── Heatmap ── */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Review Activity</h2>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 overflow-x-auto">
+        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Activity</h2>
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3 overflow-x-auto">
           <Heatmap data={heatmapData} days={365} />
         </div>
       </div>
 
-      {/* Upcoming reviews */}
+      {/* ── Due for review table ── */}
       {dueTasks.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-4">Due for Review</h2>
-          <div className="space-y-2">
-            {dueTasks.slice(0, 5).map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between p-3 bg-zinc-900 rounded-lg"
-              >
-                <div>
-                  <span className="font-medium">{task.title}</span>
-                  <span className="ml-2 text-xs text-zinc-500">
-                    {TOPIC_LABELS[task.topic]}
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
+            Due for Review
+            <span className="text-zinc-700 font-mono ml-2">{dueTasks.length}</span>
+          </h2>
+          <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
+            {dueTasks.slice(0, 8).map((task) => {
+              const days = daysUntil(task.nextReview);
+              const overdue = days < 0;
+              return (
+                <div key={task.id} className="flex items-center gap-3 px-3 py-1.5 text-xs hover:bg-zinc-800/30 transition-colors">
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`} />
+                  <span className="text-zinc-300 flex-1 truncate">{task.title}</span>
+                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">EF {task.easeFactor.toFixed(1)}</span>
+                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">×{task.repetitions}</span>
+                  {task.deadline && (
+                    <span className="text-zinc-600 font-mono tabular-nums hidden md:inline text-[10px]">
+                      dl {task.deadline}
+                    </span>
+                  )}
+                  <span className={`font-mono tabular-nums w-16 text-right ${overdue ? 'text-red-400' : 'text-zinc-500'}`}>
+                    {overdue ? `${Math.abs(days)}d late` : days === 0 ? 'today' : `in ${days}d`}
                   </span>
                 </div>
-                <span
-                  className={`text-xs ${isOverdue(task) ? 'text-red-400' : 'text-zinc-500'}`}
-                >
-                  {task.nextReview}
-                </span>
-              </div>
-            ))}
-            {dueTasks.length > 5 && (
-              <p className="text-zinc-500 text-sm text-center">
-                +{dueTasks.length - 5} more
-              </p>
-            )}
+              );
+            })}
           </div>
+          {dueTasks.length > 8 && (
+            <p className="text-[10px] text-zinc-600 text-center mt-1.5 font-mono">
+              +{dueTasks.length - 8} more
+            </p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function StatCard({
+function StatCell({
   label,
   value,
   accent = false,
+  warn = false,
 }: {
   label: string;
   value: number;
   accent?: boolean;
+  warn?: boolean;
 }) {
-  return (
-    <div className="p-4 bg-zinc-900 rounded-lg">
-      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${accent ? 'text-amber-400' : 'text-zinc-100'}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
+  const color = warn && value > 0
+    ? 'text-red-400'
+    : accent
+    ? 'text-amber-400'
+    : 'text-zinc-100';
 
-function TopicBar({
-  topic,
-  completed,
-  total,
-  pct,
-}: {
-  topic: Topic;
-  completed: number;
-  total: number;
-  pct: number;
-}) {
   return (
-    <div>
-      <div className="flex items-center justify-between text-sm mb-1">
-        <span className="text-zinc-300">{TOPIC_LABELS[topic]}</span>
-        <span className="text-zinc-500">
-          {completed}/{total} ({pct}%)
-        </span>
-      </div>
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${TOPIC_COLORS[topic]}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+    <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
+      <span className={`text-lg font-bold font-mono tabular-nums leading-none ${color}`}>
+        {value}
+      </span>
+      <span className="text-[10px] text-zinc-600 uppercase tracking-wider">{label}</span>
     </div>
   );
 }

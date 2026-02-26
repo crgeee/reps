@@ -1,0 +1,180 @@
+import { Hono } from "hono";
+import { z } from "zod";
+import sql from "../db/client.js";
+import { getUserById, updateUserProfile, listUsers } from "../auth/users.js";
+import { getUserSessions, deleteSession } from "../auth/sessions.js";
+import { validateUuid } from "../validation.js";
+
+type AppEnv = { Variables: { userId: string } };
+const users = new Hono<AppEnv>();
+
+// --- Validation ---
+
+const updateProfileSchema = z.object({
+  displayName: z.string().max(100).optional(),
+  timezone: z.string().max(100).optional(),
+  theme: z.enum(["dark", "light", "system"]).optional(),
+  notifyDaily: z.boolean().optional(),
+  notifyWeekly: z.boolean().optional(),
+  dailyReviewGoal: z.number().int().min(1).max(50).optional(),
+});
+
+const createTopicSchema = z.object({
+  name: z.string().min(1).max(50),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+});
+
+// --- Profile ---
+
+// GET /users/me
+users.get("/me", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const user = await getUserById(userId);
+  if (!user) return c.json({ error: "User not found" }, 404);
+  return c.json(user);
+});
+
+// PATCH /users/me
+users.patch("/me", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const raw = await c.req.json();
+  const parsed = updateProfileSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  }
+
+  const user = await updateUserProfile(userId, parsed.data);
+  if (!user) return c.json({ error: "User not found" }, 404);
+  return c.json(user);
+});
+
+// --- Sessions ---
+
+// GET /users/me/sessions
+users.get("/me/sessions", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const sessions = await getUserSessions(userId);
+  return c.json(sessions);
+});
+
+// DELETE /users/me/sessions/:id
+users.delete("/me/sessions/:id", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const sessionId = c.req.param("id");
+  if (!validateUuid(sessionId)) return c.json({ error: "Invalid ID format" }, 400);
+
+  // Verify session belongs to user
+  const sessions = await getUserSessions(userId);
+  const found = sessions.find((s) => s.id === sessionId);
+  if (!found) return c.json({ error: "Session not found" }, 404);
+
+  await deleteSession(sessionId);
+  return c.json({ deleted: true, id: sessionId });
+});
+
+// --- Custom Topics ---
+
+interface CustomTopicRow {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string | null;
+}
+
+// GET /users/me/topics
+users.get("/me/topics", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const rows = await sql<CustomTopicRow[]>`
+    SELECT * FROM custom_topics WHERE user_id = ${userId} ORDER BY name ASC
+  `;
+  return c.json(rows.map((r) => ({ id: r.id, name: r.name, color: r.color })));
+});
+
+// POST /users/me/topics
+users.post("/me/topics", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const raw = await c.req.json();
+  const parsed = createTopicSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  }
+
+  const [row] = await sql<CustomTopicRow[]>`
+    INSERT INTO custom_topics (user_id, name, color)
+    VALUES (${userId}, ${parsed.data.name}, ${parsed.data.color ?? null})
+    RETURNING *
+  `;
+  return c.json({ id: row.id, name: row.name, color: row.color }, 201);
+});
+
+// DELETE /users/me/topics/:id
+users.delete("/me/topics/:id", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const id = c.req.param("id");
+  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+
+  const [row] = await sql<CustomTopicRow[]>`
+    DELETE FROM custom_topics WHERE id = ${id} AND user_id = ${userId} RETURNING *
+  `;
+  if (!row) return c.json({ error: "Topic not found" }, 404);
+  return c.json({ deleted: true, id });
+});
+
+// --- Admin routes ---
+
+// GET /users/admin/users — list all users (admin only)
+users.get("/admin/users", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const user = await getUserById(userId);
+  if (!user?.isAdmin) return c.json({ error: "Forbidden" }, 403);
+
+  const allUsers = await listUsers();
+  return c.json(allUsers);
+});
+
+// GET /users/admin/stats — basic admin stats (admin only)
+users.get("/admin/stats", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const user = await getUserById(userId);
+  if (!user?.isAdmin) return c.json({ error: "Forbidden" }, 403);
+
+  const [counts] = await sql<[{
+    user_count: string;
+    task_count: string;
+    session_count: string;
+    review_count: string;
+  }]>`
+    SELECT
+      (SELECT COUNT(*)::text FROM users) AS user_count,
+      (SELECT COUNT(*)::text FROM tasks) AS task_count,
+      (SELECT COUNT(*)::text FROM sessions WHERE expires_at > now()) AS session_count,
+      (SELECT COUNT(*)::text FROM review_events) AS review_count
+  `;
+
+  return c.json({
+    users: parseInt(counts.user_count, 10),
+    tasks: parseInt(counts.task_count, 10),
+    activeSessions: parseInt(counts.session_count, 10),
+    totalReviews: parseInt(counts.review_count, 10),
+  });
+});
+
+export default users;

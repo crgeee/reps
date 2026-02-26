@@ -3,10 +3,11 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import sql from "../db/client.js";
 import { calculateSM2 } from "../../src/spaced-repetition.js";
-import { validateUuid, dateStr, topicEnum, uuidStr, statusEnum } from "../validation.js";
+import { validateUuid, buildUpdates, dateStr, topicEnum, uuidStr, statusEnum, priorityEnum } from "../validation.js";
 import type { Task, Note, Quality } from "../../src/types.js";
 
-const tasks = new Hono();
+type AppEnv = { Variables: { userId: string } };
+const tasks = new Hono<AppEnv>();
 
 // --- validation schemas ---
 
@@ -24,6 +25,8 @@ const createTaskSchema = z.object({
   createdAt: dateStr.optional(),
   collectionId: uuidStr.nullable().optional(),
   tagIds: z.array(uuidStr).optional(),
+  description: z.string().max(10000).nullable().optional(),
+  priority: priorityEnum.optional(),
 });
 
 const patchTaskSchema = z.object({
@@ -38,6 +41,9 @@ const patchTaskSchema = z.object({
   nextReview: dateStr.optional(),
   lastReviewed: dateStr.nullable().optional(),
   tagIds: z.array(uuidStr).optional(),
+  collectionId: uuidStr.nullable().optional(),
+  description: z.string().max(10000).nullable().optional(),
+  priority: priorityEnum.optional(),
 });
 
 const addNoteSchema = z.object({
@@ -86,6 +92,8 @@ interface TaskRow {
   last_reviewed: string | null;
   created_at: string;
   collection_id: string | null;
+  description: string | null;
+  priority: string;
 }
 
 interface NoteRow {
@@ -106,7 +114,7 @@ function rowToTask(
   row: TaskRow,
   notes: Note[],
   tags: { id: string; name: string; color: string | null }[] = []
-): Task & { collectionId: string | null; tags: { id: string; name: string; color: string | null }[] } {
+): Task & { collectionId: string | null; description?: string; priority: string; tags: { id: string; name: string; color: string | null }[] } {
   return {
     id: row.id,
     topic: row.topic as Task["topic"],
@@ -121,6 +129,8 @@ function rowToTask(
     lastReviewed: row.last_reviewed ?? undefined,
     createdAt: row.created_at,
     collectionId: row.collection_id,
+    description: row.description ?? undefined,
+    priority: row.priority,
     notes,
     tags,
   };
@@ -132,6 +142,16 @@ function rowToNote(row: NoteRow): Note {
     text: row.text,
     createdAt: row.created_at,
   };
+}
+
+function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
+  const notesByTask = new Map<string, Note[]>();
+  for (const nr of noteRows) {
+    const arr = notesByTask.get(nr.task_id) ?? [];
+    arr.push(rowToNote(nr));
+    notesByTask.set(nr.task_id, arr);
+  }
+  return notesByTask;
 }
 
 function today(): string {
@@ -161,6 +181,7 @@ async function fetchTagsByTaskIds(taskIds: string[]): Promise<Map<string, { id: 
 
 // GET /tasks/due must be registered before /tasks/:id to avoid route collision
 tasks.get("/due", async (c) => {
+  const userId = c.get("userId") as string;
   const collectionId = c.req.query("collection");
   if (collectionId && !validateUuid(collectionId)) {
     return c.json({ error: "Invalid collection ID" }, 400);
@@ -170,10 +191,13 @@ tasks.get("/due", async (c) => {
     ? sql`AND collection_id = ${collectionId}`
     : sql``;
 
+  const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+
   const rows = await sql<TaskRow[]>`
     SELECT * FROM tasks
     WHERE next_review <= ${today()} AND completed = false
     ${collectionFilter}
+    ${userFilter}
     ORDER BY next_review ASC
   `;
 
@@ -183,12 +207,7 @@ tasks.get("/due", async (c) => {
       ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
       : [];
 
-  const notesByTask = new Map<string, Note[]>();
-  for (const nr of noteRows) {
-    const arr = notesByTask.get(nr.task_id) ?? [];
-    arr.push(rowToNote(nr));
-    notesByTask.set(nr.task_id, arr);
-  }
+  const notesByTask = groupNotes(noteRows);
 
   const tagsByTask = await fetchTagsByTaskIds(taskIds);
 
@@ -200,27 +219,26 @@ tasks.get("/due", async (c) => {
 
 // GET /tasks
 tasks.get("/", async (c) => {
+  const userId = c.get("userId") as string;
   const collectionId = c.req.query("collection");
   if (collectionId && !validateUuid(collectionId)) {
     return c.json({ error: "Invalid collection ID" }, 400);
   }
 
+  const userFilter = userId ? sql`WHERE user_id = ${userId}` : sql`WHERE 1=1`;
   const collectionFilter = collectionId
-    ? sql`WHERE collection_id = ${collectionId}`
+    ? sql`AND collection_id = ${collectionId}`
     : sql``;
 
-  const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${collectionFilter} ORDER BY created_at DESC`;
-
-  const noteRows = await sql<NoteRow[]>`SELECT * FROM notes ORDER BY created_at ASC`;
-
-  const notesByTask = new Map<string, Note[]>();
-  for (const nr of noteRows) {
-    const arr = notesByTask.get(nr.task_id) ?? [];
-    arr.push(rowToNote(nr));
-    notesByTask.set(nr.task_id, arr);
-  }
+  const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${userFilter} ${collectionFilter} ORDER BY created_at DESC`;
 
   const taskIds = rawRows.map((r) => r.id);
+  const noteRows = taskIds.length > 0
+    ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
+    : [];
+
+  const notesByTask = groupNotes(noteRows);
+
   const tagsByTask = await fetchTagsByTaskIds(taskIds);
 
   // Tag filtering — keep tasks that have ALL specified tags
@@ -244,6 +262,7 @@ tasks.get("/", async (c) => {
 
 // POST /tasks
 tasks.post("/", async (c) => {
+  const userId = c.get("userId") as string;
   const raw = await c.req.json();
   const parsed = createTaskSchema.safeParse(raw);
   if (!parsed.success) {
@@ -254,7 +273,7 @@ tasks.post("/", async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id)
     VALUES (
       ${id},
       ${body.topic},
@@ -268,15 +287,22 @@ tasks.post("/", async (c) => {
       ${body.nextReview ?? now},
       ${body.lastReviewed ?? null},
       ${body.createdAt ?? now},
-      ${body.collectionId ?? null}
+      ${body.collectionId ?? null},
+      ${body.description ?? null},
+      ${body.priority ?? "none"},
+      ${userId ?? null}
     )
     RETURNING *
   `;
 
   // Insert initial tags if provided
   const tagIds = body.tagIds ?? [];
-  for (const tagId of tagIds) {
-    await sql`INSERT INTO task_tags (task_id, tag_id) VALUES (${id}, ${tagId}) ON CONFLICT DO NOTHING`;
+  if (tagIds.length > 0) {
+    await sql`
+      INSERT INTO task_tags (task_id, tag_id)
+      SELECT ${id}, unnest(${tagIds}::uuid[])
+      ON CONFLICT DO NOTHING
+    `;
   }
 
   const tags = tagIds.length > 0
@@ -290,6 +316,7 @@ tasks.post("/", async (c) => {
 
 // PATCH /tasks/:id
 tasks.patch("/:id", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -300,7 +327,7 @@ tasks.patch("/:id", async (c) => {
   const body = parsed.data;
 
   // Build dynamic SET clause from provided fields
-  const fieldMap: Record<string, string> = {
+  const updates = buildUpdates(body as Record<string, unknown>, {
     topic: "topic",
     title: "title",
     completed: "completed",
@@ -311,14 +338,10 @@ tasks.patch("/:id", async (c) => {
     easeFactor: "ease_factor",
     nextReview: "next_review",
     lastReviewed: "last_reviewed",
-  };
-
-  const updates: Record<string, unknown> = {};
-  for (const [camel, snake] of Object.entries(fieldMap)) {
-    if (camel in body) {
-      updates[snake] = (body as Record<string, unknown>)[camel];
-    }
-  }
+    collectionId: "collection_id",
+    description: "description",
+    priority: "priority",
+  });
 
   // Keep completed and status in sync
   if ("status" in updates && !("completed" in updates)) {
@@ -331,9 +354,10 @@ tasks.patch("/:id", async (c) => {
   // Only run UPDATE if there are scalar fields to update
   let row: TaskRow | undefined;
   if (Object.keys(updates).length > 0) {
+    const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
     const [updated] = await sql<TaskRow[]>`
       UPDATE tasks SET ${sql(updates as Record<string, unknown>)}
-      WHERE id = ${id}
+      WHERE id = ${id} ${userWhere}
       RETURNING *
     `;
     if (!updated) {
@@ -341,8 +365,9 @@ tasks.patch("/:id", async (c) => {
     }
     row = updated;
   } else {
-    // No scalar updates — just verify task exists
-    const [existing] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id}`;
+    // No scalar updates — just verify task exists and belongs to user
+    const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+    const [existing] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id} ${userWhere}`;
     if (!existing) {
       return c.json({ error: "Task not found" }, 404);
     }
@@ -351,11 +376,14 @@ tasks.patch("/:id", async (c) => {
 
   // Handle tag replacement if tagIds provided
   if (Array.isArray(body.tagIds)) {
+    const validTagIds = body.tagIds.filter(validateUuid);
     await sql`DELETE FROM task_tags WHERE task_id = ${id}`;
-    for (const tagId of body.tagIds) {
-      if (validateUuid(tagId)) {
-        await sql`INSERT INTO task_tags (task_id, tag_id) VALUES (${id}, ${tagId}) ON CONFLICT DO NOTHING`;
-      }
+    if (validTagIds.length > 0) {
+      await sql`
+        INSERT INTO task_tags (task_id, tag_id)
+        SELECT ${id}, unnest(${validTagIds}::uuid[])
+        ON CONFLICT DO NOTHING
+      `;
     }
   }
 
@@ -369,10 +397,12 @@ tasks.patch("/:id", async (c) => {
 
 // DELETE /tasks/:id
 tasks.delete("/:id", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
 
-  const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${id} RETURNING *`;
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${id} ${userWhere} RETURNING *`;
 
   if (!row) {
     return c.json({ error: "Task not found" }, 404);
@@ -383,6 +413,7 @@ tasks.delete("/:id", async (c) => {
 
 // POST /tasks/:id/notes
 tasks.post("/:id/notes", async (c) => {
+  const userId = c.get("userId") as string;
   const taskId = c.req.param("id");
   if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -391,8 +422,9 @@ tasks.post("/:id/notes", async (c) => {
     return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
   }
 
-  // Verify task exists
-  const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId}`;
+  // Verify task exists and belongs to user
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId} ${userWhere}`;
   if (!task) {
     return c.json({ error: "Task not found" }, 404);
   }
@@ -410,6 +442,7 @@ tasks.post("/:id/notes", async (c) => {
 
 // POST /tasks/:id/review
 tasks.post("/:id/review", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -419,8 +452,9 @@ tasks.post("/:id/review", async (c) => {
   }
   const quality = parsed.data.quality as Quality;
 
-  // Load current task
-  const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id}`;
+  // Load current task (scoped to user)
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id} ${userWhere}`;
   if (!taskRow) {
     return c.json({ error: "Task not found" }, 404);
   }
@@ -444,8 +478,8 @@ tasks.post("/:id/review", async (c) => {
 
   // Insert review event for streaks/heatmap tracking
   await sql`
-    INSERT INTO review_events (task_id, collection_id, quality, reviewed_at)
-    VALUES (${id}, ${taskRow.collection_id ?? null}, ${quality}, ${today()})
+    INSERT INTO review_events (task_id, collection_id, quality, reviewed_at, user_id)
+    VALUES (${id}, ${taskRow.collection_id ?? null}, ${quality}, ${today()}, ${userId ?? null})
   `;
 
   const tagsByTask = await fetchTagsByTaskIds([id]);
@@ -455,6 +489,7 @@ tasks.post("/:id/review", async (c) => {
 
 // POST /sync — bulk upsert from CLI
 tasks.post("/sync", async (c) => {
+  const userId = c.get("userId") as string;
   const raw = await c.req.json();
   const arr = Array.isArray(raw) ? raw : raw.tasks;
   const parsed = syncSchema.safeParse(arr);
@@ -465,49 +500,52 @@ tasks.post("/sync", async (c) => {
 
   let upserted = 0;
 
-  for (const t of incomingTasks) {
-    await sql`
-      INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
-      VALUES (
-        ${t.id},
-        ${t.topic},
-        ${t.title},
-        ${t.completed},
-        ${t.status ?? "todo"},
-        ${t.deadline ?? null},
-        ${t.repetitions},
-        ${t.interval},
-        ${t.easeFactor},
-        ${t.nextReview},
-        ${t.lastReviewed ?? null},
-        ${t.createdAt}
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        topic = EXCLUDED.topic,
-        title = EXCLUDED.title,
-        completed = EXCLUDED.completed,
-        status = EXCLUDED.status,
-        deadline = EXCLUDED.deadline,
-        repetitions = EXCLUDED.repetitions,
-        interval = EXCLUDED.interval,
-        ease_factor = EXCLUDED.ease_factor,
-        next_review = EXCLUDED.next_review,
-        last_reviewed = EXCLUDED.last_reviewed
-    `;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await sql.begin(async (tx: any) => {
+    for (const t of incomingTasks) {
+      await tx`
+        INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, user_id)
+        VALUES (
+          ${t.id},
+          ${t.topic},
+          ${t.title},
+          ${t.completed},
+          ${t.status ?? "todo"},
+          ${t.deadline ?? null},
+          ${t.repetitions},
+          ${t.interval},
+          ${t.easeFactor},
+          ${t.nextReview},
+          ${t.lastReviewed ?? null},
+          ${t.createdAt},
+          ${userId ?? null}
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          topic = EXCLUDED.topic,
+          title = EXCLUDED.title,
+          completed = EXCLUDED.completed,
+          status = EXCLUDED.status,
+          deadline = EXCLUDED.deadline,
+          repetitions = EXCLUDED.repetitions,
+          interval = EXCLUDED.interval,
+          ease_factor = EXCLUDED.ease_factor,
+          next_review = EXCLUDED.next_review,
+          last_reviewed = EXCLUDED.last_reviewed
+      `;
 
-    // Sync notes
-    if (t.notes && t.notes.length > 0) {
-      for (const n of t.notes) {
-        await sql`
-          INSERT INTO notes (id, task_id, text, created_at)
-          VALUES (${n.id}, ${t.id}, ${n.text}, ${n.createdAt})
-          ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text
-        `;
+      if (t.notes && t.notes.length > 0) {
+        await Promise.all(t.notes.map((n) =>
+          tx`
+            INSERT INTO notes (id, task_id, text, created_at)
+            VALUES (${n.id}, ${t.id}, ${n.text}, ${n.createdAt})
+            ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text
+          `
+        ));
       }
-    }
 
-    upserted++;
-  }
+      upserted++;
+    }
+  });
 
   return c.json({ upserted });
 });

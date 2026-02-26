@@ -58,7 +58,7 @@ export default function AddTask({
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Add Task</h1>
+      <h1 className="text-lg font-bold tracking-tight">Add Task</h1>
 
       {error && (
         <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
@@ -150,7 +150,7 @@ export default function AddTask({
         <button
           type="submit"
           disabled={submitting || !title.trim()}
-          className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-amber-500 text-zinc-950 font-bold rounded-lg hover:bg-amber-400 transition-all duration-200 disabled:opacity-50 glow-amber"
         >
           {submitting ? 'Creating...' : 'Create Task'}
         </button>

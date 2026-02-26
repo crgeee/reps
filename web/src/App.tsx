@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Task, Collection, Tag } from './types';
-import { getTasks, getDueTasks, getStoredApiKey, setApiKey, getCollections, getTags } from './api';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import type { Task, Collection, Tag, User } from './types';
+import { formatStatusLabel } from './types';
+import { getTasks, getDueTasks, getCollections, getTags } from './api';
+import { useAuth } from './hooks/useAuth';
 import { logger } from './logger';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
@@ -14,10 +16,13 @@ import CalendarView from './components/CalendarView';
 import MockInterview from './components/MockInterview';
 import CollectionSwitcher from './components/CollectionSwitcher';
 import FocusWidget from './components/FocusWidget';
+import LoginPage from './components/LoginPage';
+import Settings from './components/Settings';
+import DeviceApproval from './components/DeviceApproval';
 
-type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock' | 'settings' | 'device-approve';
 
-const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock']);
+const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock', 'settings', 'device-approve']);
 
 function getViewFromHash(): View {
   const hash = window.location.hash.slice(1);
@@ -35,25 +40,47 @@ const MORE_NAV: { view: View; label: string }[] = [
   { view: 'progress', label: 'Progress' },
   { view: 'calendar', label: 'Calendar' },
   { view: 'mock', label: 'Mock Interview' },
+  { view: 'settings', label: 'Settings' },
 ];
 
 const ALL_NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
 export default function App() {
+  const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
   const [view, setViewState] = useState<View>(getViewFromHash);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [dueTasks, setDueTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(
+    () => localStorage.getItem('reps_active_collection')
+  );
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [hasApiKey, setHasApiKey] = useState(!!getStoredApiKey());
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleCollectionChange = useCallback((id: string | null) => {
+    if (id) {
+      localStorage.setItem('reps_active_collection', id);
+    } else {
+      localStorage.removeItem('reps_active_collection');
+    }
+    setActiveCollectionId(id);
+  }, []);
+
+  const handleCollectionUpdated = useCallback((updated: Collection) => {
+    setCollections((prev) => prev.map((c) => c.id === updated.id ? updated : c));
+  }, []);
+
+  const handleCollectionDeleted = useCallback((id: string) => {
+    setCollections((prev) => prev.filter((c) => c.id !== id));
+    if (activeCollectionId === id) {
+      handleCollectionChange(null);
+    }
+  }, [activeCollectionId, handleCollectionChange]);
 
   const setView = useCallback((v: View) => {
     window.location.hash = v === 'dashboard' ? '' : v;
@@ -83,31 +110,34 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [moreOpen, mobileMenuOpen]);
 
+  const applyTaskData = useCallback((allTasks: Task[], due: Task[]) => {
+    setTasks(allTasks);
+    setDueTasks(due);
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
-      setTasks(allTasks);
-      setDueTasks(due);
+      applyTaskData(allTasks, due);
     } catch (err) {
       logger.error('Failed to fetch data', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyTaskData]);
 
   // Background refresh: re-fetches without loading spinner
   const refreshQuietly = useCallback(async () => {
     try {
       const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
-      setTasks(allTasks);
-      setDueTasks(due);
+      applyTaskData(allTasks, due);
     } catch (err) {
       logger.error('Background refresh failed', { error: String(err) });
     }
-  }, []);
+  }, [applyTaskData]);
 
   // Optimistic task update: patches local state immediately, syncs with server in background
   const optimisticUpdateTask = useCallback((taskId: string, updates: Partial<Task>) => {
@@ -119,14 +149,15 @@ export default function App() {
     try {
       const cols = await getCollections();
       setCollections(cols);
-      // Set first collection as active if none selected yet
-      if (activeCollectionId === null && cols.length > 0) {
-        setActiveCollectionId(null); // Keep "All" as default
+      // Validate stored collection still exists
+      const stored = localStorage.getItem('reps_active_collection');
+      if (stored && !cols.some((c) => c.id === stored)) {
+        handleCollectionChange(null);
       }
     } catch {
       // Collections are optional — silently fail
     }
-  }, [activeCollectionId]);
+  }, [handleCollectionChange]);
 
   const fetchTags = useCallback(async () => {
     try {
@@ -138,18 +169,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (hasApiKey) {
+    if (isAuthenticated) {
       fetchData();
       fetchCollections();
       fetchTags();
     }
-  }, [hasApiKey, fetchData, fetchCollections, fetchTags]);
+  }, [isAuthenticated, fetchData, fetchCollections, fetchTags]);
 
-  function handleSetApiKey() {
-    if (!apiKeyInput.trim()) return;
-    setApiKey(apiKeyInput.trim());
-    setApiKeyInput('');
-    setHasApiKey(true);
+  function handleUserUpdate(_updated: User) {
+    refreshAuth();
   }
 
   function handleTagCreated(tag: Tag) {
@@ -157,43 +185,40 @@ export default function App() {
   }
 
   // Filter tasks by active collection if set
-  const filteredTasks = activeCollectionId
-    ? tasks.filter((t) => t.collectionId === activeCollectionId)
-    : tasks;
-  const filteredDueTasks = activeCollectionId
-    ? dueTasks.filter((t) => t.collectionId === activeCollectionId)
-    : dueTasks;
+  const filteredTasks = useMemo(() =>
+    activeCollectionId ? tasks.filter((t) => t.collectionId === activeCollectionId) : tasks,
+    [tasks, activeCollectionId]
+  );
+  const filteredDueTasks = useMemo(() =>
+    activeCollectionId ? dueTasks.filter((t) => t.collectionId === activeCollectionId) : dueTasks,
+    [dueTasks, activeCollectionId]
+  );
+
+  const activeStatuses = useMemo(() => {
+    if (!activeCollectionId) return undefined;
+    const col = collections.find(c => c.id === activeCollectionId);
+    return col?.statuses;
+  }, [activeCollectionId, collections]);
+
+  const activeStatusOptions = useMemo(() => {
+    if (!activeStatuses || activeStatuses.length === 0) return undefined;
+    return activeStatuses.map(s => ({ value: s.name, label: formatStatusLabel(s.name) }));
+  }, [activeStatuses]);
 
   const isMoreView = MORE_NAV.some((n) => n.view === view);
 
-  if (!hasApiKey) {
+  // Show loading spinner while checking auth
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-        <form
-          className="w-full max-w-sm p-8"
-          onSubmit={(e) => { e.preventDefault(); handleSetApiKey(); }}
-          data-1p-ignore
-        >
-          <h1 className="text-4xl font-bold tracking-tight mb-2">reps</h1>
-          <p className="text-zinc-400 mb-8">Enter your API key to connect.</p>
-          <input
-            type="text"
-            value={apiKeyInput}
-            onChange={(e) => setApiKeyInput(e.target.value)}
-            placeholder="API key"
-            autoComplete="off"
-            data-1p-ignore
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 mb-4 [-webkit-text-security:disc]"
-          />
-          <button
-            type="submit"
-            className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
-          >
-            Connect
-          </button>
-        </form>
+        <Spinner size="lg" label="Loading..." />
       </div>
     );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />;
   }
 
   return (
@@ -203,7 +228,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             onClick={() => setView('dashboard')}
-            className="text-2xl font-bold tracking-tight hover:text-zinc-300 transition-colors flex-shrink-0"
+            className="text-2xl font-extrabold tracking-tight flex-shrink-0 wordmark transition-opacity hover:opacity-80"
           >
             reps
           </button>
@@ -211,8 +236,10 @@ export default function App() {
           <CollectionSwitcher
             collections={collections}
             activeId={activeCollectionId}
-            onChange={setActiveCollectionId}
+            onChange={handleCollectionChange}
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
+            onCollectionUpdated={handleCollectionUpdated}
+            onCollectionDeleted={handleCollectionDeleted}
           />
 
           {/* Desktop nav */}
@@ -267,7 +294,7 @@ export default function App() {
             </div>
           </nav>
 
-          {/* Desktop add + disconnect */}
+          {/* Desktop add + sign out */}
           <button
             onClick={() => setView('add')}
             className={`hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center text-lg font-light transition-colors ${
@@ -281,13 +308,10 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => {
-              localStorage.removeItem('reps_api_key');
-              setHasApiKey(false);
-            }}
+            onClick={logout}
             className="hidden md:block text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0"
           >
-            Disconnect
+            Sign out
           </button>
 
           {/* Mobile hamburger */}
@@ -334,13 +358,12 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      localStorage.removeItem('reps_api_key');
-                      setHasApiKey(false);
+                      logout();
                       setMobileMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
                   >
-                    Disconnect
+                    Sign out
                   </button>
                 </div>
               </div>
@@ -350,7 +373,7 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
         {error && (
           <div className="mb-6 p-4 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
             {error}
@@ -380,6 +403,9 @@ export default function App() {
                 tasks={filteredTasks}
                 onRefresh={fetchData}
                 availableTags={tags}
+                collections={collections}
+                onTagCreated={handleTagCreated}
+                statusOptions={activeStatusOptions}
               />
             )}
             {view === 'board' && (
@@ -388,6 +414,11 @@ export default function App() {
                 onRefresh={fetchData}
                 onOptimisticUpdate={optimisticUpdateTask}
                 onBackgroundRefresh={refreshQuietly}
+                collections={collections}
+                availableTags={tags}
+                onTagCreated={handleTagCreated}
+                collectionStatuses={activeStatuses}
+                statusOptions={activeStatusOptions}
               />
             )}
             {view === 'review' && (
@@ -411,12 +442,16 @@ export default function App() {
               />
             )}
             {view === 'calendar' && (
-              <div className="space-y-6">
-                <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+              <div className="space-y-4">
+                <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
                 <CalendarView tasks={filteredTasks} />
               </div>
             )}
             {view === 'mock' && <MockInterview />}
+            {view === 'settings' && user && (
+              <Settings user={user} onUserUpdate={handleUserUpdate} />
+            )}
+            {view === 'device-approve' && <DeviceApproval />}
           </ErrorBoundary>
         )}
       </main>

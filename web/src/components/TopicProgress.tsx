@@ -22,12 +22,11 @@ interface TopicStat {
 
 function getConfidenceLevel(ef: number): { label: string; color: string } {
   if (ef >= 2.5) return { label: 'Strong', color: 'text-green-400' };
-  if (ef >= 2.0) return { label: 'Moderate', color: 'text-amber-400' };
+  if (ef >= 2.0) return { label: 'Mod', color: 'text-amber-400' };
   if (ef >= 1.5) return { label: 'Weak', color: 'text-orange-400' };
-  return { label: 'Struggling', color: 'text-red-400' };
+  return { label: 'Low', color: 'text-red-400' };
 }
 
-// Map topic to Tailwind bar color for BarChart (using bg- classes)
 const TOPIC_BAR_COLORS: Record<Topic, string> = {
   coding: 'bg-blue-500',
   'system-design': 'bg-purple-500',
@@ -75,9 +74,6 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
     };
   }).filter((s) => s.total > 0);
 
-  const maxTotal = Math.max(...topicStats.map((s) => s.total), 1);
-
-  // Build BarChart data from stats overview (reviews by topic)
   const reviewsByTopicData: Record<string, number> = {};
   const reviewsByTopicColors: Record<string, string> = {};
   if (stats?.reviewsByTopic) {
@@ -89,30 +85,32 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-1">Progress</h1>
-        <p className="text-zinc-400">Performance breakdown by topic</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight">Progress</h1>
+        <span className="text-[10px] text-zinc-600 font-mono">
+          {topicStats.reduce((s, t) => s + t.total, 0)} tasks across {topicStats.length} topics
+        </span>
       </div>
 
-      {/* Stats summary from API */}
+      {/* Stats strip */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-zinc-900 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Reviews</p>
-            <p className="text-2xl font-bold text-zinc-100">{stats.totalReviews}</p>
+        <div className="flex items-stretch border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-x divide-zinc-800">
+          <div className="flex items-center gap-2 px-4 py-2.5 flex-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-100">{stats.totalReviews}</span>
+            <span className="text-[10px] text-zinc-600 uppercase tracking-wider">Reviews</span>
           </div>
-          <div className="bg-zinc-900 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Last 30 Days</p>
-            <p className="text-2xl font-bold text-zinc-100">{stats.reviewsLast30Days}</p>
+          <div className="flex items-center gap-2 px-4 py-2.5 flex-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-100">{stats.reviewsLast30Days}</span>
+            <span className="text-[10px] text-zinc-600 uppercase tracking-wider">30d</span>
           </div>
         </div>
       )}
 
       {/* Heatmap */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Review Activity</h2>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 overflow-x-auto">
+        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Activity</h2>
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3 overflow-x-auto">
           <Heatmap data={heatmapData} days={365} />
         </div>
       </div>
@@ -120,93 +118,78 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       {/* Reviews by topic bar chart */}
       {stats && Object.keys(reviewsByTopicData).length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-4">Reviews by Topic</h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Reviews by Topic</h2>
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3">
             <BarChart data={reviewsByTopicData} colors={reviewsByTopicColors} />
           </div>
         </div>
       )}
 
       {topicStats.length === 0 && (
-        <p className="text-zinc-500 py-12 text-center">No tasks yet. Add some to track progress.</p>
+        <p className="text-zinc-600 py-8 text-center text-xs">No tasks yet.</p>
       )}
 
-      {/* Per-topic breakdown */}
-      <div className="space-y-4">
-        {topicStats.map((stat) => {
-          const barWidth = (stat.total / maxTotal) * 100;
-          const completedWidth = stat.total > 0 ? (stat.completed / stat.total) * barWidth : 0;
-          const confidence = stat.avgEaseFactor > 0 ? getConfidenceLevel(stat.avgEaseFactor) : null;
-
-          return (
-            <div key={stat.topic} className="bg-zinc-900 rounded-lg border border-zinc-800 p-5 transition-all duration-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${TOPIC_COLORS[stat.topic]}`} />
-                  <h3 className="font-semibold">{TOPIC_LABELS[stat.topic]}</h3>
-                </div>
-                {confidence && (
-                  <span className={`text-sm font-medium ${confidence.color}`}>
-                    {confidence.label}
-                  </span>
-                )}
-              </div>
-
-              {/* Stacked bar */}
-              <div className="h-6 bg-zinc-800 rounded-full overflow-hidden mb-3">
-                <div className="h-full flex">
-                  <div
-                    className={`${TOPIC_COLORS[stat.topic]} opacity-100 transition-all duration-500`}
-                    style={{ width: `${completedWidth}%` }}
-                  />
-                  <div
-                    className={`${TOPIC_COLORS[stat.topic]} opacity-30 transition-all duration-500`}
-                    style={{ width: `${barWidth - completedWidth}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
-                <div>
-                  <p className="text-zinc-500">Total</p>
-                  <p className="font-medium">{stat.total}</p>
-                </div>
-                <div>
-                  <p className="text-zinc-500">Completed</p>
-                  <p className="font-medium text-green-400">{stat.completed}</p>
-                </div>
-                <div>
-                  <p className="text-zinc-500">Due</p>
-                  <p className={`font-medium ${stat.dueCount > 0 ? 'text-amber-400' : ''}`}>
-                    {stat.dueCount}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-zinc-500">Avg EF</p>
-                  <p className="font-medium">
-                    {stat.avgEaseFactor > 0 ? stat.avgEaseFactor.toFixed(2) : '--'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-zinc-500">Last Reviewed</p>
-                  <p className="font-medium">{stat.lastReviewed ?? '--'}</p>
-                </div>
-              </div>
+      {/* Per-topic table */}
+      {topicStats.length > 0 && (
+        <div>
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Breakdown</h2>
+          <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-3 py-1.5 text-[10px] text-zinc-600 uppercase tracking-wider font-medium bg-zinc-900/80">
+              <span className="w-28">Topic</span>
+              <span className="flex-1">Progress</span>
+              <span className="w-12 text-right font-mono">Done</span>
+              <span className="w-12 text-right font-mono hidden sm:inline">Due</span>
+              <span className="w-14 text-right font-mono hidden sm:inline">Avg EF</span>
+              <span className="w-14 text-right hidden md:inline">Conf</span>
+              <span className="w-20 text-right font-mono hidden md:inline">Reviewed</span>
             </div>
-          );
-        })}
-      </div>
+            {topicStats.map((stat) => {
+              const pct = stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0;
+              const confidence = stat.avgEaseFactor > 0 ? getConfidenceLevel(stat.avgEaseFactor) : null;
+
+              return (
+                <div key={stat.topic} className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-zinc-800/30 transition-colors">
+                  <div className="w-28 flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[stat.topic]}`} />
+                    <span className="text-zinc-300 truncate">{TOPIC_LABELS[stat.topic]}</span>
+                  </div>
+                  <div className="flex-1 flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${TOPIC_COLORS[stat.topic]} opacity-80`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-zinc-600 font-mono tabular-nums w-8 text-right">{pct}%</span>
+                  </div>
+                  <span className="w-12 text-right font-mono tabular-nums text-zinc-400">
+                    {stat.completed}/{stat.total}
+                  </span>
+                  <span className={`w-12 text-right font-mono tabular-nums hidden sm:inline ${stat.dueCount > 0 ? 'text-amber-400' : 'text-zinc-600'}`}>
+                    {stat.dueCount}
+                  </span>
+                  <span className="w-14 text-right font-mono tabular-nums text-zinc-500 hidden sm:inline">
+                    {stat.avgEaseFactor > 0 ? stat.avgEaseFactor.toFixed(2) : '--'}
+                  </span>
+                  <span className={`w-14 text-right hidden md:inline text-[10px] font-medium ${confidence?.color ?? 'text-zinc-700'}`}>
+                    {confidence?.label ?? '--'}
+                  </span>
+                  <span className="w-20 text-right font-mono tabular-nums text-zinc-600 hidden md:inline">
+                    {stat.lastReviewed ?? '--'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Legend */}
       {topicStats.length > 0 && (
-        <div className="text-xs text-zinc-600 space-y-1">
-          <p>EF = Ease Factor (SM-2). Higher means easier recall. Range: 1.3 - 2.5+</p>
-          <p>
-            Confidence: Strong (EF 2.5+) | Moderate (2.0-2.5) | Weak (1.5-2.0) | Struggling
-            (&lt;1.5)
-          </p>
-        </div>
+        <p className="text-[10px] text-zinc-700 font-mono">
+          EF = Ease Factor (SM-2) · Strong ≥2.5 · Mod 2.0–2.5 · Weak 1.5–2.0 · Low &lt;1.5
+        </p>
       )}
     </div>
   );
