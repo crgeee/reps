@@ -36,6 +36,8 @@ const MORE_NAV: { view: View; label: string }[] = [
   { view: 'mock', label: 'Mock Interview' },
 ];
 
+const ALL_NAV = [...PRIMARY_NAV, ...MORE_NAV];
+
 export default function App() {
   const [view, setViewState] = useState<View>(getViewFromHash);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -48,7 +50,9 @@ export default function App() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [hasApiKey, setHasApiKey] = useState(!!getStoredApiKey());
   const [moreOpen, setMoreOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const setView = useCallback((v: View) => {
     window.location.hash = v === 'dashboard' ? '' : v;
@@ -63,17 +67,20 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // Close "More" dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!moreOpen && !mobileMenuOpen) return;
     function handleClick(e: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+      if (moreOpen && moreRef.current && !moreRef.current.contains(e.target as Node)) {
         setMoreOpen(false);
+      }
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [moreOpen]);
+  }, [moreOpen, mobileMenuOpen]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -192,7 +199,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
       <header className="border-b border-zinc-800">
-        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             onClick={() => setView('dashboard')}
             className="text-2xl font-bold tracking-tight hover:text-zinc-300 transition-colors flex-shrink-0"
@@ -207,7 +214,8 @@ export default function App() {
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
           />
 
-          <nav className="flex items-center gap-1 flex-1 justify-center">
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
             {PRIMARY_NAV.map(({ view: v, label }) => (
               <button
                 key={v}
@@ -258,10 +266,10 @@ export default function App() {
             </div>
           </nav>
 
-          {/* Add task button */}
+          {/* Desktop add + disconnect */}
           <button
             onClick={() => setView('add')}
-            className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-lg font-light transition-colors ${
+            className={`hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center text-lg font-light transition-colors ${
               view === 'add'
                 ? 'bg-zinc-100 text-zinc-900'
                 : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
@@ -276,15 +284,72 @@ export default function App() {
               localStorage.removeItem('reps_api_key');
               setHasApiKey(false);
             }}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0"
+            className="hidden md:block text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0"
           >
             Disconnect
           </button>
+
+          {/* Mobile hamburger */}
+          <div ref={mobileMenuRef} className="md:hidden ml-auto relative">
+            <button
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
+              aria-label="Menu"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+
+            {mobileMenuOpen && (
+              <div className="absolute top-full right-0 mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
+                {ALL_NAV.map(({ view: v, label }) => (
+                  <button
+                    key={v}
+                    onClick={() => { setView(v); setMobileMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      view === v
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <div className="border-t border-zinc-800 mt-1 pt-1">
+                  <button
+                    onClick={() => { setView('add'); setMobileMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      view === 'add'
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                    }`}
+                  >
+                    + Add Task
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('reps_api_key');
+                      setHasApiKey(false);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {error && (
           <div className="mb-6 p-4 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
             {error}

@@ -14,7 +14,7 @@ export default function BarChart({ data, colors }: BarChartProps) {
         const barColor = colors?.[label] ?? 'bg-zinc-500';
         return (
           <div key={label} className="flex items-center gap-3">
-            <span className="text-xs text-zinc-400 w-28 flex-shrink-0 text-right truncate">
+            <span className="text-xs text-zinc-400 w-20 sm:w-28 flex-shrink-0 text-right truncate">
               {label}
             </span>
             <div className="flex-1 h-5 bg-zinc-800 rounded overflow-hidden">

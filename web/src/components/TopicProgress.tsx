@@ -97,7 +97,7 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
 
       {/* Stats summary from API */}
       {stats && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-zinc-900 rounded-lg p-4">
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Reviews</p>
             <p className="text-2xl font-bold text-zinc-100">{stats.totalReviews}</p>
@@ -167,7 +167,7 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
               </div>
 
               {/* Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
                 <div>
                   <p className="text-zinc-500">Total</p>
                   <p className="font-medium">{stat.total}</p>

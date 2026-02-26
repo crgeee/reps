@@ -230,7 +230,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
         {/* Step: Evaluation results */}
         {step === 'evaluation' && evaluation && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <ScoreCard label="Clarity" score={evaluation.clarity} />
               <ScoreCard label="Specificity" score={evaluation.specificity} />
               <ScoreCard label="Mission Align" score={evaluation.missionAlignment} />

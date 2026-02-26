@@ -72,7 +72,7 @@ export default function Dashboard({
       )}
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard label="Due Today" value={dueTasks.length} accent={dueTasks.length > 0} />
         <StatCard label="Overdue" value={overdueTasks.length} accent={overdueTasks.length > 0} />
         <StatCard label="Active" value={activeTasks.length} />
