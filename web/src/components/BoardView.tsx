@@ -1,13 +1,11 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
   closestCorners,
-  type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -57,12 +55,17 @@ const SortableCard = memo(function SortableCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0 : 1,
-    pointerEvents: isDragging ? ('none' as const) : undefined,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+    position: isDragging ? ('relative' as const) : undefined,
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={isDragging ? 'shadow-lg shadow-black/40 rounded' : ''}
+    >
       <TaskCard
         task={task}
         onRefresh={onRefresh}
@@ -86,7 +89,6 @@ export default function BoardView({
   statusOptions,
 }: BoardViewProps) {
   const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -119,8 +121,6 @@ export default function BoardView({
     return map;
   }, [filtered, statusList]);
 
-  const activeTask = activeId ? (tasks.find((t) => t.id === activeId) ?? null) : null;
-
   const findColumnForOver = useCallback(
     (overId: string | number, overData: Record<string, unknown> | undefined): string | null => {
       const id = String(overId);
@@ -135,14 +135,8 @@ export default function BoardView({
     [statusList],
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  }, []);
-
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
-      setActiveId(null);
-
       const { active, over } = event;
       if (!over) return;
 
@@ -175,10 +169,6 @@ export default function BoardView({
     [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, findColumnForOver],
   );
 
-  const handleDragCancel = useCallback(() => {
-    setActiveId(null);
-  }, []);
-
   // Compute grid columns class based on number of statuses
   const gridColsClass = useMemo(() => {
     const count = statusList.length;
@@ -206,13 +196,7 @@ export default function BoardView({
         statusOptions={statusOptions}
       />
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
         <div className={`grid ${gridColsClass} gap-4 min-h-[60vh]`}>
           {statusList.map((status) => (
             <Column
@@ -226,10 +210,6 @@ export default function BoardView({
             />
           ))}
         </div>
-
-        <DragOverlay>
-          {activeTask && <TaskCard task={activeTask} onRefresh={() => {}} compact />}
-        </DragOverlay>
       </DndContext>
 
       {editingTask && (
