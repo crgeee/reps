@@ -177,13 +177,12 @@ export default function App() {
             reps
           </button>
 
-          {collections.length > 0 && (
-            <CollectionSwitcher
-              collections={collections}
-              activeId={activeCollectionId}
-              onChange={setActiveCollectionId}
-            />
-          )}
+          <CollectionSwitcher
+            collections={collections}
+            activeId={activeCollectionId}
+            onChange={setActiveCollectionId}
+            onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
+          />
 
           <nav className="flex gap-1 overflow-x-auto flex-1 justify-center">
             {NAV_ITEMS.map(({ view: v, label }) => (

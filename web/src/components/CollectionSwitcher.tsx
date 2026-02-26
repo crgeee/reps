@@ -1,20 +1,31 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import type { Collection } from '../types';
+import { createCollection } from '../api';
 
 interface CollectionSwitcherProps {
   collections: Collection[];
   activeId: string | null;
   onChange: (id: string | null) => void;
+  onCollectionCreated: (collection: Collection) => void;
 }
+
+const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'];
 
 export default function CollectionSwitcher({
   collections,
   activeId,
   onChange,
+  onCollectionCreated,
 }: CollectionSwitcherProps) {
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState(COLOR_SWATCHES[0]!);
+  const [newSrEnabled, setNewSrEnabled] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const active = collections.find((c) => c.id === activeId) ?? null;
 
@@ -22,13 +33,34 @@ export default function CollectionSwitcher({
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
+        setCreating(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (collections.length === 0) return null;
+  useEffect(() => {
+    if (creating) nameInputRef.current?.focus();
+  }, [creating]);
+
+  async function handleCreate() {
+    if (!newName.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      const col = await createCollection({ name: newName.trim(), color: newColor, srEnabled: newSrEnabled });
+      onCollectionCreated(col);
+      onChange(col.id);
+      setNewName('');
+      setNewSrEnabled(false);
+      setCreating(false);
+      setOpen(false);
+    } catch {
+      // Silently fail
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -53,9 +85,9 @@ export default function CollectionSwitcher({
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1 left-0 z-50 min-w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
+        <div className="absolute top-full mt-1 left-0 z-50 min-w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
           <button
-            onClick={() => { onChange(null); setOpen(false); }}
+            onClick={() => { onChange(null); setOpen(false); setCreating(false); }}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
               activeId === null
                 ? 'bg-zinc-800 text-zinc-100'
@@ -68,7 +100,7 @@ export default function CollectionSwitcher({
           {collections.map((col) => (
             <button
               key={col.id}
-              onClick={() => { onChange(col.id); setOpen(false); }}
+              onClick={() => { onChange(col.id); setOpen(false); setCreating(false); }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
                 activeId === col.id
                   ? 'bg-zinc-800 text-zinc-100'
@@ -80,9 +112,69 @@ export default function CollectionSwitcher({
                 style={{ backgroundColor: col.color ?? '#71717a' }}
               />
               <span className="truncate">{col.name}</span>
-              {col.icon && <span className="ml-auto text-zinc-600">{col.icon}</span>}
+              {!col.srEnabled && <span className="ml-auto text-[10px] text-zinc-600">no SR</span>}
             </button>
           ))}
+
+          <div className="border-t border-zinc-800">
+            {!creating ? (
+              <button
+                onClick={() => setCreating(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors duration-150"
+              >
+                <Plus className="w-3 h-3" />
+                New collection
+              </button>
+            ) : (
+              <div className="p-3 space-y-2">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  placeholder="Collection name"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                />
+                <div className="flex gap-1">
+                  {COLOR_SWATCHES.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setNewColor(c)}
+                      className={`w-5 h-5 rounded-full transition-all duration-150 ${
+                        newColor === c ? 'ring-2 ring-zinc-400 ring-offset-1 ring-offset-zinc-900' : ''
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-xs text-zinc-500 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newSrEnabled}
+                    onChange={(e) => setNewSrEnabled(e.target.checked)}
+                    className="rounded border-zinc-600"
+                  />
+                  Spaced repetition
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCreate}
+                    disabled={!newName.trim() || submitting}
+                    className="flex-1 py-1.5 bg-zinc-100 text-zinc-900 text-xs font-semibold rounded hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                  >
+                    {submitting ? 'Creating...' : 'Create'}
+                  </button>
+                  <button
+                    onClick={() => { setCreating(false); setNewName(''); }}
+                    className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

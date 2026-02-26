@@ -102,7 +102,7 @@ export async function getCollections(): Promise<Collection[]> {
 }
 
 export async function createCollection(
-  input: Omit<Collection, 'id' | 'createdAt'>
+  input: { name: string; icon?: string; color?: string; srEnabled?: boolean; sortOrder?: number }
 ): Promise<Collection> {
   return request<Collection>('/collections', {
     method: 'POST',

@@ -13,6 +13,10 @@ stats.get("/overview", async (c) => {
 
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0]!;
+
   // Single CTE query for all stats
   const [result] = await sql<[{
     total_reviews: string;
@@ -28,7 +32,7 @@ stats.get("/overview", async (c) => {
     )
     SELECT
       (SELECT COUNT(*) FROM filtered_events)::text AS total_reviews,
-      (SELECT COUNT(*) FROM filtered_events WHERE reviewed_at >= CURRENT_DATE - 30)::text AS reviews_last_30,
+      (SELECT COUNT(*) FROM filtered_events WHERE reviewed_at >= ${thirtyDaysAgoStr}::date)::text AS reviews_last_30,
       (SELECT COALESCE(json_object_agg(t.topic, t.cnt), '{}')
        FROM (SELECT topic, COUNT(*)::int AS cnt FROM filtered_events fe
              JOIN tasks tk ON tk.id = fe.task_id
@@ -59,10 +63,14 @@ stats.get("/heatmap", async (c) => {
 
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().split("T")[0]!;
+
   const rows = await sql<{ date: string; count: string }[]>`
     SELECT reviewed_at::text AS date, COUNT(*)::text AS count
     FROM review_events
-    WHERE reviewed_at >= CURRENT_DATE - ${days}
+    WHERE reviewed_at >= ${cutoffStr}::date
     ${collectionFilter}
     GROUP BY reviewed_at
     ORDER BY reviewed_at
