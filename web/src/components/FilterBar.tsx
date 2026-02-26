@@ -67,7 +67,7 @@ export default function FilterBar({ filters, setFilter, resetFilters, hideStatus
         />
 
         {/* Sort */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto">
           <select
             value={filters.sortField}
             onChange={(e) => setFilter('sortField', e.target.value as SortField)}

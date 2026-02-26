@@ -128,7 +128,7 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 overflow-x-auto">
         {calendarDays.map((day, i) => {
           if (!day) {
             return <div key={`empty-${i}`} />;

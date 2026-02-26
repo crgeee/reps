@@ -70,7 +70,7 @@ export default function AddTask({
         {/* Topic */}
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-2">Topic</label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
             {TOPICS.map((t) => (
               <button
                 key={t}

@@ -85,7 +85,7 @@ export default function CollectionSwitcher({
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1 left-0 z-50 min-w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
+        <div className="absolute top-full mt-1 right-0 sm:right-auto sm:left-0 z-50 min-w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
           <button
             onClick={() => { onChange(null); setOpen(false); setCreating(false); }}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
