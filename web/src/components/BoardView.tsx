@@ -251,8 +251,8 @@ const Column = memo(function Column({
       style={{ borderTopColor: borderColor ?? '#3f3f46' }}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-zinc-400">{label}</h3>
-        <span className="text-xs text-zinc-600">{tasks.length}</span>
+        <h3 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">{label}</h3>
+        <span className="text-xs text-zinc-600 font-mono tabular-nums">{tasks.length}</span>
       </div>
 
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>

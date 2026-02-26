@@ -150,7 +150,7 @@ export default function AddTask({
         <button
           type="submit"
           disabled={submitting || !title.trim()}
-          className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-amber-500 text-zinc-950 font-bold rounded-lg hover:bg-amber-400 transition-all duration-200 disabled:opacity-50 glow-amber"
         >
           {submitting ? 'Creating...' : 'Create Task'}
         </button>
