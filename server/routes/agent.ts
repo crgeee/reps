@@ -5,7 +5,19 @@ import { evaluateAnswer } from "../agent/evaluator.js";
 import { generateQuestion } from "../agent/questions.js";
 import { summarizePaper } from "../agent/papers.js";
 import { dailyBriefing } from "../agent/coach.js";
-import { validateUuid, uuidStr } from "../validation.js";
+import {
+  startMockInterview,
+  respondToMock,
+  getMockSession,
+  listMockSessions,
+  getInterleaveTopicForMock,
+} from "../agent/mock.js";
+import {
+  validateUuid,
+  uuidStr,
+  mockStartSchema,
+  mockRespondSchema,
+} from "../validation.js";
 import type { Task, Note } from "../../src/types.js";
 
 const agent = new Hono();
@@ -123,6 +135,78 @@ agent.post("/briefing", async (c) => {
   } catch (err) {
     console.error("[agent/briefing]", err);
     return c.json({ error: "Briefing failed" }, 500);
+  }
+});
+
+// --- mock interview routes ---
+
+// POST /agent/mock/start
+agent.post("/mock/start", async (c) => {
+  try {
+    const raw = await c.req.json();
+    const parsed = mockStartSchema.safeParse(raw);
+    if (!parsed.success) {
+      return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    }
+
+    // "surprise me" mode: no topic provided → pick weakest topic
+    const topic =
+      parsed.data.topic ?? (await getInterleaveTopicForMock(parsed.data.collectionId));
+    const difficulty = parsed.data.difficulty ?? "medium";
+
+    const result = await startMockInterview(topic, difficulty, parsed.data.collectionId);
+    return c.json(result, 201);
+  } catch (err) {
+    console.error("[agent/mock/start]", err);
+    return c.json({ error: "Failed to start mock interview" }, 500);
+  }
+});
+
+// POST /agent/mock/respond
+agent.post("/mock/respond", async (c) => {
+  try {
+    const raw = await c.req.json();
+    const parsed = mockRespondSchema.safeParse(raw);
+    if (!parsed.success) {
+      return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    }
+
+    const result = await respondToMock(parsed.data.sessionId, parsed.data.answer);
+    return c.json(result);
+  } catch (err) {
+    console.error("[agent/mock/respond]", err);
+    return c.json({ error: "Failed to process response" }, 500);
+  }
+});
+
+// GET /agent/mock — list sessions, optional ?collection=uuid filter
+agent.get("/mock", async (c) => {
+  try {
+    const collectionId = c.req.query("collection");
+    if (collectionId && !validateUuid(collectionId)) {
+      return c.json({ error: "Invalid collection ID format" }, 400);
+    }
+    const sessions = await listMockSessions(collectionId);
+    return c.json(sessions);
+  } catch (err) {
+    console.error("[agent/mock list]", err);
+    return c.json({ error: "Failed to list mock sessions" }, 500);
+  }
+});
+
+// GET /agent/mock/:id — must come after /mock to avoid ambiguity
+agent.get("/mock/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+
+    const session = await getMockSession(id);
+    if (!session) return c.json({ error: "Session not found" }, 404);
+
+    return c.json(session);
+  } catch (err) {
+    console.error("[agent/mock/:id]", err);
+    return c.json({ error: "Failed to get mock session" }, 500);
   }
 });
 

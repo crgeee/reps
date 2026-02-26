@@ -1,51 +1,50 @@
 import Anthropic from "@anthropic-ai/sdk";
 import sql from "../db/client.js";
 import { send } from "./notify.js";
+import { getDailyBriefingData } from "./shared.js";
 
 const anthropic = new Anthropic();
 const MODEL = "claude-sonnet-4-6";
 
 export async function dailyBriefing(): Promise<string> {
-  const today = new Date().toISOString().split("T")[0];
-  const deadlineCutoff = new Date();
-  deadlineCutoff.setDate(deadlineCutoff.getDate() + 7);
-  const deadlineStr = deadlineCutoff.toISOString().split("T")[0];
+  const data = await getDailyBriefingData();
 
-  const dueTasks = await sql<{ id: string; topic: string; title: string; next_review: string }[]>`
-    SELECT id, topic, title, next_review FROM tasks
-    WHERE next_review <= ${today} AND completed = false
-    ORDER BY next_review ASC
-  `;
+  const dueList =
+    data.dueToday.length > 0
+      ? data.dueToday.map((t) => `- [${t.topic}] ${t.title} (due: ${t.nextReview})`).join("\n")
+      : "No reviews due today.";
 
-  const upcomingDeadlines = await sql<{ id: string; topic: string; title: string; deadline: string }[]>`
-    SELECT id, topic, title, deadline FROM tasks
-    WHERE deadline IS NOT NULL AND deadline <= ${deadlineStr} AND completed = false
-    ORDER BY deadline ASC
-  `;
+  const deadlineList =
+    data.upcomingDeadlines.length > 0
+      ? data.upcomingDeadlines
+          .map((t) => `- [${t.topic}] ${t.title} (deadline: ${t.deadline})`)
+          .join("\n")
+      : "No upcoming deadlines.";
 
-  const dueList = dueTasks.length > 0
-    ? dueTasks.map((t) => `- [${t.topic}] ${t.title} (due: ${t.next_review})`).join("\n")
-    : "No reviews due today.";
+  const streakLine =
+    data.streak.current > 0
+      ? `Current streak: ${data.streak.current} day${data.streak.current === 1 ? "" : "s"}.`
+      : "No active streak.";
 
-  const deadlineList = upcomingDeadlines.length > 0
-    ? upcomingDeadlines.map((t) => `- [${t.topic}] ${t.title} (deadline: ${t.deadline})`).join("\n")
-    : "No upcoming deadlines.";
-
-  const userPrompt = `Reviews due today:\n${dueList}\n\nUpcoming deadlines (next 7 days):\n${deadlineList}`;
+  const userPrompt = `Reviews due today:\n${dueList}\n\nUpcoming deadlines (next 7 days):\n${deadlineList}\n\n${streakLine}`;
 
   let message: string;
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 300,
-      system: "You are a technical interview coach. The candidate is preparing for a software engineer role at Anthropic. Given these due review items and upcoming deadlines, write a 3-sentence motivating and specific coaching message for today. Be direct, not cheesy.",
+      system:
+        "You are a technical interview coach. The candidate is preparing for a software engineer role at Anthropic. Given these due review items and upcoming deadlines, write a 3-sentence motivating and specific coaching message for today. Be direct, not cheesy.",
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    message = response.content[0].type === "text" ? response.content[0].text : "Unable to generate briefing.";
+    message =
+      response.content[0].type === "text"
+        ? response.content[0].text
+        : "Unable to generate briefing.";
   } catch (err) {
     console.error("[coach] dailyBriefing Claude error:", err);
-    message = `You have ${dueTasks.length} review(s) due and ${upcomingDeadlines.length} upcoming deadline(s). Check your reps dashboard.`;
+    message = `You have ${data.dueToday.length} review(s) due and ${data.upcomingDeadlines.length} upcoming deadline(s). Check your reps dashboard.`;
   }
 
   await send("reps — daily briefing", message);
@@ -84,11 +83,15 @@ export async function weeklyInsight(): Promise<string> {
     ORDER BY topic
   `;
 
-  const historyText = reviewHistory.length > 0
-    ? reviewHistory
-        .map((r) => `${r.topic}: ${r.review_count} reviews, avg ease ${r.avg_ease}, avg reps ${r.avg_reps}`)
-        .join("\n")
-    : "No review activity in the last 30 days.";
+  const historyText =
+    reviewHistory.length > 0
+      ? reviewHistory
+          .map(
+            (r) =>
+              `${r.topic}: ${r.review_count} reviews, avg ease ${r.avg_ease}, avg reps ${r.avg_reps}`,
+          )
+          .join("\n")
+      : "No review activity in the last 30 days.";
 
   const userPrompt = `Review history (last 30 days):\n${historyText}`;
 
@@ -97,14 +100,19 @@ export async function weeklyInsight(): Promise<string> {
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 400,
-      system: "You are a technical interview coach. The candidate is preparing for a software engineer role at Anthropic. Given this 30-day review history by topic, identify the weakest topic and suggest one concrete focus area for the coming week. Be specific and actionable in 3-4 sentences.",
+      system:
+        "You are a technical interview coach. The candidate is preparing for a software engineer role at Anthropic. Given this 30-day review history by topic, identify the weakest topic and suggest one concrete focus area for the coming week. Be specific and actionable in 3-4 sentences.",
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    message = response.content[0].type === "text" ? response.content[0].text : "Unable to generate insight.";
+    message =
+      response.content[0].type === "text"
+        ? response.content[0].text
+        : "Unable to generate insight.";
   } catch (err) {
     console.error("[coach] weeklyInsight Claude error:", err);
-    message = "Could not generate weekly insight. Review your topic progress in the dashboard.";
+    message =
+      "Could not generate weekly insight. Review your topic progress in the dashboard.";
   }
 
   await send("reps — weekly insight", message);
