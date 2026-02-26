@@ -6,8 +6,8 @@ import { getDailyBriefingData } from "./shared.js";
 const anthropic = new Anthropic();
 const MODEL = "claude-sonnet-4-6";
 
-export async function dailyBriefing(): Promise<string> {
-  const data = await getDailyBriefingData();
+export async function dailyBriefing(userId?: string): Promise<string> {
+  const data = await getDailyBriefingData(undefined, userId);
 
   const dueList =
     data.dueToday.length > 0
@@ -51,8 +51,8 @@ export async function dailyBriefing(): Promise<string> {
 
   try {
     await sql`
-      INSERT INTO agent_logs (type, input, output)
-      VALUES ('daily_briefing', ${userPrompt}, ${message})
+      INSERT INTO agent_logs (type, input, output, user_id)
+      VALUES ('daily_briefing', ${userPrompt}, ${message}, ${userId ?? null})
     `;
   } catch (err) {
     console.error("[coach] Failed to log daily briefing:", err);
@@ -61,10 +61,12 @@ export async function dailyBriefing(): Promise<string> {
   return message;
 }
 
-export async function weeklyInsight(): Promise<string> {
+export async function weeklyInsight(userId?: string): Promise<string> {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const cutoff = thirtyDaysAgo.toISOString().split("T")[0];
+
+  const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
 
   const reviewHistory = await sql<{
     topic: string;
@@ -78,7 +80,7 @@ export async function weeklyInsight(): Promise<string> {
       ROUND(AVG(ease_factor)::numeric, 2)::text AS avg_ease,
       ROUND(AVG(repetitions)::numeric, 1)::text AS avg_reps
     FROM tasks
-    WHERE last_reviewed IS NOT NULL AND last_reviewed >= ${cutoff}
+    WHERE last_reviewed IS NOT NULL AND last_reviewed >= ${cutoff} ${userFilter}
     GROUP BY topic
     ORDER BY topic
   `;
@@ -119,8 +121,8 @@ export async function weeklyInsight(): Promise<string> {
 
   try {
     await sql`
-      INSERT INTO agent_logs (type, input, output)
-      VALUES ('weekly_insight', ${userPrompt}, ${message})
+      INSERT INTO agent_logs (type, input, output, user_id)
+      VALUES ('weekly_insight', ${userPrompt}, ${message}, ${userId ?? null})
     `;
   } catch (err) {
     console.error("[coach] Failed to log weekly insight:", err);

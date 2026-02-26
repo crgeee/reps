@@ -13,18 +13,18 @@ function getResend(): Resend | null {
   return resendClient;
 }
 
-export async function sendDailyDigest(): Promise<void> {
+export async function sendDailyDigest(userId?: string, userEmail?: string): Promise<void> {
   const client = getResend();
-  const to = process.env.DIGEST_EMAIL_TO;
+  const to = userEmail ?? process.env.DIGEST_EMAIL_TO;
 
   if (!client || !to) {
-    console.log("[email] Resend not configured (missing RESEND_API_KEY or DIGEST_EMAIL_TO), skipping daily digest");
+    console.log("[email] Resend not configured (missing RESEND_API_KEY or email), skipping daily digest");
     return;
   }
 
   let data;
   try {
-    data = await getDailyBriefingData();
+    data = await getDailyBriefingData(undefined, userId);
   } catch (err) {
     console.error("[email] Failed to fetch briefing data:", err);
     return;

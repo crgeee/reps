@@ -20,7 +20,8 @@ import {
 } from "../validation.js";
 import type { Task, Note } from "../../src/types.js";
 
-const agent = new Hono();
+type AppEnv = { Variables: { userId: string } };
+const agent = new Hono<AppEnv>();
 
 const evaluateSchema = z.object({
   taskId: uuidStr,
@@ -92,7 +93,9 @@ agent.get("/question/:taskId", async (c) => {
     const taskId = c.req.param("taskId");
     if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
 
-    const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId}`;
+    const userId = c.get("userId") as string;
+    const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+    const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId} ${userWhere}`;
     if (!taskRow) {
       return c.json({ error: "Task not found" }, 404);
     }
@@ -130,7 +133,8 @@ agent.post("/summarize/:taskId", async (c) => {
 
 agent.post("/briefing", async (c) => {
   try {
-    const message = await dailyBriefing();
+    const userId = c.get("userId") as string;
+    const message = await dailyBriefing(userId);
     return c.json({ message });
   } catch (err) {
     console.error("[agent/briefing]", err);
@@ -143,6 +147,7 @@ agent.post("/briefing", async (c) => {
 // POST /agent/mock/start
 agent.post("/mock/start", async (c) => {
   try {
+    const userId = c.get("userId") as string;
     const raw = await c.req.json();
     const parsed = mockStartSchema.safeParse(raw);
     if (!parsed.success) {
@@ -151,10 +156,10 @@ agent.post("/mock/start", async (c) => {
 
     // "surprise me" mode: no topic provided → pick weakest topic
     const topic =
-      parsed.data.topic ?? (await getInterleaveTopicForMock(parsed.data.collectionId));
+      parsed.data.topic ?? (await getInterleaveTopicForMock(parsed.data.collectionId, userId));
     const difficulty = parsed.data.difficulty ?? "medium";
 
-    const result = await startMockInterview(topic, difficulty, parsed.data.collectionId);
+    const result = await startMockInterview(topic, difficulty, parsed.data.collectionId, userId);
     return c.json(result, 201);
   } catch (err) {
     console.error("[agent/mock/start]", err);
@@ -186,7 +191,8 @@ agent.get("/mock", async (c) => {
     if (collectionId && !validateUuid(collectionId)) {
       return c.json({ error: "Invalid collection ID format" }, 400);
     }
-    const sessions = await listMockSessions(collectionId);
+    const userId = c.get("userId") as string;
+    const sessions = await listMockSessions(collectionId, userId);
     return c.json(sessions);
   } catch (err) {
     console.error("[agent/mock list]", err);
@@ -200,7 +206,8 @@ agent.get("/mock/:id", async (c) => {
     const id = c.req.param("id");
     if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
 
-    const session = await getMockSession(id);
+    const userId = c.get("userId") as string;
+    const session = await getMockSession(id, userId);
     if (!session) return c.json({ error: "Session not found" }, 404);
 
     return c.json(session);

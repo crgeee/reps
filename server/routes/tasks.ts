@@ -6,7 +6,8 @@ import { calculateSM2 } from "../../src/spaced-repetition.js";
 import { validateUuid, buildUpdates, dateStr, topicEnum, uuidStr, statusEnum, priorityEnum } from "../validation.js";
 import type { Task, Note, Quality } from "../../src/types.js";
 
-const tasks = new Hono();
+type AppEnv = { Variables: { userId: string } };
+const tasks = new Hono<AppEnv>();
 
 // --- validation schemas ---
 
@@ -180,6 +181,7 @@ async function fetchTagsByTaskIds(taskIds: string[]): Promise<Map<string, { id: 
 
 // GET /tasks/due must be registered before /tasks/:id to avoid route collision
 tasks.get("/due", async (c) => {
+  const userId = c.get("userId") as string;
   const collectionId = c.req.query("collection");
   if (collectionId && !validateUuid(collectionId)) {
     return c.json({ error: "Invalid collection ID" }, 400);
@@ -189,10 +191,13 @@ tasks.get("/due", async (c) => {
     ? sql`AND collection_id = ${collectionId}`
     : sql``;
 
+  const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+
   const rows = await sql<TaskRow[]>`
     SELECT * FROM tasks
     WHERE next_review <= ${today()} AND completed = false
     ${collectionFilter}
+    ${userFilter}
     ORDER BY next_review ASC
   `;
 
@@ -214,16 +219,18 @@ tasks.get("/due", async (c) => {
 
 // GET /tasks
 tasks.get("/", async (c) => {
+  const userId = c.get("userId") as string;
   const collectionId = c.req.query("collection");
   if (collectionId && !validateUuid(collectionId)) {
     return c.json({ error: "Invalid collection ID" }, 400);
   }
 
+  const userFilter = userId ? sql`WHERE user_id = ${userId}` : sql`WHERE 1=1`;
   const collectionFilter = collectionId
-    ? sql`WHERE collection_id = ${collectionId}`
+    ? sql`AND collection_id = ${collectionId}`
     : sql``;
 
-  const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${collectionFilter} ORDER BY created_at DESC`;
+  const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${userFilter} ${collectionFilter} ORDER BY created_at DESC`;
 
   const taskIds = rawRows.map((r) => r.id);
   const noteRows = taskIds.length > 0
@@ -255,6 +262,7 @@ tasks.get("/", async (c) => {
 
 // POST /tasks
 tasks.post("/", async (c) => {
+  const userId = c.get("userId") as string;
   const raw = await c.req.json();
   const parsed = createTaskSchema.safeParse(raw);
   if (!parsed.success) {
@@ -265,7 +273,7 @@ tasks.post("/", async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id)
     VALUES (
       ${id},
       ${body.topic},
@@ -281,7 +289,8 @@ tasks.post("/", async (c) => {
       ${body.createdAt ?? now},
       ${body.collectionId ?? null},
       ${body.description ?? null},
-      ${body.priority ?? "none"}
+      ${body.priority ?? "none"},
+      ${userId ?? null}
     )
     RETURNING *
   `;
@@ -307,6 +316,7 @@ tasks.post("/", async (c) => {
 
 // PATCH /tasks/:id
 tasks.patch("/:id", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -344,9 +354,10 @@ tasks.patch("/:id", async (c) => {
   // Only run UPDATE if there are scalar fields to update
   let row: TaskRow | undefined;
   if (Object.keys(updates).length > 0) {
+    const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
     const [updated] = await sql<TaskRow[]>`
       UPDATE tasks SET ${sql(updates as Record<string, unknown>)}
-      WHERE id = ${id}
+      WHERE id = ${id} ${userWhere}
       RETURNING *
     `;
     if (!updated) {
@@ -354,8 +365,9 @@ tasks.patch("/:id", async (c) => {
     }
     row = updated;
   } else {
-    // No scalar updates — just verify task exists
-    const [existing] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id}`;
+    // No scalar updates — just verify task exists and belongs to user
+    const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+    const [existing] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id} ${userWhere}`;
     if (!existing) {
       return c.json({ error: "Task not found" }, 404);
     }
@@ -385,10 +397,12 @@ tasks.patch("/:id", async (c) => {
 
 // DELETE /tasks/:id
 tasks.delete("/:id", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
 
-  const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${id} RETURNING *`;
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${id} ${userWhere} RETURNING *`;
 
   if (!row) {
     return c.json({ error: "Task not found" }, 404);
@@ -399,6 +413,7 @@ tasks.delete("/:id", async (c) => {
 
 // POST /tasks/:id/notes
 tasks.post("/:id/notes", async (c) => {
+  const userId = c.get("userId") as string;
   const taskId = c.req.param("id");
   if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -407,8 +422,9 @@ tasks.post("/:id/notes", async (c) => {
     return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
   }
 
-  // Verify task exists
-  const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId}`;
+  // Verify task exists and belongs to user
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId} ${userWhere}`;
   if (!task) {
     return c.json({ error: "Task not found" }, 404);
   }
@@ -426,6 +442,7 @@ tasks.post("/:id/notes", async (c) => {
 
 // POST /tasks/:id/review
 tasks.post("/:id/review", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -435,8 +452,9 @@ tasks.post("/:id/review", async (c) => {
   }
   const quality = parsed.data.quality as Quality;
 
-  // Load current task
-  const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id}`;
+  // Load current task (scoped to user)
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id} ${userWhere}`;
   if (!taskRow) {
     return c.json({ error: "Task not found" }, 404);
   }
@@ -460,8 +478,8 @@ tasks.post("/:id/review", async (c) => {
 
   // Insert review event for streaks/heatmap tracking
   await sql`
-    INSERT INTO review_events (task_id, collection_id, quality, reviewed_at)
-    VALUES (${id}, ${taskRow.collection_id ?? null}, ${quality}, ${today()})
+    INSERT INTO review_events (task_id, collection_id, quality, reviewed_at, user_id)
+    VALUES (${id}, ${taskRow.collection_id ?? null}, ${quality}, ${today()}, ${userId ?? null})
   `;
 
   const tagsByTask = await fetchTagsByTaskIds([id]);
@@ -471,6 +489,7 @@ tasks.post("/:id/review", async (c) => {
 
 // POST /sync — bulk upsert from CLI
 tasks.post("/sync", async (c) => {
+  const userId = c.get("userId") as string;
   const raw = await c.req.json();
   const arr = Array.isArray(raw) ? raw : raw.tasks;
   const parsed = syncSchema.safeParse(arr);
@@ -485,7 +504,7 @@ tasks.post("/sync", async (c) => {
   await sql.begin(async (tx: any) => {
     for (const t of incomingTasks) {
       await tx`
-        INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
+        INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, user_id)
         VALUES (
           ${t.id},
           ${t.topic},
@@ -498,7 +517,8 @@ tasks.post("/sync", async (c) => {
           ${t.easeFactor},
           ${t.nextReview},
           ${t.lastReviewed ?? null},
-          ${t.createdAt}
+          ${t.createdAt},
+          ${userId ?? null}
         )
         ON CONFLICT (id) DO UPDATE SET
           topic = EXCLUDED.topic,
