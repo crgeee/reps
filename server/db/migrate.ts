@@ -1,17 +1,25 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import sql from "./client.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const schemaPath = resolve(__dirname, "../../db/schema.sql");
+const dbDir = resolve(__dirname, "../../db");
 
 async function migrate(): Promise<void> {
   console.log("Running migrations...");
 
   try {
-    const schema = readFileSync(schemaPath, "utf-8");
-    await sql.unsafe(schema);
+    const files = readdirSync(dbDir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+
+    for (const file of files) {
+      console.log(`  Running ${file}...`);
+      const content = readFileSync(resolve(dbDir, file), "utf-8");
+      await sql.unsafe(content);
+    }
+
     console.log("Migrations completed successfully.");
   } catch (error) {
     console.error("Migration failed:", error);
