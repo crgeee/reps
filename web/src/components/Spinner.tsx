@@ -14,12 +14,14 @@ const SIZES = {
 export default memo(function Spinner({ size = 'md', label }: SpinnerProps) {
   const s = SIZES[size];
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div role="status" aria-label={label ?? 'Loading'} className="flex flex-col items-center gap-3">
       <div className="relative">
         <div
+          aria-hidden="true"
           className={`${s.box} ${s.border} rounded-full border-zinc-800 border-t-zinc-300 animate-spin`}
         />
         <div
+          aria-hidden="true"
           className={`absolute inset-0 ${s.box} ${s.border} rounded-full border-transparent border-b-zinc-600 animate-spin`}
           style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}
         />

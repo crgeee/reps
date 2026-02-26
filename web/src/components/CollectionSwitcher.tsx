@@ -63,6 +63,9 @@ export default function CollectionSwitcher({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={active ? `Collection: ${active.name}` : 'All collections'}
         className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-zinc-600 hover:text-zinc-100 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-600"
       >
         {active ? (
@@ -113,6 +116,7 @@ export default function CollectionSwitcher({
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setEditingCollection(col); setOpen(false); }}
+                aria-label={`Edit ${col.name}`}
                 className="p-1.5 text-zinc-600 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-all"
                 title="Edit collection"
               >
@@ -146,6 +150,8 @@ export default function CollectionSwitcher({
                     <button
                       key={c}
                       onClick={() => setNewColor(c)}
+                      aria-label={`Color ${c}`}
+                      aria-pressed={newColor === c}
                       className={`w-5 h-5 rounded-full transition-all duration-150 ${
                         newColor === c ? 'ring-2 ring-zinc-400 ring-offset-1 ring-offset-zinc-900' : ''
                       }`}

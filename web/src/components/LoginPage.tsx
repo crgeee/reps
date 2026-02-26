@@ -56,12 +56,14 @@ export default function LoginPage() {
         <p className="text-zinc-400 mb-8">Sign in with your email to get started.</p>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
+          <div role="alert" className="mb-4 p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
             {error}
           </div>
         )}
 
+        <label htmlFor="login-email" className="sr-only">Email address</label>
         <input
+          id="login-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

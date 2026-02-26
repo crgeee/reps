@@ -61,7 +61,7 @@ export default function AddTask({
       <h1 className="text-lg font-bold tracking-tight">Add Task</h1>
 
       {error && (
-        <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
+        <div role="alert" className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
           {error}
         </div>
       )}

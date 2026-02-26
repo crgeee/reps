@@ -169,6 +169,7 @@ function GroupSection({
     <div>
       <button
         onClick={() => setCollapsed(!collapsed)}
+        aria-expanded={!collapsed}
         className="flex items-center gap-2 mb-1.5 group"
       >
         <svg
