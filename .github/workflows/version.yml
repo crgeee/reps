@@ -1,0 +1,53 @@
+name: Version Bump
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    # Skip if this push is already a version bump commit
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.VERSION_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine bump type from commits since last tag
+        id: bump
+        run: |
+          # Get the latest tag, or use initial commit if none exists
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+
+          # Get commit messages since last tag
+          COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%s%n%b" 2>/dev/null || echo "")
+
+          BUMP="patch"
+
+          # Check for breaking changes
+          if echo "$COMMITS" | grep -qE "^[a-z]+(\(.+\))?!:|BREAKING CHANGE"; then
+            BUMP="major"
+          # Check for features
+          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then
+            BUMP="minor"
+          fi
+
+          echo "type=$BUMP" >> "$GITHUB_OUTPUT"
+          echo "Bump type: $BUMP"
+
+      - name: Bump version
+        run: |
+          npm version ${{ steps.bump.outputs.type }} -m "chore(release): v%s"
+          git push --follow-tags

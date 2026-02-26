@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
@@ -12,6 +15,9 @@ import tags from './routes/tags.js';
 import statsRoutes from './routes/stats.js';
 import usersRoutes from './routes/users.js';
 import { calendarFeed, exportRoutes } from './routes/export.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
 
 // Import and start cron jobs
 import { startCronJobs } from './cron.js';
@@ -40,7 +46,7 @@ app.use('/*', bodyLimit({ maxSize: 1024 * 1024 }));
 app.use('/*', rateLimiter(100, 60_000));
 
 // Health check (no auth required)
-app.get('/health', (c) => c.json({ status: 'ok' }));
+app.get('/health', (c) => c.json({ status: 'ok', version: pkg.version }));
 
 // Auth routes — BEFORE auth middleware (public endpoints)
 app.route('/auth', authRoutes);
