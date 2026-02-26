@@ -7,6 +7,7 @@ module.exports = {
       cwd: "/var/www/reps",
       env: {
         NODE_ENV: "production",
+        TZ: "America/Los_Angeles",
       },
       instances: 1,
       exec_mode: "fork",
