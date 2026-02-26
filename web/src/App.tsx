@@ -15,6 +15,7 @@ import Spinner from './components/Spinner';
 import CalendarView from './components/CalendarView';
 import MockInterview from './components/MockInterview';
 import CollectionSwitcher from './components/CollectionSwitcher';
+import FocusWidget from './components/FocusWidget';
 import LoginPage from './components/LoginPage';
 import Settings from './components/Settings';
 import DeviceApproval from './components/DeviceApproval';
@@ -454,6 +455,7 @@ export default function App() {
           </ErrorBoundary>
         )}
       </main>
+      <FocusWidget />
     </div>
   );
 }
