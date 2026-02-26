@@ -1,5 +1,5 @@
 import sql from "../db/client.js";
-import { generateToken, hashToken, generateUserCode, generateDeviceCode } from "./crypto.js";
+import { hashToken, generateUserCode, generateDeviceCode } from "./crypto.js";
 import { createSession } from "./sessions.js";
 
 const DEVICE_CODE_EXPIRY_MINUTES = 10;

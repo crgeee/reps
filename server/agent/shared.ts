@@ -67,7 +67,7 @@ export async function getDailyBriefingData(collectionId?: string, userId?: strin
   `;
 
   // Streak: count consecutive distinct reviewed_at days going back from today
-  let streakCount = 0;
+  let streakCount: number;
   try {
     const [streakRow] = await sql<[{ cnt: string }]>`
       WITH dates AS (
