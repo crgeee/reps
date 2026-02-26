@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import sql from "../db/client.js";
-import { getUserById, updateUserProfile, listUsers, adminUpdateUser } from "../auth/users.js";
+import { getUserById, updateUserProfile, adminUpdateUser } from "../auth/users.js";
 import { getUserSessions, deleteSession } from "../auth/sessions.js";
 import { validateUuid } from "../validation.js";
 
