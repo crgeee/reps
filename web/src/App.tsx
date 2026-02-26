@@ -578,8 +578,8 @@ export default function App() {
           </ErrorBoundary>
         )}
       </main>
-      <Footer onNavigate={(v) => setView(v as View)} />
       <FocusWidget />
+      <Footer onNavigate={(v) => setView(v as View)} />
     </div>
   );
 }

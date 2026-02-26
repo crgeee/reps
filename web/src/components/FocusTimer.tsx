@@ -3,6 +3,7 @@ import { Timer } from 'lucide-react';
 
 interface FocusTimerProps {
   onComplete?: () => void;
+  soundEnabled?: boolean;
 }
 
 const DURATIONS = [
@@ -33,7 +34,7 @@ function playBeep() {
   }
 }
 
-export default function FocusTimer({ onComplete }: FocusTimerProps) {
+export default function FocusTimer({ onComplete, soundEnabled = true }: FocusTimerProps) {
   const [selectedDuration, setSelectedDuration] = useState(DURATIONS[0]!.seconds);
   const [remaining, setRemaining] = useState(DURATIONS[0]!.seconds);
   const [running, setRunning] = useState(false);
@@ -41,6 +42,9 @@ export default function FocusTimer({ onComplete }: FocusTimerProps) {
   const durationAtStartRef = useRef<number>(selectedDuration);
   const rafRef = useRef<number | null>(null);
   const completedRef = useRef(false);
+
+  const soundEnabledRef = useRef(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
 
   const tick = useCallback(() => {
     if (!startTimeRef.current) return;
@@ -51,7 +55,7 @@ export default function FocusTimer({ onComplete }: FocusTimerProps) {
     if (newRemaining === 0 && !completedRef.current) {
       completedRef.current = true;
       setRunning(false);
-      playBeep();
+      if (soundEnabledRef.current) playBeep();
       onComplete?.();
       return;
     }
