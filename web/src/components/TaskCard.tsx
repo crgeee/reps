@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Task } from '../types';
 import { TOPIC_LABELS, TOPIC_COLORS } from '../types';
 import { updateTask, deleteTask, addNote } from '../api';
+import { logger } from '../logger';
 
 interface TaskCardProps {
   task: Task;
@@ -20,6 +21,8 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: 
     try {
       await updateTask(task.id, { completed: !task.completed });
       onRefresh();
+    } catch (err) {
+      logger.error('Failed to toggle task completion', { taskId: task.id, error: String(err) });
     } finally {
       setSubmitting(false);
     }
@@ -31,6 +34,8 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: 
     try {
       await deleteTask(task.id);
       onRefresh();
+    } catch (err) {
+      logger.error('Failed to delete task', { taskId: task.id, error: String(err) });
     } finally {
       setSubmitting(false);
     }
@@ -44,6 +49,8 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: 
       await addNote(task.id, text);
       setNoteInput('');
       onRefresh();
+    } catch (err) {
+      logger.error('Failed to add note', { taskId: task.id, error: String(err) });
     } finally {
       setSubmitting(false);
     }

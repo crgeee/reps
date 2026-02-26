@@ -18,6 +18,7 @@ import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
 import { updateTask } from '../api';
+import { logger } from '../logger';
 
 interface BoardViewProps {
   tasks: Task[];
@@ -122,7 +123,8 @@ export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
     try {
       await updateTask(taskId, { status: targetStatus });
       onRefresh();
-    } catch {
+    } catch (err) {
+      logger.error('Failed to update task status', { taskId, targetStatus, error: String(err) });
       onRefresh();
     }
   }, [tasks, onRefresh]);

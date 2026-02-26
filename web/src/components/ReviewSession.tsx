@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Task, Quality, EvaluationResult } from '../types';
 import { TOPIC_LABELS } from '../types';
 import { getQuestion, evaluateAnswer, submitReview } from '../api';
+import { logger } from '../logger';
 
 interface ReviewSessionProps {
   dueTasks: Task[];
@@ -59,6 +60,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
       setQuestion(q);
       setQuestionLoaded(true);
     } catch (err) {
+      logger.error('Failed to load question', { taskId: task.id, error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to load question');
     } finally {
       setLoading(false);
@@ -74,6 +76,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
       setEvaluation(result);
       setStep('evaluation');
     } catch (err) {
+      logger.error('Failed to evaluate answer', { taskId: task.id, error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to evaluate');
     } finally {
       setLoading(false);
@@ -99,6 +102,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
         setQuestionLoaded(false);
       }
     } catch (err) {
+      logger.error('Failed to submit review', { taskId: task.id, quality, error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to submit review');
     } finally {
       setLoading(false);

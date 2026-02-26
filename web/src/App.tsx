@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Task } from './types';
 import { getTasks, getDueTasks, getStoredApiKey, setApiKey } from './api';
+import { logger } from './logger';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
 import ReviewSession from './components/ReviewSession';
@@ -36,6 +37,7 @@ export default function App() {
       setTasks(allTasks);
       setDueTasks(due);
     } catch (err) {
+      logger.error('Failed to fetch data', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);

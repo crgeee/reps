@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Topic } from '../types';
 import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask } from '../api';
+import { logger } from '../logger';
 
 interface AddTaskProps {
   onCreated: () => void;
@@ -30,6 +31,7 @@ export default function AddTask({ onCreated }: AddTaskProps) {
       });
       onCreated();
     } catch (err) {
+      logger.error('Failed to create task', { topic, title, error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to create task');
     } finally {
       setSubmitting(false);
