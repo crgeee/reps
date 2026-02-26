@@ -6,6 +6,7 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  closestCorners,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -56,7 +57,8 @@ const SortableCard = memo(function SortableCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0 : 1,
+    pointerEvents: isDragging ? 'none' as const : undefined,
   };
 
   return (
@@ -206,6 +208,7 @@ export default function BoardView({
 
       <DndContext
         sensors={sensors}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
@@ -224,7 +227,7 @@ export default function BoardView({
           ))}
         </div>
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay>
           {activeTask && <TaskCard task={activeTask} onRefresh={() => {}} compact />}
         </DragOverlay>
       </DndContext>
