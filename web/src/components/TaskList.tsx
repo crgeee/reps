@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Task, Topic, Tag, Collection } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, STATUS_LABELS } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
@@ -13,10 +13,11 @@ interface TaskListProps {
   availableTags?: Tag[];
   collections?: Collection[];
   onTagCreated?: (tag: Tag) => void;
+  statusOptions?: { value: string; label: string }[];
 }
 
-export default function TaskList({ tasks, onRefresh, availableTags = [], collections = [], onTagCreated }: TaskListProps) {
-  const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
+export default function TaskList({ tasks, onRefresh, availableTags = [], collections = [], onTagCreated, statusOptions }: TaskListProps) {
+  const { filters, setFilter, resetFilters, filtered, grouped } = useFilteredTasks(tasks);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -25,7 +26,7 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
     return filtered.filter((t) => t.tags?.some((tag) => tag.id === tagFilter));
   }, [filtered, tagFilter]);
 
-  const grouped = TOPICS.reduce<Record<Topic, Task[]>>((acc, topic) => {
+  const topicGroups = TOPICS.reduce<Record<Topic, Task[]>>((acc, topic) => {
     const topicTasks = tagFiltered.filter((t) => t.topic === topic);
     if (topicTasks.length > 0) acc[topic] = topicTasks;
     return acc;
@@ -50,7 +51,7 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
 
-      <FilterBar filters={filters} setFilter={setFilter} resetFilters={resetFilters} />
+      <FilterBar filters={filters} setFilter={setFilter} resetFilters={resetFilters} statusOptions={statusOptions} />
 
       {/* Tag filter */}
       {usedTags.length > 0 && (
@@ -78,26 +79,59 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
         </div>
       )}
 
-      {Object.entries(grouped).length === 0 && (
-        <p className="text-zinc-500 py-12 text-center">No tasks found.</p>
-      )}
+      {filters.groupBy !== 'none' ? (
+        <>
+          {grouped.size === 0 && tagFiltered.length === 0 && (
+            <p className="text-zinc-500 py-12 text-center">No tasks found.</p>
+          )}
+          {Array.from(grouped.entries()).map(([groupKey, groupTasks]) => {
+            const filteredGroup = tagFilter
+              ? groupTasks.filter((t) => t.tags?.some((tag) => tag.id === tagFilter))
+              : groupTasks;
+            if (filteredGroup.length === 0) return null;
 
-      {Object.entries(grouped).map(([topic, topicTasks]) => (
-        <div key={topic}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2 h-2 rounded-full ${TOPIC_COLORS[topic as Topic]}`} />
-            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-              {TOPIC_LABELS[topic as Topic]}
-            </h2>
-            <span className="text-xs text-zinc-600">{topicTasks.length}</span>
-          </div>
-          <div className="space-y-2">
-            {topicTasks.map((task) => (
-              <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
-            ))}
-          </div>
-        </div>
-      ))}
+            const label = filters.groupBy === 'topic'
+              ? (TOPIC_LABELS[groupKey as Topic] ?? groupKey)
+              : (STATUS_LABELS[groupKey as keyof typeof STATUS_LABELS] ?? groupKey.charAt(0).toUpperCase() + groupKey.slice(1));
+            const isDone = groupKey === 'done';
+
+            return (
+              <GroupSection
+                key={groupKey}
+                label={label}
+                count={filteredGroup.length}
+                defaultCollapsed={isDone}
+              >
+                {filteredGroup.map((task) => (
+                  <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
+                ))}
+              </GroupSection>
+            );
+          })}
+        </>
+      ) : (
+        <>
+          {Object.entries(topicGroups).length === 0 && (
+            <p className="text-zinc-500 py-12 text-center">No tasks found.</p>
+          )}
+          {Object.entries(topicGroups).map(([topic, topicTasks]) => (
+            <div key={topic}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`w-2 h-2 rounded-full ${TOPIC_COLORS[topic as Topic]}`} />
+                <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                  {TOPIC_LABELS[topic as Topic]}
+                </h2>
+                <span className="text-xs text-zinc-600">{topicTasks.length}</span>
+              </div>
+              <div className="space-y-2">
+                {topicTasks.map((task) => (
+                  <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
 
       {editingTask && (
         <TaskEditModal
@@ -108,6 +142,45 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
           onClose={() => setEditingTask(null)}
           onTagCreated={onTagCreated}
         />
+      )}
+    </div>
+  );
+}
+
+function GroupSection({
+  label,
+  count,
+  defaultCollapsed = false,
+  children,
+}: {
+  label: string;
+  count: number;
+  defaultCollapsed?: boolean;
+  children: React.ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  return (
+    <div>
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-2 mb-3 group"
+      >
+        <svg
+          className={`w-3 h-3 text-zinc-500 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+          {label}
+        </h2>
+        <span className="text-xs text-zinc-600">{count}</span>
+      </button>
+      {!collapsed && (
+        <div className="space-y-2 ml-5">
+          {children}
+        </div>
       )}
     </div>
   );

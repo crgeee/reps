@@ -1,12 +1,13 @@
-import type { Topic, TaskStatus } from '../types';
+import type { Topic } from '../types';
 import { TOPICS, TOPIC_LABELS, STATUSES, STATUS_LABELS } from '../types';
-import type { FilterState, DueFilter, SortField } from '../hooks/useFilteredTasks';
+import type { FilterState, DueFilter, SortField, GroupBy } from '../hooks/useFilteredTasks';
 
 interface FilterBarProps {
   filters: FilterState;
   setFilter: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void;
   resetFilters: () => void;
   hideStatus?: boolean;
+  statusOptions?: { value: string; label: string }[];
 }
 
 const DUE_OPTIONS: { value: DueFilter; label: string }[] = [
@@ -24,9 +25,10 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'ease-factor', label: 'Ease Factor' },
 ];
 
-export default function FilterBar({ filters, setFilter, resetFilters, hideStatus }: FilterBarProps) {
+export default function FilterBar({ filters, setFilter, resetFilters, hideStatus, statusOptions }: FilterBarProps) {
   const hasActiveFilters = filters.topic !== 'all' || filters.status !== 'all' ||
-    filters.due !== 'all' || filters.search !== '' || filters.sortField !== 'created';
+    filters.due !== 'all' || filters.search !== '' || filters.sortField !== 'created' ||
+    !filters.hideCompleted || filters.groupBy !== 'none';
 
   return (
     <div className="space-y-3">
@@ -53,8 +55,11 @@ export default function FilterBar({ filters, setFilter, resetFilters, hideStatus
           <ChipGroup
             label="Status"
             value={filters.status}
-            options={[{ value: 'all' as const, label: 'All' }, ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))]}
-            onChange={(v) => setFilter('status', v as TaskStatus | 'all')}
+            options={[
+              { value: 'all' as const, label: 'All' },
+              ...(statusOptions ?? STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))),
+            ]}
+            onChange={(v) => setFilter('status', v)}
           />
         )}
 
@@ -85,6 +90,28 @@ export default function FilterBar({ filters, setFilter, resetFilters, hideStatus
             {filters.sortDir === 'asc' ? '\u2191' : '\u2193'}
           </button>
         </div>
+
+        {/* Hide completed */}
+        <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={filters.hideCompleted}
+            onChange={(e) => setFilter('hideCompleted', e.target.checked)}
+            className="rounded border-zinc-600 bg-zinc-800 text-zinc-400 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+          />
+          Hide done
+        </label>
+
+        {/* Group by */}
+        <select
+          value={filters.groupBy}
+          onChange={(e) => setFilter('groupBy', e.target.value as GroupBy)}
+          className="bg-zinc-900 border border-zinc-800 rounded text-xs text-zinc-400 px-2 py-1.5 focus:outline-none"
+        >
+          <option value="none">No grouping</option>
+          <option value="status">Group by Status</option>
+          <option value="topic">Group by Topic</option>
+        </select>
 
         {/* Reset */}
         {hasActiveFilters && (

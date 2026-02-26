@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Task, Collection, Tag } from './types';
 import { getTasks, getDueTasks, getStoredApiKey, setApiKey, getCollections, getTags } from './api';
 import { logger } from './logger';
@@ -185,6 +185,17 @@ export default function App() {
   const filteredDueTasks = activeCollectionId
     ? dueTasks.filter((t) => t.collectionId === activeCollectionId)
     : dueTasks;
+
+  const activeStatuses = useMemo(() => {
+    if (!activeCollectionId) return undefined;
+    const col = collections.find(c => c.id === activeCollectionId);
+    return col?.statuses;
+  }, [activeCollectionId, collections]);
+
+  const activeStatusOptions = useMemo(() => {
+    if (!activeStatuses || activeStatuses.length === 0) return undefined;
+    return activeStatuses.map(s => ({ value: s.name, label: s.name.charAt(0).toUpperCase() + s.name.slice(1) }));
+  }, [activeStatuses]);
 
   const isMoreView = MORE_NAV.some((n) => n.view === view);
 
@@ -406,6 +417,7 @@ export default function App() {
                 availableTags={tags}
                 collections={collections}
                 onTagCreated={handleTagCreated}
+                statusOptions={activeStatusOptions}
               />
             )}
             {view === 'board' && (
@@ -417,6 +429,8 @@ export default function App() {
                 collections={collections}
                 availableTags={tags}
                 onTagCreated={handleTagCreated}
+                collectionStatuses={activeStatuses}
+                statusOptions={activeStatusOptions}
               />
             )}
             {view === 'review' && (
