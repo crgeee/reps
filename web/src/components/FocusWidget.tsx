@@ -50,7 +50,12 @@ export default function FocusWidget() {
       return;
     }
     const interval = setInterval(() => {
-      const el = document.querySelector('[data-focus-timer-display]');
+      const container = document.querySelector('[data-focus-timer-active]');
+      if (!container) {
+        setTimerDisplay((prev) => (prev === null ? prev : null));
+        return;
+      }
+      const el = container.querySelector('[data-focus-timer-display]');
       const text = el?.textContent ?? null;
       setTimerDisplay((prev) => (prev === text ? prev : text));
     }, 500);
