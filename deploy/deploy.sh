@@ -11,6 +11,13 @@ npm ci
 echo "→ Installing web dependencies..."
 cd web && npm ci && cd ..
 
+echo "→ Running pre-migration backup..."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if ! bash "$SCRIPT_DIR/backup.sh"; then
+  echo "✗ Backup failed — aborting deploy"
+  exit 1
+fi
+
 echo "→ Running database migrations..."
 npm run migrate
 
