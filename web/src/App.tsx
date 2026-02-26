@@ -161,24 +161,29 @@ export default function App() {
   if (!hasApiKey) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-        <div className="w-full max-w-sm p-8">
+        <form
+          className="w-full max-w-sm p-8"
+          onSubmit={(e) => { e.preventDefault(); handleSetApiKey(); }}
+          data-1p-ignore
+        >
           <h1 className="text-4xl font-bold tracking-tight mb-2">reps</h1>
           <p className="text-zinc-400 mb-8">Enter your API key to connect.</p>
           <input
-            type="password"
+            type="text"
             value={apiKeyInput}
             onChange={(e) => setApiKeyInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSetApiKey()}
             placeholder="API key"
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 mb-4"
+            autoComplete="off"
+            data-1p-ignore
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 mb-4 [-webkit-text-security:disc]"
           />
           <button
-            onClick={handleSetApiKey}
+            type="submit"
             className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
           >
             Connect
           </button>
-        </div>
+        </form>
       </div>
     );
   }
