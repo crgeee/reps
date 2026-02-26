@@ -110,9 +110,10 @@ interface TagRow {
   color: string | null;
 }
 
-// postgres.js may return DATE columns as ISO timestamps — normalize to yyyy-MM-dd
-function toDateStr(val: string | null | undefined): string | undefined {
+// postgres.js returns Date objects for DATE columns — normalize to yyyy-MM-dd string
+function toDateStr(val: string | Date | null | undefined): string | undefined {
   if (!val) return undefined;
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
   return val.slice(0, 10);
 }
 
