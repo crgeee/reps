@@ -11,6 +11,7 @@ import collections from "./routes/collections.js";
 import tags from "./routes/tags.js";
 import statsRoutes from "./routes/stats.js";
 import usersRoutes from "./routes/users.js";
+import { calendarFeed, exportRoutes } from "./routes/export.js";
 
 // Import and start cron jobs
 import { startCronJobs } from "./cron.js";
@@ -44,6 +45,9 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 // Auth routes — BEFORE auth middleware (public endpoints)
 app.route("/auth", authRoutes);
 
+// Calendar feed — token-based auth, no Bearer header (calendar apps can't send it)
+app.route("/export", calendarFeed);
+
 // Apply auth middleware to all protected routes
 app.use("/*", authMiddleware);
 
@@ -57,6 +61,7 @@ app.route("/collections", collections);
 app.route("/tags", tags);
 app.route("/stats", statsRoutes);
 app.route("/users", usersRoutes);
+app.route("/export", exportRoutes);
 
 const port = parseInt(process.env.PORT || "3000", 10);
 
