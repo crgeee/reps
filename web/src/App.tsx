@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Task, Collection, Tag } from './types';
+import { formatStatusLabel } from './types';
 import { getTasks, getDueTasks, getStoredApiKey, setApiKey, getCollections, getTags } from './api';
 import { logger } from './logger';
 import Dashboard from './components/Dashboard';
@@ -104,31 +105,34 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [moreOpen, mobileMenuOpen]);
 
+  const applyTaskData = useCallback((allTasks: Task[], due: Task[]) => {
+    setTasks(allTasks);
+    setDueTasks(due);
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
-      setTasks(allTasks);
-      setDueTasks(due);
+      applyTaskData(allTasks, due);
     } catch (err) {
       logger.error('Failed to fetch data', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyTaskData]);
 
   // Background refresh: re-fetches without loading spinner
   const refreshQuietly = useCallback(async () => {
     try {
       const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
-      setTasks(allTasks);
-      setDueTasks(due);
+      applyTaskData(allTasks, due);
     } catch (err) {
       logger.error('Background refresh failed', { error: String(err) });
     }
-  }, []);
+  }, [applyTaskData]);
 
   // Optimistic task update: patches local state immediately, syncs with server in background
   const optimisticUpdateTask = useCallback((taskId: string, updates: Partial<Task>) => {
@@ -179,12 +183,14 @@ export default function App() {
   }
 
   // Filter tasks by active collection if set
-  const filteredTasks = activeCollectionId
-    ? tasks.filter((t) => t.collectionId === activeCollectionId)
-    : tasks;
-  const filteredDueTasks = activeCollectionId
-    ? dueTasks.filter((t) => t.collectionId === activeCollectionId)
-    : dueTasks;
+  const filteredTasks = useMemo(() =>
+    activeCollectionId ? tasks.filter((t) => t.collectionId === activeCollectionId) : tasks,
+    [tasks, activeCollectionId]
+  );
+  const filteredDueTasks = useMemo(() =>
+    activeCollectionId ? dueTasks.filter((t) => t.collectionId === activeCollectionId) : dueTasks,
+    [dueTasks, activeCollectionId]
+  );
 
   const activeStatuses = useMemo(() => {
     if (!activeCollectionId) return undefined;
@@ -194,7 +200,7 @@ export default function App() {
 
   const activeStatusOptions = useMemo(() => {
     if (!activeStatuses || activeStatuses.length === 0) return undefined;
-    return activeStatuses.map(s => ({ value: s.name, label: s.name.charAt(0).toUpperCase() + s.name.slice(1) }));
+    return activeStatuses.map(s => ({ value: s.name, label: formatStatusLabel(s.name) }));
   }, [activeStatuses]);
 
   const isMoreView = MORE_NAV.some((n) => n.view === view);

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Task, Topic, Tag, Collection } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, STATUS_LABELS } from '../types';
+import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, STATUS_LABELS, formatStatusLabel } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
@@ -92,7 +92,7 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
 
             const label = filters.groupBy === 'topic'
               ? (TOPIC_LABELS[groupKey as Topic] ?? groupKey)
-              : (STATUS_LABELS[groupKey as keyof typeof STATUS_LABELS] ?? groupKey.charAt(0).toUpperCase() + groupKey.slice(1));
+              : (STATUS_LABELS[groupKey as keyof typeof STATUS_LABELS] ?? formatStatusLabel(groupKey));
             const isDone = groupKey === 'done';
 
             return (

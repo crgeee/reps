@@ -162,3 +162,9 @@ export const PRIORITY_COLORS: Record<Priority, string> = {
   medium: 'text-amber-400',
   high: 'text-red-400',
 };
+
+export const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'] as const;
+
+export function formatStatusLabel(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');
+}

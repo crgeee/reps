@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Task, Collection, Tag, Topic, Priority, CollectionStatus } from '../types';
-import { TOPICS, TOPIC_LABELS, PRIORITIES, PRIORITY_LABELS, PRIORITY_COLORS } from '../types';
+import { TOPICS, TOPIC_LABELS, PRIORITIES, PRIORITY_LABELS, PRIORITY_COLORS, formatStatusLabel } from '../types';
 import { updateTask, deleteTask, addNote, createTag } from '../api';
 import TagPicker from './TagPicker';
+import NotesList from './NotesList';
 
 interface TaskEditModalProps {
   task: Task;
@@ -32,7 +33,6 @@ export default function TaskEditModal({
   const [collectionId, setCollectionId] = useState<string>(task.collectionId ?? '');
   const [description, setDescription] = useState(task.description ?? '');
   const [tagIds, setTagIds] = useState<string[]>(task.tags?.map((t) => t.id) ?? []);
-  const [noteInput, setNoteInput] = useState('');
   const [notes, setNotes] = useState(task.notes);
   const [saving, setSaving] = useState(false);
 
@@ -82,22 +82,13 @@ export default function TaskEditModal({
     }
   }
 
-  async function handleAddNote() {
-    const text = noteInput.trim();
-    if (!text) return;
-    setSaving(true);
-    try {
-      await addNote(task.id, text);
-      setNoteInput('');
-      // Optimistically add note to local list
-      setNotes((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), text, createdAt: new Date().toISOString().slice(0, 10) },
-      ]);
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
+  async function handleAddNote(text: string) {
+    await addNote(task.id, text);
+    setNotes((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), text, createdAt: new Date().toISOString().slice(0, 10) },
+    ]);
+    onSaved();
   }
 
   async function handleCreateTag(name: string, color: string): Promise<Tag> {
@@ -109,11 +100,10 @@ export default function TaskEditModal({
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start gap-3">
@@ -163,7 +153,7 @@ export default function TaskEditModal({
             >
               {statusOptions.map((s) => (
                 <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ')}
+                  {formatStatusLabel(s)}
                 </option>
               ))}
             </select>
@@ -252,35 +242,7 @@ export default function TaskEditModal({
           <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
             Notes
           </label>
-          <div className="space-y-1.5 mb-2">
-            {notes.length > 0 ? (
-              notes.map((note) => (
-                <div key={note.id} className="bg-zinc-800/50 rounded p-2">
-                  <p className="text-xs text-zinc-400 whitespace-pre-wrap">{note.text}</p>
-                  <p className="text-[10px] text-zinc-600 mt-1">{note.createdAt}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-zinc-600">No notes yet.</p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={noteInput}
-              onChange={(e) => setNoteInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-              placeholder="Add a note..."
-              className="flex-1 px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-            />
-            <button
-              onClick={handleAddNote}
-              disabled={saving}
-              className="px-3 py-1.5 bg-zinc-700 text-zinc-200 text-xs rounded hover:bg-zinc-600 transition-colors disabled:opacity-50"
-            >
-              Add
-            </button>
-          </div>
+          <NotesList notes={notes} onAddNote={handleAddNote} />
         </div>
 
         {/* SM-2 info */}

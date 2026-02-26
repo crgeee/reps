@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import sql from "../db/client.js";
 import { calculateSM2 } from "../../src/spaced-repetition.js";
-import { validateUuid, dateStr, topicEnum, uuidStr, statusEnum, priorityEnum } from "../validation.js";
+import { validateUuid, buildUpdates, dateStr, topicEnum, uuidStr, statusEnum, priorityEnum } from "../validation.js";
 import type { Task, Note, Quality } from "../../src/types.js";
 
 const tasks = new Hono();
@@ -143,6 +143,16 @@ function rowToNote(row: NoteRow): Note {
   };
 }
 
+function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
+  const notesByTask = new Map<string, Note[]>();
+  for (const nr of noteRows) {
+    const arr = notesByTask.get(nr.task_id) ?? [];
+    arr.push(rowToNote(nr));
+    notesByTask.set(nr.task_id, arr);
+  }
+  return notesByTask;
+}
+
 function today(): string {
   return new Date().toISOString().split("T")[0];
 }
@@ -192,12 +202,7 @@ tasks.get("/due", async (c) => {
       ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
       : [];
 
-  const notesByTask = new Map<string, Note[]>();
-  for (const nr of noteRows) {
-    const arr = notesByTask.get(nr.task_id) ?? [];
-    arr.push(rowToNote(nr));
-    notesByTask.set(nr.task_id, arr);
-  }
+  const notesByTask = groupNotes(noteRows);
 
   const tagsByTask = await fetchTagsByTaskIds(taskIds);
 
@@ -220,16 +225,13 @@ tasks.get("/", async (c) => {
 
   const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${collectionFilter} ORDER BY created_at DESC`;
 
-  const noteRows = await sql<NoteRow[]>`SELECT * FROM notes ORDER BY created_at ASC`;
-
-  const notesByTask = new Map<string, Note[]>();
-  for (const nr of noteRows) {
-    const arr = notesByTask.get(nr.task_id) ?? [];
-    arr.push(rowToNote(nr));
-    notesByTask.set(nr.task_id, arr);
-  }
-
   const taskIds = rawRows.map((r) => r.id);
+  const noteRows = taskIds.length > 0
+    ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
+    : [];
+
+  const notesByTask = groupNotes(noteRows);
+
   const tagsByTask = await fetchTagsByTaskIds(taskIds);
 
   // Tag filtering — keep tasks that have ALL specified tags
@@ -286,8 +288,12 @@ tasks.post("/", async (c) => {
 
   // Insert initial tags if provided
   const tagIds = body.tagIds ?? [];
-  for (const tagId of tagIds) {
-    await sql`INSERT INTO task_tags (task_id, tag_id) VALUES (${id}, ${tagId}) ON CONFLICT DO NOTHING`;
+  if (tagIds.length > 0) {
+    await sql`
+      INSERT INTO task_tags (task_id, tag_id)
+      SELECT ${id}, unnest(${tagIds}::uuid[])
+      ON CONFLICT DO NOTHING
+    `;
   }
 
   const tags = tagIds.length > 0
@@ -311,7 +317,7 @@ tasks.patch("/:id", async (c) => {
   const body = parsed.data;
 
   // Build dynamic SET clause from provided fields
-  const fieldMap: Record<string, string> = {
+  const updates = buildUpdates(body as Record<string, unknown>, {
     topic: "topic",
     title: "title",
     completed: "completed",
@@ -325,14 +331,7 @@ tasks.patch("/:id", async (c) => {
     collectionId: "collection_id",
     description: "description",
     priority: "priority",
-  };
-
-  const updates: Record<string, unknown> = {};
-  for (const [camel, snake] of Object.entries(fieldMap)) {
-    if (camel in body) {
-      updates[snake] = (body as Record<string, unknown>)[camel];
-    }
-  }
+  });
 
   // Keep completed and status in sync
   if ("status" in updates && !("completed" in updates)) {
@@ -365,11 +364,14 @@ tasks.patch("/:id", async (c) => {
 
   // Handle tag replacement if tagIds provided
   if (Array.isArray(body.tagIds)) {
+    const validTagIds = body.tagIds.filter(validateUuid);
     await sql`DELETE FROM task_tags WHERE task_id = ${id}`;
-    for (const tagId of body.tagIds) {
-      if (validateUuid(tagId)) {
-        await sql`INSERT INTO task_tags (task_id, tag_id) VALUES (${id}, ${tagId}) ON CONFLICT DO NOTHING`;
-      }
+    if (validTagIds.length > 0) {
+      await sql`
+        INSERT INTO task_tags (task_id, tag_id)
+        SELECT ${id}, unnest(${validTagIds}::uuid[])
+        ON CONFLICT DO NOTHING
+      `;
     }
   }
 
@@ -479,49 +481,51 @@ tasks.post("/sync", async (c) => {
 
   let upserted = 0;
 
-  for (const t of incomingTasks) {
-    await sql`
-      INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
-      VALUES (
-        ${t.id},
-        ${t.topic},
-        ${t.title},
-        ${t.completed},
-        ${t.status ?? "todo"},
-        ${t.deadline ?? null},
-        ${t.repetitions},
-        ${t.interval},
-        ${t.easeFactor},
-        ${t.nextReview},
-        ${t.lastReviewed ?? null},
-        ${t.createdAt}
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        topic = EXCLUDED.topic,
-        title = EXCLUDED.title,
-        completed = EXCLUDED.completed,
-        status = EXCLUDED.status,
-        deadline = EXCLUDED.deadline,
-        repetitions = EXCLUDED.repetitions,
-        interval = EXCLUDED.interval,
-        ease_factor = EXCLUDED.ease_factor,
-        next_review = EXCLUDED.next_review,
-        last_reviewed = EXCLUDED.last_reviewed
-    `;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await sql.begin(async (tx: any) => {
+    for (const t of incomingTasks) {
+      await tx`
+        INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
+        VALUES (
+          ${t.id},
+          ${t.topic},
+          ${t.title},
+          ${t.completed},
+          ${t.status ?? "todo"},
+          ${t.deadline ?? null},
+          ${t.repetitions},
+          ${t.interval},
+          ${t.easeFactor},
+          ${t.nextReview},
+          ${t.lastReviewed ?? null},
+          ${t.createdAt}
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          topic = EXCLUDED.topic,
+          title = EXCLUDED.title,
+          completed = EXCLUDED.completed,
+          status = EXCLUDED.status,
+          deadline = EXCLUDED.deadline,
+          repetitions = EXCLUDED.repetitions,
+          interval = EXCLUDED.interval,
+          ease_factor = EXCLUDED.ease_factor,
+          next_review = EXCLUDED.next_review,
+          last_reviewed = EXCLUDED.last_reviewed
+      `;
 
-    // Sync notes
-    if (t.notes && t.notes.length > 0) {
-      for (const n of t.notes) {
-        await sql`
-          INSERT INTO notes (id, task_id, text, created_at)
-          VALUES (${n.id}, ${t.id}, ${n.text}, ${n.createdAt})
-          ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text
-        `;
+      if (t.notes && t.notes.length > 0) {
+        await Promise.all(t.notes.map((n) =>
+          tx`
+            INSERT INTO notes (id, task_id, text, created_at)
+            VALUES (${n.id}, ${t.id}, ${n.text}, ${n.createdAt})
+            ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text
+          `
+        ));
       }
-    }
 
-    upserted++;
-  }
+      upserted++;
+    }
+  });
 
   return c.json({ upserted });
 });

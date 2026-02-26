@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { Task, Topic } from '../types';
 import { TOPIC_LABELS, TOPIC_COLORS } from '../types';
 import { updateTask, deleteTask, addNote } from '../api';
 import { logger } from '../logger';
 import TagBadge from './TagBadge';
+import NotesList from './NotesList';
 
 const TOPIC_BORDER_COLORS: Record<Topic, string> = {
   coding: 'border-l-blue-500',
@@ -21,9 +22,8 @@ interface TaskCardProps {
   onEdit?: (task: Task) => void;
 }
 
-export default function TaskCard({ task, onRefresh, compact, dragHandleProps, onEdit }: TaskCardProps) {
+export default memo(function TaskCard({ task, onRefresh, compact, dragHandleProps, onEdit }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [noteInput, setNoteInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleMarkDone() {
@@ -46,21 +46,6 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps, on
       onRefresh();
     } catch (err) {
       logger.error('Failed to delete task', { taskId: task.id, error: String(err) });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleAddNote() {
-    const text = noteInput.trim();
-    if (!text) return;
-    setSubmitting(true);
-    try {
-      await addNote(task.id, text);
-      setNoteInput('');
-      onRefresh();
-    } catch (err) {
-      logger.error('Failed to add note', { taskId: task.id, error: String(err) });
     } finally {
       setSubmitting(false);
     }
@@ -138,36 +123,10 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps, on
       )}
 
       {expanded && (
-        <div className="border-t border-zinc-800 p-3 space-y-2">
-          {task.notes.length > 0 ? (
-            task.notes.map((note) => (
-              <div key={note.id} className="text-xs text-zinc-400 bg-zinc-800/50 rounded p-2">
-                <p className="whitespace-pre-wrap">{note.text}</p>
-                <p className="text-[10px] text-zinc-600 mt-1">{note.createdAt}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs text-zinc-600">No notes yet.</p>
-          )}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={noteInput}
-              onChange={(e) => setNoteInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
-              placeholder="Add a note..."
-              className="flex-1 px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-            />
-            <button
-              onClick={handleAddNote}
-              disabled={submitting}
-              className="px-3 py-1.5 bg-zinc-700 text-zinc-200 text-xs rounded hover:bg-zinc-600 transition-colors disabled:opacity-50"
-            >
-              Add
-            </button>
-          </div>
+        <div className="border-t border-zinc-800 p-3">
+          <NotesList notes={task.notes} onAddNote={async (text) => { await addNote(task.id, text); onRefresh(); }} />
         </div>
       )}
     </div>
   );
-}
+});

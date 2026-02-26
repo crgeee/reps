@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Tag as TagIcon } from 'lucide-react';
 import type { Tag } from '../types';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 interface TagPickerProps {
   selectedTagIds: string[];
@@ -29,16 +30,7 @@ export default function TagPicker({
   const [savingTag, setSavingTag] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setCreating(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(ref, useCallback(() => { setOpen(false); setCreating(false); }, []));
 
   const filtered = availableTags.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase())
