@@ -377,6 +377,20 @@ PORT=3000
 
 ---
 
+## Git Workflow
+
+**All changes MUST go through a worktree + branch + PR. Never commit directly to main.**
+
+1. **Create a worktree** — always work in `.worktrees/<feature-name>` (directory is in `.gitignore`)
+2. **Create a feature branch** — `git worktree add .worktrees/<name> -b <branch-name>`
+3. **Do all work in the worktree** — commits, builds, verification
+4. **Rebase onto `origin/main`** before pushing — ensure branch is up to date
+5. **Push and create a PR** — use `gh pr create`
+6. **Merge the PR** — use `gh pr merge`
+7. **Never push directly to main** — even for small fixes
+
+---
+
 ## Agent Team Setup
 
 Enable agent teams in `.claude/settings.json`:
