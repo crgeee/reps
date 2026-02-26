@@ -63,6 +63,7 @@ export default function Dashboard({
 
   return (
     <div className="space-y-5">
+      <h1 className="sr-only">Dashboard</h1>
       {/* ── Stat strip ── */}
       <div className="flex items-stretch border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-x divide-zinc-800">
         <StatCell label="Due" value={dueTasks.length} accent={dueTasks.length > 0} />
@@ -133,6 +134,11 @@ export default function Dashboard({
               <span className="text-zinc-300 w-24 truncate">{TOPIC_LABELS[topic]}</span>
               <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
+                  role="progressbar"
+                  aria-valuenow={pct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${TOPIC_LABELS[topic]} progress: ${pct}%`}
                   className={`h-full rounded-full ${TOPIC_COLORS[topic]} opacity-80`}
                   style={{ width: `${pct}%` }}
                 />

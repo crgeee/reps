@@ -110,12 +110,13 @@ export default function CollectionEditModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5">
+      <div role="dialog" aria-modal="true" aria-label="Edit collection" className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-100">Edit Collection</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             <X className="w-4 h-4" />

@@ -103,6 +103,9 @@ export default function TaskEditModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Edit task: ${task.title}`}
         className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5"
       >
         {/* Header */}
@@ -116,6 +119,7 @@ export default function TaskEditModal({
           />
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 flex-shrink-0"
           >
             <X className="w-5 h-5" />
