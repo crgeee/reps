@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import type { Task, Streaks } from '../types';
 import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
-import { getStreaks, getHeatmap } from '../api';
+import { getStreaks } from '../api';
 import { Flame } from 'lucide-react';
-import Heatmap from './Heatmap';
 
-type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
+type View =
+  | 'dashboard'
+  | 'tasks'
+  | 'review'
+  | 'add'
+  | 'progress'
+  | 'calendar'
+  | 'export'
+  | 'settings';
 
 interface DashboardProps {
   tasks: Task[];
@@ -33,14 +40,10 @@ export default function Dashboard({
   activeCollectionId,
 }: DashboardProps) {
   const [streaks, setStreaks] = useState<Streaks | null>(null);
-  const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
 
   useEffect(() => {
     getStreaks(activeCollectionId ?? undefined)
       .then(setStreaks)
-      .catch(() => null);
-    getHeatmap(activeCollectionId ?? undefined)
-      .then(setHeatmapData)
       .catch(() => null);
   }, [activeCollectionId]);
 
@@ -196,16 +199,6 @@ export default function Dashboard({
               </button>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* ── Heatmap ── */}
-      <div>
-        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
-          Activity
-        </h2>
-        <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3 overflow-x-auto">
-          <Heatmap data={heatmapData} days={365} />
         </div>
       </div>
 

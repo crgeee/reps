@@ -9,11 +9,9 @@ import TaskList from './components/TaskList';
 import ReviewSession from './components/ReviewSession';
 import AddTask from './components/AddTask';
 import TopicProgress from './components/TopicProgress';
-import BoardView from './components/BoardView';
 import ErrorBoundary from './components/ErrorBoundary';
 import Spinner from './components/Spinner';
 import CalendarView from './components/CalendarView';
-import MockInterview from './components/MockInterview';
 import ExportView from './components/ExportView';
 import CollectionSwitcher from './components/CollectionSwitcher';
 import FocusWidget from './components/FocusWidget';
@@ -27,12 +25,10 @@ import TermsOfService from './components/TermsOfService';
 type View =
   | 'dashboard'
   | 'tasks'
-  | 'board'
   | 'review'
   | 'add'
   | 'progress'
   | 'calendar'
-  | 'mock'
   | 'export'
   | 'settings'
   | 'device-approve'
@@ -42,40 +38,39 @@ type View =
 const VALID_VIEWS = new Set<string>([
   'dashboard',
   'tasks',
-  'board',
   'review',
   'add',
   'progress',
   'calendar',
-  'mock',
   'export',
   'settings',
   'device-approve',
   'privacy',
   'terms',
+  // Legacy routes redirect to consolidated views
+  'board',
+  'mock',
 ]);
+
+const LEGACY_REDIRECTS: Record<string, View> = {
+  board: 'tasks',
+  mock: 'review',
+};
 
 function getViewFromHash(): View {
   const hash = window.location.hash.slice(1);
-  return VALID_VIEWS.has(hash) ? (hash as View) : 'dashboard';
+  if (!VALID_VIEWS.has(hash)) return 'dashboard';
+  if (hash in LEGACY_REDIRECTS) return LEGACY_REDIRECTS[hash]!;
+  return hash as View;
 }
 
-const PRIMARY_NAV: { view: View; label: string }[] = [
+const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'dashboard', label: 'Dashboard' },
   { view: 'tasks', label: 'Tasks' },
-  { view: 'board', label: 'Board' },
   { view: 'review', label: 'Review' },
-];
-
-const MORE_NAV: { view: View; label: string }[] = [
   { view: 'progress', label: 'Progress' },
   { view: 'calendar', label: 'Calendar' },
-  { view: 'mock', label: 'Mock Interview' },
-  { view: 'export', label: 'Export' },
-  { view: 'settings', label: 'Settings' },
 ];
-
-const ALL_NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
 export default function App() {
   const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
@@ -89,9 +84,7 @@ export default function App() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const handleCollectionChange = useCallback((id: string | null) => {
@@ -130,24 +123,17 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // Close dropdowns on outside click
+  // Close mobile menu on outside click
   useEffect(() => {
-    if (!moreOpen && !mobileMenuOpen) return;
+    if (!mobileMenuOpen) return;
     function handleClick(e: MouseEvent) {
-      if (moreOpen && moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-      if (
-        mobileMenuOpen &&
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(e.target as Node)
-      ) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
         setMobileMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [moreOpen, mobileMenuOpen]);
+  }, [mobileMenuOpen]);
 
   const applyTaskData = useCallback((allTasks: Task[], due: Task[]) => {
     setTasks(allTasks);
@@ -245,8 +231,6 @@ export default function App() {
     return activeStatuses.map((s) => ({ value: s.name, label: formatStatusLabel(s.name) }));
   }, [activeStatuses]);
 
-  const isMoreView = MORE_NAV.some((n) => n.view === view);
-
   // Show loading spinner while checking auth
   if (authLoading) {
     return (
@@ -325,7 +309,7 @@ export default function App() {
             aria-label="Main navigation"
             className="hidden md:flex items-center gap-1 flex-1 justify-center"
           >
-            {PRIMARY_NAV.map(({ view: v, label }) => (
+            {NAV_ITEMS.map(({ view: v, label }) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -339,52 +323,6 @@ export default function App() {
                 {label}
               </button>
             ))}
-
-            {/* More dropdown */}
-            <div ref={moreRef} className="relative">
-              <button
-                onClick={() => setMoreOpen((o) => !o)}
-                aria-expanded={moreOpen}
-                aria-haspopup="true"
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-                  isMoreView
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                }`}
-              >
-                More
-                <svg
-                  className={`w-3.5 h-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {moreOpen && (
-                <div className="anim-slide-down absolute top-full right-0 mt-1 w-44 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
-                  {MORE_NAV.map(({ view: v, label }) => (
-                    <button
-                      key={v}
-                      onClick={() => {
-                        setView(v);
-                        setMoreOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                        view === v
-                          ? 'bg-zinc-800 text-zinc-100'
-                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </nav>
 
           {/* Desktop add + settings + sign out */}
@@ -493,7 +431,7 @@ export default function App() {
                 aria-label="Mobile navigation"
                 className="anim-slide-down absolute top-full right-0 mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50"
               >
-                {ALL_NAV.map(({ view: v, label }) => (
+                {NAV_ITEMS.map(({ view: v, label }) => (
                   <button
                     key={v}
                     onClick={() => {
@@ -595,19 +533,9 @@ export default function App() {
                   collections={collections}
                   onTagCreated={handleTagCreated}
                   statusOptions={activeStatusOptions}
-                />
-              )}
-              {view === 'board' && (
-                <BoardView
-                  tasks={filteredTasks}
-                  onRefresh={fetchData}
                   onOptimisticUpdate={optimisticUpdateTask}
                   onBackgroundRefresh={refreshQuietly}
-                  collections={collections}
-                  availableTags={tags}
-                  onTagCreated={handleTagCreated}
                   collectionStatuses={activeStatuses}
-                  statusOptions={activeStatusOptions}
                 />
               )}
               {view === 'review' && (
@@ -639,7 +567,6 @@ export default function App() {
                   <CalendarView tasks={filteredTasks} />
                 </div>
               )}
-              {view === 'mock' && <MockInterview />}
               {view === 'export' && <ExportView />}
               {view === 'settings' && user && (
                 <Settings user={user} onUserUpdate={handleUserUpdate} />
