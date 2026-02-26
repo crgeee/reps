@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
-import type { Task, Topic, TaskStatus } from '../types';
+import type { Task, Topic } from '../types';
 
 export type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-deadline';
 export type SortField = 'created' | 'next-review' | 'deadline' | 'ease-factor';
@@ -7,7 +7,7 @@ export type SortDir = 'asc' | 'desc';
 
 export interface FilterState {
   topic: Topic | 'all';
-  status: TaskStatus | 'all';
+  status: string | 'all';
   due: DueFilter;
   search: string;
   sortField: SortField;

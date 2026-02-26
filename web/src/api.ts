@@ -4,6 +4,7 @@ import type {
   Quality,
   EvaluationResult,
   Collection,
+  CollectionStatus,
   Tag,
   StatsOverview,
   Streaks,
@@ -122,6 +123,34 @@ export async function updateCollection(
 
 export async function deleteCollection(id: string): Promise<void> {
   await request<unknown>(`/collections/${id}`, { method: 'DELETE' });
+}
+
+export async function createCollectionStatus(
+  collectionId: string,
+  input: { name: string; color?: string | null; sortOrder?: number }
+): Promise<CollectionStatus> {
+  return request<CollectionStatus>(`/collections/${collectionId}/statuses`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCollectionStatus(
+  collectionId: string,
+  statusId: string,
+  updates: Partial<{ name: string; color: string | null; sortOrder: number }>
+): Promise<CollectionStatus> {
+  return request<CollectionStatus>(`/collections/${collectionId}/statuses/${statusId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteCollectionStatus(
+  collectionId: string,
+  statusId: string
+): Promise<void> {
+  await request<unknown>(`/collections/${collectionId}/statuses/${statusId}`, { method: 'DELETE' });
 }
 
 // Tags
