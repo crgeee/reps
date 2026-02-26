@@ -22,6 +22,7 @@ interface TaskRow {
   topic: string;
   title: string;
   completed: boolean;
+  status: string;
   deadline: string | null;
   repetitions: number;
   interval: number;
@@ -44,6 +45,7 @@ function rowToTask(row: TaskRow, notes: Note[]): Task {
     topic: row.topic as Task["topic"],
     title: row.title,
     completed: row.completed,
+    status: row.status as Task["status"],
     deadline: row.deadline ?? undefined,
     repetitions: row.repetitions,
     interval: row.interval,

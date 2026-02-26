@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import sql from "../db/client.js";
 import { calculateSM2 } from "../../src/spaced-repetition.js";
-import { validateUuid, dateStr, topicEnum, uuidStr } from "../validation.js";
+import { validateUuid, dateStr, topicEnum, uuidStr, statusEnum } from "../validation.js";
 import type { Task, Note, Quality } from "../../src/types.js";
 
 const tasks = new Hono();
@@ -14,6 +14,7 @@ const createTaskSchema = z.object({
   topic: topicEnum,
   title: z.string().min(1).max(500),
   completed: z.boolean().optional(),
+  status: statusEnum.optional(),
   deadline: dateStr.nullable().optional(),
   repetitions: z.number().int().min(0).max(1000).optional(),
   interval: z.number().int().min(1).max(365).optional(),
@@ -27,6 +28,7 @@ const patchTaskSchema = z.object({
   topic: topicEnum.optional(),
   title: z.string().min(1).max(500).optional(),
   completed: z.boolean().optional(),
+  status: statusEnum.optional(),
   deadline: dateStr.nullable().optional(),
   repetitions: z.number().int().min(0).max(1000).optional(),
   interval: z.number().int().min(1).max(365).optional(),
@@ -48,6 +50,7 @@ const syncTaskSchema = z.object({
   topic: topicEnum,
   title: z.string().min(1).max(500),
   completed: z.boolean(),
+  status: statusEnum.optional(),
   deadline: z.string().nullable().optional(),
   repetitions: z.number().int().min(0),
   interval: z.number().int().min(1),
@@ -71,6 +74,7 @@ interface TaskRow {
   topic: string;
   title: string;
   completed: boolean;
+  status: string;
   deadline: string | null;
   repetitions: number;
   interval: number;
@@ -93,6 +97,7 @@ function rowToTask(row: TaskRow, notes: Note[]): Task {
     topic: row.topic as Task["topic"],
     title: row.title,
     completed: row.completed,
+    status: row.status as Task["status"],
     deadline: row.deadline ?? undefined,
     repetitions: row.repetitions,
     interval: row.interval,
@@ -172,12 +177,13 @@ tasks.post("/", async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
     VALUES (
       ${id},
       ${body.topic},
       ${body.title},
       ${body.completed ?? false},
+      ${body.status ?? "todo"},
       ${body.deadline ?? null},
       ${body.repetitions ?? 0},
       ${body.interval ?? 1},
@@ -208,6 +214,7 @@ tasks.patch("/:id", async (c) => {
     topic: "topic",
     title: "title",
     completed: "completed",
+    status: "status",
     deadline: "deadline",
     repetitions: "repetitions",
     interval: "interval",
@@ -337,12 +344,13 @@ tasks.post("/sync", async (c) => {
 
   for (const t of incomingTasks) {
     await sql`
-      INSERT INTO tasks (id, topic, title, completed, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
+      INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
       VALUES (
         ${t.id},
         ${t.topic},
         ${t.title},
         ${t.completed},
+        ${t.status ?? "todo"},
         ${t.deadline ?? null},
         ${t.repetitions},
         ${t.interval},
@@ -355,6 +363,7 @@ tasks.post("/sync", async (c) => {
         topic = EXCLUDED.topic,
         title = EXCLUDED.title,
         completed = EXCLUDED.completed,
+        status = EXCLUDED.status,
         deadline = EXCLUDED.deadline,
         repetitions = EXCLUDED.repetitions,
         interval = EXCLUDED.interval,

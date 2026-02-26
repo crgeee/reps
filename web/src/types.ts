@@ -1,4 +1,5 @@
 export type Topic = 'coding' | 'system-design' | 'behavioral' | 'papers' | 'custom';
+export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type Quality = 0 | 1 | 2 | 3 | 4 | 5;
 
 export interface Note {
@@ -13,6 +14,7 @@ export interface Task {
   title: string;
   notes: Note[];
   completed: boolean;
+  status: TaskStatus;
   deadline?: string;
   repetitions: number;
   interval: number;
@@ -57,4 +59,13 @@ export const TOPIC_COLORS: Record<Topic, string> = {
   behavioral: 'bg-green-500',
   papers: 'bg-amber-500',
   custom: 'bg-slate-500',
+};
+
+export const STATUSES: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
+
+export const STATUS_LABELS: Record<TaskStatus, string> = {
+  'todo': 'Todo',
+  'in-progress': 'In Progress',
+  'review': 'Review',
+  'done': 'Done',
 };

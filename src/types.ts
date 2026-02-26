@@ -1,4 +1,5 @@
 export type Topic = 'coding' | 'system-design' | 'behavioral' | 'papers' | 'custom';
+export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type Quality = 0 | 1 | 2 | 3 | 4 | 5;
 
 export interface Note {
@@ -13,6 +14,7 @@ export interface Task {
   title: string;
   notes: Note[];
   completed: boolean;
+  status: TaskStatus;
   deadline?: string;
   repetitions: number;
   interval: number;

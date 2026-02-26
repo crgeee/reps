@@ -9,3 +9,4 @@ export function validateUuid(id: string): boolean {
 export const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const topicEnum = z.enum(["coding", "system-design", "behavioral", "papers", "custom"]);
 export const uuidStr = z.string().regex(UUID_RE);
+export const statusEnum = z.enum(["todo", "in-progress", "review", "done"]);
