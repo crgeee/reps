@@ -1,20 +1,24 @@
 import { useState, useMemo } from 'react';
-import type { Task, Topic, Tag } from '../types';
+import type { Task, Topic, Tag, Collection } from '../types';
 import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
 import TagBadge from './TagBadge';
+import TaskEditModal from './TaskEditModal';
 
 interface TaskListProps {
   tasks: Task[];
   onRefresh: () => void;
   availableTags?: Tag[];
+  collections?: Collection[];
+  onTagCreated?: (tag: Tag) => void;
 }
 
-export default function TaskList({ tasks, onRefresh, availableTags = [] }: TaskListProps) {
+export default function TaskList({ tasks, onRefresh, availableTags = [], collections = [], onTagCreated }: TaskListProps) {
   const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const tagFiltered = useMemo(() => {
     if (!tagFilter) return filtered;
@@ -89,11 +93,22 @@ export default function TaskList({ tasks, onRefresh, availableTags = [] }: TaskL
           </div>
           <div className="space-y-2">
             {topicTasks.map((task) => (
-              <TaskCard key={task.id} task={task} onRefresh={onRefresh} />
+              <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
             ))}
           </div>
         </div>
       ))}
+
+      {editingTask && (
+        <TaskEditModal
+          task={editingTask}
+          collections={collections}
+          availableTags={availableTags}
+          onSaved={() => { onRefresh(); setEditingTask(null); }}
+          onClose={() => setEditingTask(null)}
+          onTagCreated={onTagCreated}
+        />
+      )}
     </div>
   );
 }

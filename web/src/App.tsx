@@ -404,6 +404,8 @@ export default function App() {
                 tasks={filteredTasks}
                 onRefresh={fetchData}
                 availableTags={tags}
+                collections={collections}
+                onTagCreated={handleTagCreated}
               />
             )}
             {view === 'board' && (
@@ -412,6 +414,9 @@ export default function App() {
                 onRefresh={fetchData}
                 onOptimisticUpdate={optimisticUpdateTask}
                 onBackgroundRefresh={refreshQuietly}
+                collections={collections}
+                availableTags={tags}
+                onTagCreated={handleTagCreated}
               />
             )}
             {view === 'review' && (

@@ -10,9 +10,10 @@ interface TaskCardProps {
   onRefresh: () => void;
   compact?: boolean;
   dragHandleProps?: Record<string, unknown>;
+  onEdit?: (task: Task) => void;
 }
 
-export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: TaskCardProps) {
+export default function TaskCard({ task, onRefresh, compact, dragHandleProps, onEdit }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -74,7 +75,7 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: 
           )}
         </button>
 
-        <button onClick={() => setExpanded(!expanded)} className="flex-1 text-left min-w-0">
+        <button onClick={() => onEdit ? onEdit(task) : setExpanded(!expanded)} className="flex-1 text-left min-w-0">
           <span className={`text-sm font-medium truncate block ${task.completed ? 'line-through text-zinc-500' : ''}`}>
             {task.title}
           </span>
@@ -90,6 +91,15 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: 
 
         {compact && (
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`} />
+        )}
+
+        {task.notes.length > 0 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-zinc-600 hover:text-zinc-400 transition-colors p-0.5 flex-shrink-0 text-[10px]"
+          >
+            {task.notes.length}
+          </button>
         )}
 
         <button

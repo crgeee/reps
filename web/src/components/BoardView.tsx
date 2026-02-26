@@ -11,11 +11,12 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Task, TaskStatus } from '../types';
+import type { Task, TaskStatus, Collection, Tag } from '../types';
 import { STATUSES, STATUS_LABELS } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
+import TaskEditModal from './TaskEditModal';
 import { updateTask } from '../api';
 import { logger } from '../logger';
 
@@ -24,6 +25,9 @@ interface BoardViewProps {
   onRefresh: () => void;
   onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
   onBackgroundRefresh?: () => void;
+  collections?: Collection[];
+  availableTags?: Tag[];
+  onTagCreated?: (tag: Tag) => void;
 }
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
@@ -33,7 +37,7 @@ const STATUS_COLORS: Record<TaskStatus, string> = {
   'done': 'border-green-800',
 };
 
-const SortableCard = memo(function SortableCard({ task, onRefresh }: { task: Task; onRefresh: () => void }) {
+const SortableCard = memo(function SortableCard({ task, onRefresh, onEdit }: { task: Task; onRefresh: () => void; onEdit?: (task: Task) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'card', status: task.status },
@@ -52,6 +56,7 @@ const SortableCard = memo(function SortableCard({ task, onRefresh }: { task: Tas
         onRefresh={onRefresh}
         compact
         dragHandleProps={{ ...attributes, ...listeners }}
+        onEdit={onEdit}
       />
     </div>
   );
@@ -67,9 +72,10 @@ function findColumnForOver(overId: string | number, overData: Record<string, unk
   return null;
 }
 
-export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh }: BoardViewProps) {
+export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, collections = [], availableTags = [], onTagCreated }: BoardViewProps) {
   const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -143,6 +149,7 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
               tasks={columns[status]}
               onRefresh={onRefresh}
               color={STATUS_COLORS[status]}
+              onEdit={setEditingTask}
             />
           ))}
         </div>
@@ -151,6 +158,17 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
           {activeTask && <TaskCard task={activeTask} onRefresh={() => {}} compact />}
         </DragOverlay>
       </DndContext>
+
+      {editingTask && (
+        <TaskEditModal
+          task={editingTask}
+          collections={collections}
+          availableTags={availableTags}
+          onSaved={() => { onRefresh(); setEditingTask(null); }}
+          onClose={() => setEditingTask(null)}
+          onTagCreated={onTagCreated}
+        />
+      )}
     </div>
   );
 }
@@ -160,11 +178,13 @@ const Column = memo(function Column({
   tasks,
   onRefresh,
   color,
+  onEdit,
 }: {
   status: TaskStatus;
   tasks: Task[];
   onRefresh: () => void;
   color: string;
+  onEdit?: (task: Task) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -187,7 +207,7 @@ const Column = memo(function Column({
 
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
         {tasks.map((task) => (
-          <SortableCard key={task.id} task={task} onRefresh={onRefresh} />
+          <SortableCard key={task.id} task={task} onRefresh={onRefresh} onEdit={onEdit} />
         ))}
       </SortableContext>
 
