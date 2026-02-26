@@ -58,7 +58,7 @@ const SortableCard = memo(function SortableCard({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0 : 1,
-    pointerEvents: isDragging ? 'none' as const : undefined,
+    pointerEvents: isDragging ? ('none' as const) : undefined,
   };
 
   return (
