@@ -1,8 +1,13 @@
-import type { Task, Topic } from '../types';
+import { useState, useEffect } from 'react';
+import type { Task, Topic, StatsOverview } from '../types';
 import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { getStatsOverview, getHeatmap } from '../api';
+import Heatmap from './Heatmap';
+import BarChart from './BarChart';
 
 interface TopicProgressProps {
   tasks: Task[];
+  activeCollectionId?: string | null;
 }
 
 interface TopicStat {
@@ -22,16 +27,37 @@ function getConfidenceLevel(ef: number): { label: string; color: string } {
   return { label: 'Struggling', color: 'text-red-400' };
 }
 
-export default function TopicProgress({ tasks }: TopicProgressProps) {
+// Map topic to Tailwind bar color for BarChart (using bg- classes)
+const TOPIC_BAR_COLORS: Record<Topic, string> = {
+  coding: 'bg-blue-500',
+  'system-design': 'bg-purple-500',
+  behavioral: 'bg-green-500',
+  papers: 'bg-amber-500',
+  custom: 'bg-slate-500',
+};
+
+export default function TopicProgress({ tasks, activeCollectionId }: TopicProgressProps) {
+  const [stats, setStats] = useState<StatsOverview | null>(null);
+  const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    getStatsOverview(activeCollectionId ?? undefined)
+      .then(setStats)
+      .catch(() => null);
+    getHeatmap(activeCollectionId ?? undefined)
+      .then(setHeatmapData)
+      .catch(() => null);
+  }, [activeCollectionId]);
+
   const today = new Date().toISOString().split('T')[0]!;
 
-  const stats: TopicStat[] = TOPICS.map((topic) => {
+  const topicStats: TopicStat[] = TOPICS.map((topic) => {
     const topicTasks = tasks.filter((t) => t.topic === topic);
     const active = topicTasks.filter((t) => !t.completed);
     const completed = topicTasks.filter((t) => t.completed);
-    const reviewed = topicTasks.filter((t) => t.lastReviewed).sort((a, b) =>
-      (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? '')
-    );
+    const reviewed = topicTasks
+      .filter((t) => t.lastReviewed)
+      .sort((a, b) => (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? ''));
     const avgEF =
       active.length > 0
         ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length
@@ -49,7 +75,18 @@ export default function TopicProgress({ tasks }: TopicProgressProps) {
     };
   }).filter((s) => s.total > 0);
 
-  const maxTotal = Math.max(...stats.map((s) => s.total), 1);
+  const maxTotal = Math.max(...topicStats.map((s) => s.total), 1);
+
+  // Build BarChart data from stats overview (reviews by topic)
+  const reviewsByTopicData: Record<string, number> = {};
+  const reviewsByTopicColors: Record<string, string> = {};
+  if (stats?.reviewsByTopic) {
+    for (const [topic, count] of Object.entries(stats.reviewsByTopic)) {
+      const label = TOPIC_LABELS[topic as Topic] ?? topic;
+      reviewsByTopicData[label] = count;
+      reviewsByTopicColors[label] = TOPIC_BAR_COLORS[topic as Topic] ?? 'bg-zinc-500';
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -58,19 +95,51 @@ export default function TopicProgress({ tasks }: TopicProgressProps) {
         <p className="text-zinc-400">Performance breakdown by topic</p>
       </div>
 
-      {stats.length === 0 && (
+      {/* Stats summary from API */}
+      {stats && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-zinc-900 rounded-lg p-4">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Reviews</p>
+            <p className="text-2xl font-bold text-zinc-100">{stats.totalReviews}</p>
+          </div>
+          <div className="bg-zinc-900 rounded-lg p-4">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Last 30 Days</p>
+            <p className="text-2xl font-bold text-zinc-100">{stats.reviewsLast30Days}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Heatmap */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Review Activity</h2>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 overflow-x-auto">
+          <Heatmap data={heatmapData} days={365} />
+        </div>
+      </div>
+
+      {/* Reviews by topic bar chart */}
+      {stats && Object.keys(reviewsByTopicData).length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Reviews by Topic</h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <BarChart data={reviewsByTopicData} colors={reviewsByTopicColors} />
+          </div>
+        </div>
+      )}
+
+      {topicStats.length === 0 && (
         <p className="text-zinc-500 py-12 text-center">No tasks yet. Add some to track progress.</p>
       )}
 
-      {/* Bar chart */}
+      {/* Per-topic breakdown */}
       <div className="space-y-4">
-        {stats.map((stat) => {
+        {topicStats.map((stat) => {
           const barWidth = (stat.total / maxTotal) * 100;
           const completedWidth = stat.total > 0 ? (stat.completed / stat.total) * barWidth : 0;
           const confidence = stat.avgEaseFactor > 0 ? getConfidenceLevel(stat.avgEaseFactor) : null;
 
           return (
-            <div key={stat.topic} className="bg-zinc-900 rounded-lg border border-zinc-800 p-5">
+            <div key={stat.topic} className="bg-zinc-900 rounded-lg border border-zinc-800 p-5 transition-all duration-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${TOPIC_COLORS[stat.topic]}`} />
@@ -87,11 +156,11 @@ export default function TopicProgress({ tasks }: TopicProgressProps) {
               <div className="h-6 bg-zinc-800 rounded-full overflow-hidden mb-3">
                 <div className="h-full flex">
                   <div
-                    className={`${TOPIC_COLORS[stat.topic]} opacity-100 transition-all`}
+                    className={`${TOPIC_COLORS[stat.topic]} opacity-100 transition-all duration-500`}
                     style={{ width: `${completedWidth}%` }}
                   />
                   <div
-                    className={`${TOPIC_COLORS[stat.topic]} opacity-30 transition-all`}
+                    className={`${TOPIC_COLORS[stat.topic]} opacity-30 transition-all duration-500`}
                     style={{ width: `${barWidth - completedWidth}%` }}
                   />
                 </div>
@@ -130,7 +199,7 @@ export default function TopicProgress({ tasks }: TopicProgressProps) {
       </div>
 
       {/* Legend */}
-      {stats.length > 0 && (
+      {topicStats.length > 0 && (
         <div className="text-xs text-zinc-600 space-y-1">
           <p>EF = Ease Factor (SM-2). Higher means easier recall. Range: 1.3 - 2.5+</p>
           <p>

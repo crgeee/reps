@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Task } from './types';
-import { getTasks, getDueTasks, getStoredApiKey, setApiKey } from './api';
+import type { Task, Collection, Tag } from './types';
+import { getTasks, getDueTasks, getStoredApiKey, setApiKey, getCollections, getTags } from './api';
 import { logger } from './logger';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
@@ -8,8 +8,12 @@ import ReviewSession from './components/ReviewSession';
 import AddTask from './components/AddTask';
 import TopicProgress from './components/TopicProgress';
 import BoardView from './components/BoardView';
+import ErrorBoundary from './components/ErrorBoundary';
+import CalendarView from './components/CalendarView';
+import MockInterview from './components/MockInterview';
+import CollectionSwitcher from './components/CollectionSwitcher';
 
-type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress';
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
 
 const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'dashboard', label: 'Dashboard' },
@@ -18,12 +22,17 @@ const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'review', label: 'Review' },
   { view: 'add', label: 'Add Task' },
   { view: 'progress', label: 'Progress' },
+  { view: 'calendar', label: 'Calendar' },
+  { view: 'mock', label: 'Mock' },
 ];
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [dueTasks, setDueTasks] = useState<Task[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -44,11 +53,35 @@ export default function App() {
     }
   }, []);
 
+  const fetchCollections = useCallback(async () => {
+    try {
+      const cols = await getCollections();
+      setCollections(cols);
+      // Set first collection as active if none selected yet
+      if (activeCollectionId === null && cols.length > 0) {
+        setActiveCollectionId(null); // Keep "All" as default
+      }
+    } catch {
+      // Collections are optional — silently fail
+    }
+  }, [activeCollectionId]);
+
+  const fetchTags = useCallback(async () => {
+    try {
+      const t = await getTags();
+      setTags(t);
+    } catch {
+      // Tags are optional — silently fail
+    }
+  }, []);
+
   useEffect(() => {
     if (hasApiKey) {
       fetchData();
+      fetchCollections();
+      fetchTags();
     }
-  }, [hasApiKey, fetchData]);
+  }, [hasApiKey, fetchData, fetchCollections, fetchTags]);
 
   function handleSetApiKey() {
     if (!apiKeyInput.trim()) return;
@@ -56,6 +89,18 @@ export default function App() {
     setApiKeyInput('');
     setHasApiKey(true);
   }
+
+  function handleTagCreated(tag: Tag) {
+    setTags((prev) => [...prev, tag]);
+  }
+
+  // Filter tasks by active collection if set
+  const filteredTasks = activeCollectionId
+    ? tasks.filter((t) => t.collectionId === activeCollectionId)
+    : tasks;
+  const filteredDueTasks = activeCollectionId
+    ? dueTasks.filter((t) => t.collectionId === activeCollectionId)
+    : dueTasks;
 
   if (!hasApiKey) {
     return (
@@ -86,19 +131,28 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
       <header className="border-b border-zinc-800">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => setView('dashboard')}
-            className="text-2xl font-bold tracking-tight hover:text-zinc-300 transition-colors"
+            className="text-2xl font-bold tracking-tight hover:text-zinc-300 transition-colors flex-shrink-0"
           >
             reps
           </button>
-          <nav className="flex gap-1">
+
+          {collections.length > 0 && (
+            <CollectionSwitcher
+              collections={collections}
+              activeId={activeCollectionId}
+              onChange={setActiveCollectionId}
+            />
+          )}
+
+          <nav className="flex gap-1 overflow-x-auto flex-1 justify-center">
             {NAV_ITEMS.map(({ view: v, label }) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                   view === v
                     ? 'bg-zinc-800 text-zinc-100'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -108,12 +162,13 @@ export default function App() {
               </button>
             ))}
           </nav>
+
           <button
             onClick={() => {
               localStorage.removeItem('reps_api_key');
               setHasApiKey(false);
             }}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0"
           >
             Disconnect
           </button>
@@ -136,19 +191,28 @@ export default function App() {
             <div className="text-zinc-500">Loading...</div>
           </div>
         ) : (
-          <>
+          <ErrorBoundary key={view}>
             {view === 'dashboard' && (
               <Dashboard
-                tasks={tasks}
-                dueTasks={dueTasks}
+                tasks={filteredTasks}
+                dueTasks={filteredDueTasks}
                 onStartReview={() => setView('review')}
                 onNavigate={setView}
+                activeCollectionId={activeCollectionId}
               />
             )}
-            {view === 'tasks' && <TaskList tasks={tasks} onRefresh={fetchData} />}
-            {view === 'board' && <BoardView tasks={tasks} onRefresh={fetchData} />}
+            {view === 'tasks' && (
+              <TaskList
+                tasks={filteredTasks}
+                onRefresh={fetchData}
+                availableTags={tags}
+              />
+            )}
+            {view === 'board' && (
+              <BoardView tasks={filteredTasks} onRefresh={fetchData} />
+            )}
             {view === 'review' && (
-              <ReviewSession dueTasks={dueTasks} onComplete={fetchData} />
+              <ReviewSession dueTasks={filteredDueTasks} onComplete={fetchData} />
             )}
             {view === 'add' && (
               <AddTask
@@ -156,10 +220,25 @@ export default function App() {
                   fetchData();
                   setView('tasks');
                 }}
+                availableTags={tags}
+                onTagCreated={handleTagCreated}
+                activeCollectionId={activeCollectionId}
               />
             )}
-            {view === 'progress' && <TopicProgress tasks={tasks} />}
-          </>
+            {view === 'progress' && (
+              <TopicProgress
+                tasks={filteredTasks}
+                activeCollectionId={activeCollectionId}
+              />
+            )}
+            {view === 'calendar' && (
+              <div className="space-y-6">
+                <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+                <CalendarView tasks={filteredTasks} />
+              </div>
+            )}
+            {view === 'mock' && <MockInterview />}
+          </ErrorBoundary>
         )}
       </main>
     </div>

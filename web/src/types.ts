@@ -8,6 +8,12 @@ export interface Note {
   createdAt: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Task {
   id: string;
   topic: Topic;
@@ -21,6 +27,18 @@ export interface Task {
   easeFactor: number;
   nextReview: string;
   lastReviewed?: string;
+  createdAt: string;
+  collectionId?: string;
+  tags?: Tag[];
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  srEnabled: boolean;
+  sortOrder: number;
   createdAt: string;
 }
 
@@ -37,10 +55,54 @@ export interface CreateTaskInput {
   title: string;
   deadline?: string;
   note?: string;
+  collectionId?: string;
+  tagIds?: string[];
 }
 
 export interface ReviewInput {
   quality: Quality;
+}
+
+export type MockDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface MockMessage {
+  role: 'interviewer' | 'candidate';
+  content: string;
+}
+
+export interface MockScore {
+  clarity: number;
+  depth: number;
+  correctness: number;
+  communication: number;
+  overall: number;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+}
+
+export interface MockSession {
+  id: string;
+  collectionId?: string;
+  topic: Topic;
+  difficulty: MockDifficulty;
+  messages: MockMessage[];
+  score?: MockScore;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface StatsOverview {
+  totalReviews: number;
+  reviewsLast30Days: number;
+  reviewsByTopic: Record<Topic, number>;
+  averageEaseByTopic: Record<Topic, number>;
+}
+
+export interface Streaks {
+  currentStreak: number;
+  longestStreak: number;
+  lastReviewDate: string | null;
 }
 
 export const TOPICS: Topic[] = ['coding', 'system-design', 'behavioral', 'papers', 'custom'];

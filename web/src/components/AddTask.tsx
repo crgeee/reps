@@ -1,18 +1,28 @@
 import { useState } from 'react';
-import type { Topic } from '../types';
+import type { Topic, Tag } from '../types';
 import { TOPICS, TOPIC_LABELS } from '../types';
-import { createTask } from '../api';
+import { createTask, createTag } from '../api';
 import { logger } from '../logger';
+import TagPicker from './TagPicker';
 
 interface AddTaskProps {
   onCreated: () => void;
+  availableTags?: Tag[];
+  onTagCreated?: (tag: Tag) => void;
+  activeCollectionId?: string | null;
 }
 
-export default function AddTask({ onCreated }: AddTaskProps) {
+export default function AddTask({
+  onCreated,
+  availableTags = [],
+  onTagCreated,
+  activeCollectionId,
+}: AddTaskProps) {
   const [topic, setTopic] = useState<Topic>('coding');
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +38,8 @@ export default function AddTask({ onCreated }: AddTaskProps) {
         title: title.trim(),
         deadline: deadline || undefined,
         note: note.trim() || undefined,
+        collectionId: activeCollectionId ?? undefined,
+        tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
       onCreated();
     } catch (err) {
@@ -36,6 +48,12 @@ export default function AddTask({ onCreated }: AddTaskProps) {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleCreateTag(name: string, color: string): Promise<Tag> {
+    const tag = await createTag({ name, color });
+    onTagCreated?.(tag);
+    return tag;
   }
 
   return (
@@ -58,7 +76,7 @@ export default function AddTask({ onCreated }: AddTaskProps) {
                 key={t}
                 type="button"
                 onClick={() => setTopic(t)}
-                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
                   topic === t
                     ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
                     : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
@@ -82,7 +100,7 @@ export default function AddTask({ onCreated }: AddTaskProps) {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. LRU Cache implementation"
             required
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all duration-200"
           />
         </div>
 
@@ -96,7 +114,20 @@ export default function AddTask({ onCreated }: AddTaskProps) {
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 [color-scheme:dark]"
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 [color-scheme:dark] transition-all duration-200"
+          />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-400 mb-2">
+            Tags (optional)
+          </label>
+          <TagPicker
+            selectedTagIds={selectedTagIds}
+            onChange={setSelectedTagIds}
+            availableTags={availableTags}
+            onCreateTag={handleCreateTag}
           />
         </div>
 
@@ -111,7 +142,7 @@ export default function AddTask({ onCreated }: AddTaskProps) {
             onChange={(e) => setNote(e.target.value)}
             placeholder="Initial thoughts, links, resources..."
             rows={4}
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-y"
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 resize-y transition-all duration-200"
           />
         </div>
 

@@ -3,6 +3,7 @@ import type { Task } from '../types';
 import { TOPIC_LABELS, TOPIC_COLORS } from '../types';
 import { updateTask, deleteTask, addNote } from '../api';
 import { logger } from '../logger';
+import TagBadge from './TagBadge';
 
 interface TaskCardProps {
   task: Task;
@@ -104,10 +105,17 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps }: 
 
       {/* Meta row */}
       {!compact && (
-        <div className="px-3 pb-2 flex gap-3 text-[10px] text-zinc-600">
+        <div className="px-3 pb-2 flex flex-wrap items-center gap-3 text-[10px] text-zinc-600">
           <span>Review: {task.nextReview}</span>
           <span>EF: {task.easeFactor.toFixed(1)}</span>
           <span>Reps: {task.repetitions}</span>
+          {task.tags && task.tags.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {task.tags.map((tag) => (
+                <TagBadge key={tag.id} tag={tag} size="sm" />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

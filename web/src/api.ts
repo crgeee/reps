@@ -1,4 +1,17 @@
-import type { Task, CreateTaskInput, Quality, EvaluationResult } from './types';
+import type {
+  Task,
+  CreateTaskInput,
+  Quality,
+  EvaluationResult,
+  Collection,
+  Tag,
+  StatsOverview,
+  Streaks,
+  MockSession,
+  MockScore,
+  Topic,
+  MockDifficulty,
+} from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
@@ -42,6 +55,14 @@ export async function getDueTasks(): Promise<Task[]> {
   return request<Task[]>('/tasks/due');
 }
 
+export async function getTasksByCollection(collectionId: string): Promise<Task[]> {
+  return request<Task[]>(`/tasks?collectionId=${collectionId}`);
+}
+
+export async function getDueTasksByCollection(collectionId: string): Promise<Task[]> {
+  return request<Task[]>(`/tasks/due?collectionId=${collectionId}`);
+}
+
 export async function createTask(input: CreateTaskInput): Promise<Task> {
   return request<Task>('/tasks', {
     method: 'POST',
@@ -72,6 +93,105 @@ export async function submitReview(taskId: string, quality: Quality): Promise<Ta
     method: 'POST',
     body: JSON.stringify({ quality }),
   });
+}
+
+// Collections
+
+export async function getCollections(): Promise<Collection[]> {
+  return request<Collection[]>('/collections');
+}
+
+export async function createCollection(
+  input: Omit<Collection, 'id' | 'createdAt'>
+): Promise<Collection> {
+  return request<Collection>('/collections', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCollection(
+  id: string,
+  updates: Partial<Collection>
+): Promise<Collection> {
+  return request<Collection>(`/collections/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteCollection(id: string): Promise<void> {
+  await request<unknown>(`/collections/${id}`, { method: 'DELETE' });
+}
+
+// Tags
+
+export async function getTags(): Promise<Tag[]> {
+  return request<Tag[]>('/tags');
+}
+
+export async function createTag(input: Omit<Tag, 'id'>): Promise<Tag> {
+  return request<Tag>('/tags', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateTag(id: string, updates: Partial<Tag>): Promise<Tag> {
+  return request<Tag>(`/tags/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  await request<unknown>(`/tags/${id}`, { method: 'DELETE' });
+}
+
+// Stats
+
+export async function getStatsOverview(collectionId?: string): Promise<StatsOverview> {
+  const qs = collectionId ? `?collectionId=${collectionId}` : '';
+  return request<StatsOverview>(`/stats/overview${qs}`);
+}
+
+export async function getHeatmap(collectionId?: string): Promise<Record<string, number>> {
+  const qs = collectionId ? `?collectionId=${collectionId}` : '';
+  return request<Record<string, number>>(`/stats/heatmap${qs}`);
+}
+
+export async function getStreaks(collectionId?: string): Promise<Streaks> {
+  const qs = collectionId ? `?collectionId=${collectionId}` : '';
+  return request<Streaks>(`/stats/streaks${qs}`);
+}
+
+// Mock interviews
+
+export async function startMockInterview(
+  topic: Topic,
+  difficulty: MockDifficulty
+): Promise<MockSession> {
+  return request<MockSession>('/mock/sessions', {
+    method: 'POST',
+    body: JSON.stringify({ topic, difficulty }),
+  });
+}
+
+export async function respondToMock(
+  sessionId: string,
+  answer: string
+): Promise<{ followUp?: string; score?: MockScore; done: boolean }> {
+  return request<{ followUp?: string; score?: MockScore; done: boolean }>(
+    `/mock/sessions/${sessionId}/respond`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ answer }),
+    }
+  );
+}
+
+export async function getMockSessions(): Promise<MockSession[]> {
+  return request<MockSession[]>('/mock/sessions');
 }
 
 // Agent

@@ -1,18 +1,43 @@
-import type { Task, Topic } from '../types';
+import { useState, useEffect } from 'react';
+import type { Task, Topic, Streaks } from '../types';
 import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { getStreaks, getHeatmap } from '../api';
+import StreakBadge from './StreakBadge';
+import Heatmap from './Heatmap';
+
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
 
 interface DashboardProps {
   tasks: Task[];
   dueTasks: Task[];
   onStartReview: () => void;
-  onNavigate: (view: 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress') => void;
+  onNavigate: (view: View) => void;
+  activeCollectionId?: string | null;
 }
 
 function isOverdue(task: Task): boolean {
   return new Date(task.nextReview) < new Date(new Date().toISOString().split('T')[0]!);
 }
 
-export default function Dashboard({ tasks, dueTasks, onStartReview, onNavigate }: DashboardProps) {
+export default function Dashboard({
+  tasks,
+  dueTasks,
+  onStartReview,
+  onNavigate,
+  activeCollectionId,
+}: DashboardProps) {
+  const [streaks, setStreaks] = useState<Streaks | null>(null);
+  const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    getStreaks(activeCollectionId ?? undefined)
+      .then(setStreaks)
+      .catch(() => null);
+    getHeatmap(activeCollectionId ?? undefined)
+      .then(setHeatmapData)
+      .catch(() => null);
+  }, [activeCollectionId]);
+
   const overdueTasks = dueTasks.filter(isOverdue);
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
@@ -47,11 +72,16 @@ export default function Dashboard({ tasks, dueTasks, onStartReview, onNavigate }
       )}
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <StatCard label="Due Today" value={dueTasks.length} accent={dueTasks.length > 0} />
         <StatCard label="Overdue" value={overdueTasks.length} accent={overdueTasks.length > 0} />
         <StatCard label="Active" value={activeTasks.length} />
         <StatCard label="Completed" value={completedTasks.length} />
+        {streaks && (
+          <div className="col-span-2 sm:col-span-1">
+            <StreakBadge current={streaks.currentStreak} longest={streaks.longestStreak} />
+          </div>
+        )}
       </div>
 
       {/* Start Review CTA */}
@@ -96,6 +126,14 @@ export default function Dashboard({ tasks, dueTasks, onStartReview, onNavigate }
               </button>
             </p>
           )}
+        </div>
+      </div>
+
+      {/* Heatmap */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Review Activity</h2>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 overflow-x-auto">
+          <Heatmap data={heatmapData} days={365} />
         </div>
       </div>
 
@@ -174,7 +212,7 @@ function TopicBar({
       </div>
       <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${TOPIC_COLORS[topic]}`}
+          className={`h-full rounded-full transition-all duration-500 ${TOPIC_COLORS[topic]}`}
           style={{ width: `${pct}%` }}
         />
       </div>

@@ -24,13 +24,13 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 function todayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split('T')[0]!;
 }
 
 function endOfWeekStr(): string {
   const d = new Date();
   d.setDate(d.getDate() + (7 - d.getDay()));
-  return d.toISOString().split('T')[0];
+  return d.toISOString().split('T')[0]!;
 }
 
 function matchesDue(task: Task, due: DueFilter): boolean {

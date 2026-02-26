@@ -3,6 +3,8 @@ import type { Task, Quality, EvaluationResult } from '../types';
 import { TOPIC_LABELS } from '../types';
 import { getQuestion, evaluateAnswer, submitReview } from '../api';
 import { logger } from '../logger';
+import FocusTimer from './FocusTimer';
+import ScoreCard from './ScoreCard';
 
 interface ReviewSessionProps {
   dueTasks: Task[];
@@ -124,7 +126,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
       </div>
       <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className="h-full bg-zinc-400 rounded-full transition-all"
+          className="h-full bg-zinc-400 rounded-full transition-all duration-500"
           style={{ width: `${((currentIndex + 1) / dueTasks.length) * 100}%` }}
         />
       </div>
@@ -199,12 +201,13 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
                 <p className="text-zinc-200 text-sm whitespace-pre-wrap">{question}</p>
               </div>
             )}
+            <FocusTimer />
             <textarea
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="Type your answer here..."
               rows={8}
-              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 resize-y"
+              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 resize-y transition-all duration-200"
             />
             <div className="flex gap-3">
               <button
@@ -230,7 +233,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
             <div className="grid grid-cols-3 gap-3">
               <ScoreCard label="Clarity" score={evaluation.clarity} />
               <ScoreCard label="Specificity" score={evaluation.specificity} />
-              <ScoreCard label="Mission Alignment" score={evaluation.missionAlignment} />
+              <ScoreCard label="Mission Align" score={evaluation.missionAlignment} />
             </div>
 
             <div className="p-4 bg-zinc-800 rounded-lg space-y-3">
@@ -269,12 +272,12 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
                   key={q}
                   onClick={() => handleRate(q)}
                   disabled={loading}
-                  className={`text-left px-4 py-3 rounded-lg border transition-colors disabled:opacity-50 ${
+                  className={`text-left px-4 py-3 rounded-lg border transition-all duration-150 disabled:opacity-50 focus:outline-none focus:ring-1 ${
                     q >= 4
-                      ? 'border-green-800/50 bg-green-950/30 hover:bg-green-950/50 text-green-300'
+                      ? 'border-green-800/50 bg-green-950/30 hover:bg-green-950/50 text-green-300 focus:ring-green-700'
                       : q >= 3
-                        ? 'border-amber-800/50 bg-amber-950/30 hover:bg-amber-950/50 text-amber-300'
-                        : 'border-red-800/50 bg-red-950/30 hover:bg-red-950/50 text-red-300'
+                        ? 'border-amber-800/50 bg-amber-950/30 hover:bg-amber-950/50 text-amber-300 focus:ring-amber-700'
+                        : 'border-red-800/50 bg-red-950/30 hover:bg-red-950/50 text-red-300 focus:ring-red-700'
                   }`}
                 >
                   {QUALITY_LABELS[q]}
@@ -284,19 +287,6 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function ScoreCard({ label, score }: { label: string; score: number }) {
-  const color =
-    score >= 4 ? 'text-green-400' : score >= 3 ? 'text-amber-400' : 'text-red-400';
-
-  return (
-    <div className="p-3 bg-zinc-800 rounded-lg text-center">
-      <p className="text-xs text-zinc-500 mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{score}</p>
-      <p className="text-xs text-zinc-600">/5</p>
     </div>
   );
 }
