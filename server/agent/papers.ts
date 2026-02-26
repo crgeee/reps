@@ -48,6 +48,29 @@ export async function summarizePaper(taskId: string): Promise<PaperSummary> {
     throw new Error("No URL found in task notes");
   }
 
+  // SSRF protection: only allow HTTPS to public hosts
+  try {
+    const parsed = new URL(paperUrl);
+    if (parsed.protocol !== "https:") {
+      throw new Error("Only HTTPS URLs are allowed");
+    }
+    const host = parsed.hostname;
+    if (
+      host === "localhost" ||
+      host === "[::1]" ||
+      host.startsWith("127.") ||
+      host.startsWith("10.") ||
+      host.startsWith("192.168.") ||
+      host.startsWith("169.254.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    ) {
+      throw new Error("Private/internal URLs are not allowed");
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("not allowed")) throw err;
+    throw new Error("Invalid URL");
+  }
+
   // Fetch the URL content
   let content: string;
   try {
