@@ -15,6 +15,7 @@
 Each task below is tagged with its agent owner. Agents work on their own files only.
 
 ### Dependency Order
+
 ```
 Task 1 (db-architect) → Task 2 (api-builder) → Tasks 3-6 run in parallel
                                                   ├── Task 3 (agent-builder)
@@ -29,6 +30,7 @@ Task 7 (web-builder — mock UI) depends on Task 6
 ## Task 1: Schema Migration — `db-architect`
 
 **Files:**
+
 - Create: `db/002-feature-expansion.sql`
 - Modify: `server/validation.ts` (add new zod schemas)
 
@@ -110,7 +112,10 @@ Add after existing exports:
 export const collectionSchema = z.object({
   name: z.string().min(1).max(200),
   icon: z.string().max(10).optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
   srEnabled: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
@@ -118,24 +123,35 @@ export const collectionSchema = z.object({
 export const patchCollectionSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   icon: z.string().max(10).nullable().optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable()
+    .optional(),
   srEnabled: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 
 export const tagSchema = z.object({
   name: z.string().min(1).max(100),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
 });
 
 export const patchTagSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable()
+    .optional(),
 });
 
 export const mockStartSchema = z.object({
   topic: topicEnum.optional(),
-  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
   collectionId: uuidStr.optional(),
 });
 
@@ -144,7 +160,7 @@ export const mockRespondSchema = z.object({
   answer: z.string().min(1).max(10000),
 });
 
-export const difficultyEnum = z.enum(["easy", "medium", "hard"]);
+export const difficultyEnum = z.enum(['easy', 'medium', 'hard']);
 ```
 
 **Step 4: Commit**
@@ -159,6 +175,7 @@ git commit -m "feat: add schema for collections, review_events, tags, mock_sessi
 ## Task 2: Collection + Tag + Stats Routes — `api-builder`
 
 **Files:**
+
 - Create: `server/routes/collections.ts`
 - Create: `server/routes/tags.ts`
 - Create: `server/routes/stats.ts`
@@ -168,9 +185,9 @@ git commit -m "feat: add schema for collections, review_events, tags, mock_sessi
 ### Step 1: Create `server/routes/collections.ts`
 
 ```typescript
-import { Hono } from "hono";
-import sql from "../db/client.js";
-import { validateUuid, collectionSchema, patchCollectionSchema } from "../validation.js";
+import { Hono } from 'hono';
+import sql from '../db/client.js';
+import { validateUuid, collectionSchema, patchCollectionSchema } from '../validation.js';
 
 const collections = new Hono();
 
@@ -197,7 +214,7 @@ function rowToCollection(row: CollectionRow) {
 }
 
 // GET /collections
-collections.get("/", async (c) => {
+collections.get('/', async (c) => {
   const rows = await sql<CollectionRow[]>`
     SELECT * FROM collections ORDER BY sort_order ASC, created_at ASC
   `;
@@ -205,10 +222,11 @@ collections.get("/", async (c) => {
 });
 
 // POST /collections
-collections.post("/", async (c) => {
+collections.post('/', async (c) => {
   const raw = await c.req.json();
   const parsed = collectionSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const [row] = await sql<CollectionRow[]>`
@@ -220,20 +238,21 @@ collections.post("/", async (c) => {
 });
 
 // PATCH /collections/:id
-collections.patch("/:id", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+collections.patch('/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
   const raw = await c.req.json();
   const parsed = patchCollectionSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const fieldMap: Record<string, string> = {
-    name: "name",
-    icon: "icon",
-    color: "color",
-    srEnabled: "sr_enabled",
-    sortOrder: "sort_order",
+    name: 'name',
+    icon: 'icon',
+    color: 'color',
+    srEnabled: 'sr_enabled',
+    sortOrder: 'sort_order',
   };
 
   const updates: Record<string, unknown> = {};
@@ -241,22 +260,22 @@ collections.patch("/:id", async (c) => {
     if (camel in body) updates[snake] = (body as Record<string, unknown>)[camel];
   }
 
-  if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
+  if (Object.keys(updates).length === 0) return c.json({ error: 'No valid fields' }, 400);
 
   const [row] = await sql<CollectionRow[]>`
     UPDATE collections SET ${sql(updates)} WHERE id = ${id} RETURNING *
   `;
-  if (!row) return c.json({ error: "Collection not found" }, 404);
+  if (!row) return c.json({ error: 'Collection not found' }, 404);
   return c.json(rowToCollection(row));
 });
 
 // DELETE /collections/:id
-collections.delete("/:id", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+collections.delete('/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const [row] = await sql<CollectionRow[]>`DELETE FROM collections WHERE id = ${id} RETURNING *`;
-  if (!row) return c.json({ error: "Collection not found" }, 404);
+  if (!row) return c.json({ error: 'Collection not found' }, 404);
 
   return c.json({ deleted: true, id });
 });
@@ -267,27 +286,32 @@ export default collections;
 ### Step 2: Create `server/routes/tags.ts`
 
 ```typescript
-import { Hono } from "hono";
-import sql from "../db/client.js";
-import { validateUuid, tagSchema, patchTagSchema } from "../validation.js";
+import { Hono } from 'hono';
+import sql from '../db/client.js';
+import { validateUuid, tagSchema, patchTagSchema } from '../validation.js';
 
 const tags = new Hono();
 
-interface TagRow { id: string; name: string; color: string | null; }
+interface TagRow {
+  id: string;
+  name: string;
+  color: string | null;
+}
 
 function rowToTag(row: TagRow) {
   return { id: row.id, name: row.name, color: row.color };
 }
 
-tags.get("/", async (c) => {
+tags.get('/', async (c) => {
   const rows = await sql<TagRow[]>`SELECT * FROM tags ORDER BY name ASC`;
   return c.json(rows.map(rowToTag));
 });
 
-tags.post("/", async (c) => {
+tags.post('/', async (c) => {
   const raw = await c.req.json();
   const parsed = tagSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
 
   const [row] = await sql<TagRow[]>`
     INSERT INTO tags (name, color) VALUES (${parsed.data.name}, ${parsed.data.color ?? null}) RETURNING *
@@ -295,28 +319,29 @@ tags.post("/", async (c) => {
   return c.json(rowToTag(row), 201);
 });
 
-tags.patch("/:id", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+tags.patch('/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
   const raw = await c.req.json();
   const parsed = patchTagSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
   if (parsed.data.color !== undefined) updates.color = parsed.data.color;
-  if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
+  if (Object.keys(updates).length === 0) return c.json({ error: 'No valid fields' }, 400);
 
   const [row] = await sql<TagRow[]>`UPDATE tags SET ${sql(updates)} WHERE id = ${id} RETURNING *`;
-  if (!row) return c.json({ error: "Tag not found" }, 404);
+  if (!row) return c.json({ error: 'Tag not found' }, 404);
   return c.json(rowToTag(row));
 });
 
-tags.delete("/:id", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+tags.delete('/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
   const [row] = await sql<TagRow[]>`DELETE FROM tags WHERE id = ${id} RETURNING *`;
-  if (!row) return c.json({ error: "Tag not found" }, 404);
+  if (!row) return c.json({ error: 'Tag not found' }, 404);
   return c.json({ deleted: true, id });
 });
 
@@ -326,28 +351,32 @@ export default tags;
 ### Step 3: Create `server/routes/stats.ts`
 
 ```typescript
-import { Hono } from "hono";
-import sql from "../db/client.js";
-import { validateUuid } from "../validation.js";
+import { Hono } from 'hono';
+import sql from '../db/client.js';
+import { validateUuid } from '../validation.js';
 
 const stats = new Hono();
 
 // GET /stats/overview?collection=uuid
-stats.get("/overview", async (c) => {
-  const collectionId = c.req.query("collection");
+stats.get('/overview', async (c) => {
+  const collectionId = c.req.query('collection');
   if (collectionId && !validateUuid(collectionId)) {
-    return c.json({ error: "Invalid collection ID" }, 400);
+    return c.json({ error: 'Invalid collection ID' }, 400);
   }
 
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
   // Single CTE query for all stats
-  const [result] = await sql<[{
-    total_reviews: string;
-    reviews_last_30: string;
-    reviews_by_topic: string;
-    avg_ease_by_topic: string;
-  }]>`
+  const [result] = await sql<
+    [
+      {
+        total_reviews: string;
+        reviews_last_30: string;
+        reviews_by_topic: string;
+        avg_ease_by_topic: string;
+      },
+    ]
+  >`
     WITH filtered_events AS (
       SELECT * FROM review_events WHERE 1=1 ${collectionFilter}
     ),
@@ -378,11 +407,11 @@ stats.get("/overview", async (c) => {
 });
 
 // GET /stats/heatmap?collection=uuid&days=365
-stats.get("/heatmap", async (c) => {
-  const collectionId = c.req.query("collection");
-  const days = Math.min(parseInt(c.req.query("days") ?? "365", 10), 365);
+stats.get('/heatmap', async (c) => {
+  const collectionId = c.req.query('collection');
+  const days = Math.min(parseInt(c.req.query('days') ?? '365', 10), 365);
   if (collectionId && !validateUuid(collectionId)) {
-    return c.json({ error: "Invalid collection ID" }, 400);
+    return c.json({ error: 'Invalid collection ID' }, 400);
   }
 
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
@@ -402,10 +431,10 @@ stats.get("/heatmap", async (c) => {
 });
 
 // GET /stats/streaks?collection=uuid
-stats.get("/streaks", async (c) => {
-  const collectionId = c.req.query("collection");
+stats.get('/streaks', async (c) => {
+  const collectionId = c.req.query('collection');
   if (collectionId && !validateUuid(collectionId)) {
-    return c.json({ error: "Invalid collection ID" }, 400);
+    return c.json({ error: 'Invalid collection ID' }, 400);
   }
 
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
@@ -423,7 +452,7 @@ stats.get("/streaks", async (c) => {
   }
 
   const dates = rows.map((r) => r.review_date);
-  const today = new Date().toISOString().split("T")[0]!;
+  const today = new Date().toISOString().split('T')[0]!;
 
   // Calculate current streak
   let currentStreak = 0;
@@ -435,7 +464,7 @@ stats.get("/streaks", async (c) => {
   } else {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (dates[0] === yesterday.toISOString().split("T")[0]) {
+    if (dates[0] === yesterday.toISOString().split('T')[0]) {
       currentStreak = 1;
       checkDate = yesterday;
     }
@@ -446,7 +475,7 @@ stats.get("/streaks", async (c) => {
     for (let i = 1; ; i++) {
       const prev = new Date(checkDate);
       prev.setDate(prev.getDate() - i);
-      const prevStr = prev.toISOString().split("T")[0]!;
+      const prevStr = prev.toISOString().split('T')[0]!;
       if (dateSet.has(prevStr)) {
         currentStreak++;
       } else {
@@ -496,11 +525,10 @@ Add collection filtering to `GET /tasks`:
 
 ```typescript
 // At start of GET / handler:
-const collectionId = c.req.query("collection");
-if (collectionId && !validateUuid(collectionId)) return c.json({ error: "Invalid collection ID" }, 400);
-const collectionFilter = collectionId
-  ? sql`WHERE collection_id = ${collectionId}`
-  : sql``;
+const collectionId = c.req.query('collection');
+if (collectionId && !validateUuid(collectionId))
+  return c.json({ error: 'Invalid collection ID' }, 400);
+const collectionFilter = collectionId ? sql`WHERE collection_id = ${collectionId}` : sql``;
 
 // Replace the SELECT:
 const rows = await sql<TaskRow[]>`SELECT * FROM tasks ${collectionFilter} ORDER BY created_at DESC`;
@@ -512,13 +540,14 @@ Add tag joining to task responses — after fetching tasks, also fetch their tag
 
 ```typescript
 // After fetching taskIds
-const tagRows = taskIds.length > 0
-  ? await sql<{ task_id: string; tag_id: string; name: string; color: string | null }[]>`
+const tagRows =
+  taskIds.length > 0
+    ? await sql<{ task_id: string; tag_id: string; name: string; color: string | null }[]>`
     SELECT tt.task_id, t.id AS tag_id, t.name, t.color
     FROM task_tags tt JOIN tags t ON t.id = tt.tag_id
     WHERE tt.task_id = ANY(${taskIds})
   `
-  : [];
+    : [];
 
 const tagsByTask = new Map<string, { id: string; name: string; color: string | null }[]>();
 for (const tr of tagRows) {
@@ -551,14 +580,14 @@ Add `collection_id` to `POST /tasks` — accept `collectionId` in body, INSERT i
 Add tag filter to `GET /tasks?tags=uuid1,uuid2`:
 
 ```typescript
-const tagFilter = c.req.query("tags");
+const tagFilter = c.req.query('tags');
 if (tagFilter) {
-  const tagIds = tagFilter.split(",").filter(validateUuid);
+  const tagIds = tagFilter.split(',').filter(validateUuid);
   if (tagIds.length > 0) {
     // Filter to tasks that have ALL specified tags
-    rows = rows.filter(r => {
+    rows = rows.filter((r) => {
       const taskTags = tagsByTask.get(r.id) ?? [];
-      return tagIds.every(tid => taskTags.some(t => t.id === tid));
+      return tagIds.every((tid) => taskTags.some((t) => t.id === tid));
     });
   }
 }
@@ -567,14 +596,14 @@ if (tagFilter) {
 ### Step 5: Modify `server/index.ts` — mount new routes
 
 ```typescript
-import collections from "./routes/collections.js";
-import tags from "./routes/tags.js";
-import statsRoutes from "./routes/stats.js";
+import collections from './routes/collections.js';
+import tags from './routes/tags.js';
+import statsRoutes from './routes/stats.js';
 
 // After existing route mounts:
-app.route("/collections", collections);
-app.route("/tags", tags);
-app.route("/stats", statsRoutes);
+app.route('/collections', collections);
+app.route('/tags', tags);
+app.route('/stats', statsRoutes);
 ```
 
 ### Step 6: Commit
@@ -589,6 +618,7 @@ git commit -m "feat: add collection, tag, and stats routes with collection filte
 ## Task 3: Shared Briefing Helper + Email + Mock AI — `agent-builder`
 
 **Files:**
+
 - Create: `server/agent/shared.ts`
 - Create: `server/agent/email.ts`
 - Create: `server/agent/mock.ts`
@@ -598,17 +628,30 @@ git commit -m "feat: add collection, tag, and stats routes with collection filte
 ### Step 1: Create `server/agent/shared.ts`
 
 ```typescript
-import sql from "../db/client.js";
-import type { Task, Note } from "../../src/types.js";
+import sql from '../db/client.js';
+import type { Task, Note } from '../../src/types.js';
 
 interface TaskRow {
-  id: string; topic: string; title: string; completed: boolean;
-  deadline: string | null; repetitions: number; interval: number;
-  ease_factor: number; next_review: string; last_reviewed: string | null;
-  created_at: string; collection_id: string | null;
+  id: string;
+  topic: string;
+  title: string;
+  completed: boolean;
+  deadline: string | null;
+  repetitions: number;
+  interval: number;
+  ease_factor: number;
+  next_review: string;
+  last_reviewed: string | null;
+  created_at: string;
+  collection_id: string | null;
 }
 
-interface NoteRow { id: string; task_id: string; text: string; created_at: string; }
+interface NoteRow {
+  id: string;
+  task_id: string;
+  text: string;
+  created_at: string;
+}
 
 export interface BriefingData {
   dueToday: Task[];
@@ -618,14 +661,14 @@ export interface BriefingData {
 }
 
 function today(): string {
-  return new Date().toISOString().split("T")[0]!;
+  return new Date().toISOString().split('T')[0]!;
 }
 
 export async function getDailyBriefingData(collectionId?: string): Promise<BriefingData> {
   const todayStr = today();
   const deadlineCutoff = new Date();
   deadlineCutoff.setDate(deadlineCutoff.getDate() + 7);
-  const deadlineStr = deadlineCutoff.toISOString().split("T")[0]!;
+  const deadlineStr = deadlineCutoff.toISOString().split('T')[0]!;
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
   const dueTasks = await sql<TaskRow[]>`
@@ -647,7 +690,7 @@ export async function getDailyBriefingData(collectionId?: string): Promise<Brief
     )
     SELECT COUNT(*)::text AS cnt FROM dates
   `;
-  const streakCount = parseInt(streakRow?.cnt ?? "0", 10);
+  const streakCount = parseInt(streakRow?.cnt ?? '0', 10);
 
   // Weakest topic
   const weakest = await sql<{ topic: string; avg_ease: string }[]>`
@@ -657,18 +700,27 @@ export async function getDailyBriefingData(collectionId?: string): Promise<Brief
   `;
 
   const mapTask = (row: TaskRow): Task => ({
-    id: row.id, topic: row.topic as Task["topic"], title: row.title,
-    completed: row.completed, deadline: row.deadline ?? undefined,
-    repetitions: row.repetitions, interval: row.interval, easeFactor: row.ease_factor,
-    nextReview: row.next_review, lastReviewed: row.last_reviewed ?? undefined,
-    createdAt: row.created_at, notes: [],
+    id: row.id,
+    topic: row.topic as Task['topic'],
+    title: row.title,
+    completed: row.completed,
+    deadline: row.deadline ?? undefined,
+    repetitions: row.repetitions,
+    interval: row.interval,
+    easeFactor: row.ease_factor,
+    nextReview: row.next_review,
+    lastReviewed: row.last_reviewed ?? undefined,
+    createdAt: row.created_at,
+    notes: [],
   });
 
   return {
     dueToday: dueTasks.map(mapTask),
     upcomingDeadlines: upcomingDeadlines.map(mapTask),
     streak: { current: streakCount, longest: streakCount },
-    weakestTopic: weakest[0] ? { topic: weakest[0].topic, avgEase: parseFloat(weakest[0].avg_ease) } : null,
+    weakestTopic: weakest[0]
+      ? { topic: weakest[0].topic, avgEase: parseFloat(weakest[0].avg_ease) }
+      : null,
   };
 }
 ```
@@ -697,8 +749,8 @@ export async function dailyBriefing(): Promise<string> {
 ### Step 3: Create `server/agent/email.ts`
 
 ```typescript
-import { Resend } from "resend";
-import { getDailyBriefingData } from "./shared.js";
+import { Resend } from 'resend';
+import { getDailyBriefingData } from './shared.js';
 
 let resend: Resend | null = null;
 
@@ -712,28 +764,30 @@ export async function sendDailyDigest(): Promise<void> {
   const client = getResend();
   const to = process.env.DIGEST_EMAIL_TO;
   if (!client || !to) {
-    console.log("[email] Resend not configured, skipping daily digest");
+    console.log('[email] Resend not configured, skipping daily digest');
     return;
   }
 
   const data = await getDailyBriefingData();
 
-  const dueList = data.dueToday.length > 0
-    ? data.dueToday.map((t) => `<li><strong>[${t.topic}]</strong> ${t.title}</li>`).join("")
-    : "<li>No reviews due today!</li>";
+  const dueList =
+    data.dueToday.length > 0
+      ? data.dueToday.map((t) => `<li><strong>[${t.topic}]</strong> ${t.title}</li>`).join('')
+      : '<li>No reviews due today!</li>';
 
-  const streakText = data.streak.current > 0
-    ? `You're on a ${data.streak.current}-day streak!`
-    : "Start a new streak today!";
+  const streakText =
+    data.streak.current > 0
+      ? `You're on a ${data.streak.current}-day streak!`
+      : 'Start a new streak today!';
 
   const weakestText = data.weakestTopic
     ? `Your weakest area is <strong>${data.weakestTopic.topic}</strong> (avg ease: ${data.weakestTopic.avgEase}).`
-    : "";
+    : '';
 
   const html = `
     <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background: #18181b; color: #e4e4e7; padding: 32px; border-radius: 12px;">
       <h1 style="font-size: 24px; margin: 0 0 8px;">reps — daily digest</h1>
-      <p style="color: #a1a1aa; margin: 0 0 24px;">${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+      <p style="color: #a1a1aa; margin: 0 0 24px;">${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
 
       <div style="background: #27272a; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
         <p style="margin: 0; font-size: 18px;">${streakText}</p>
@@ -742,7 +796,7 @@ export async function sendDailyDigest(): Promise<void> {
       <h2 style="font-size: 16px; color: #a1a1aa; margin: 0 0 8px;">Due for Review (${data.dueToday.length})</h2>
       <ul style="padding-left: 20px; margin: 0 0 16px;">${dueList}</ul>
 
-      ${weakestText ? `<p style="color: #fbbf24; margin: 16px 0;">${weakestText}</p>` : ""}
+      ${weakestText ? `<p style="color: #fbbf24; margin: 16px 0;">${weakestText}</p>` : ''}
 
       <p style="color: #71717a; font-size: 12px; margin-top: 24px;">Sent from reps — your interview prep tracker</p>
     </div>
@@ -750,14 +804,14 @@ export async function sendDailyDigest(): Promise<void> {
 
   try {
     await client.emails.send({
-      from: "reps <noreply@reps-prep.duckdns.org>",
+      from: 'reps <noreply@reps-prep.duckdns.org>',
       to,
-      subject: `reps: ${data.dueToday.length} review${data.dueToday.length === 1 ? "" : "s"} due today`,
+      subject: `reps: ${data.dueToday.length} review${data.dueToday.length === 1 ? '' : 's'} due today`,
       html,
     });
-    console.log("[email] Daily digest sent");
+    console.log('[email] Daily digest sent');
   } catch (err) {
-    console.error("[email] Failed to send daily digest:", err);
+    console.error('[email] Failed to send daily digest:', err);
   }
 }
 ```
@@ -765,18 +819,18 @@ export async function sendDailyDigest(): Promise<void> {
 ### Step 4: Create `server/agent/mock.ts`
 
 ```typescript
-import Anthropic from "@anthropic-ai/sdk";
-import sql from "../db/client.js";
+import Anthropic from '@anthropic-ai/sdk';
+import sql from '../db/client.js';
 
 const anthropic = new Anthropic();
-const MODEL = "claude-sonnet-4-6";
+const MODEL = 'claude-sonnet-4-6';
 
 interface MockSession {
   id: string;
   collectionId: string | null;
   topic: string;
   difficulty: string;
-  messages: { role: "interviewer" | "candidate"; content: string }[];
+  messages: { role: 'interviewer' | 'candidate'; content: string }[];
   score: MockScore | null;
   startedAt: string;
   completedAt: string | null;
@@ -810,25 +864,30 @@ function rowToSession(row: SessionRow): MockSession {
     collectionId: row.collection_id,
     topic: row.topic,
     difficulty: row.difficulty,
-    messages: typeof row.messages === "string" ? JSON.parse(row.messages) : row.messages,
-    score: row.score ? (typeof row.score === "string" ? JSON.parse(row.score) : row.score) : null,
+    messages: typeof row.messages === 'string' ? JSON.parse(row.messages) : row.messages,
+    score: row.score ? (typeof row.score === 'string' ? JSON.parse(row.score) : row.score) : null,
     startedAt: row.started_at,
     completedAt: row.completed_at,
   };
 }
 
 const TOPIC_PROMPTS: Record<string, string> = {
-  coding: "Ask a specific coding problem with constraints. Frame it like an Anthropic engineer would — focus on algorithmic thinking, edge cases, and clean design.",
-  "system-design": "Ask a system design question with specific scale requirements. Frame it like an Anthropic architect would — emphasize reliability, scalability, and trade-offs.",
-  behavioral: "Ask a behavioral interview question in STAR format tied to Anthropic's AI safety values. Focus on leadership, impact, and ethical decision-making.",
-  papers: "Ask a discussion question about a recent AI/ML paper relevant to Anthropic's mission. Focus on practical implications and safety considerations.",
-  custom: "Ask a thoughtful technical interview question appropriate for a senior software engineer.",
+  coding:
+    'Ask a specific coding problem with constraints. Frame it like an Anthropic engineer would — focus on algorithmic thinking, edge cases, and clean design.',
+  'system-design':
+    'Ask a system design question with specific scale requirements. Frame it like an Anthropic architect would — emphasize reliability, scalability, and trade-offs.',
+  behavioral:
+    "Ask a behavioral interview question in STAR format tied to Anthropic's AI safety values. Focus on leadership, impact, and ethical decision-making.",
+  papers:
+    "Ask a discussion question about a recent AI/ML paper relevant to Anthropic's mission. Focus on practical implications and safety considerations.",
+  custom:
+    'Ask a thoughtful technical interview question appropriate for a senior software engineer.',
 };
 
 const DIFFICULTY_MODIFIERS: Record<string, string> = {
-  easy: "Keep it at a mid-level engineer level. Straightforward with clear constraints.",
-  medium: "Target senior engineer level. Include nuance and require trade-off analysis.",
-  hard: "Target staff+ engineer level. Require deep expertise, handle ambiguity, and explore edge cases.",
+  easy: 'Keep it at a mid-level engineer level. Straightforward with clear constraints.',
+  medium: 'Target senior engineer level. Include nuance and require trade-off analysis.',
+  hard: 'Target staff+ engineer level. Require deep expertise, handle ambiguity, and explore edge cases.',
 };
 
 export async function startMockInterview(
@@ -845,15 +904,18 @@ export async function startMockInterview(
       model: MODEL,
       max_tokens: 400,
       system: `You are a senior Anthropic interviewer conducting a mock technical interview. ${difficultyMod} Generate a single interview question only — no preamble, no "Here's a question for you", just the question itself.`,
-      messages: [{ role: "user", content: topicPrompt }],
+      messages: [{ role: 'user', content: topicPrompt }],
     });
-    question = response.content[0]?.type === "text" ? response.content[0].text : "Tell me about a challenging technical problem you've solved recently.";
+    question =
+      response.content[0]?.type === 'text'
+        ? response.content[0].text
+        : "Tell me about a challenging technical problem you've solved recently.";
   } catch (err) {
-    console.error("[mock] Failed to generate question:", err);
+    console.error('[mock] Failed to generate question:', err);
     question = "Tell me about a challenging technical problem you've solved recently.";
   }
 
-  const messages = [{ role: "interviewer" as const, content: question }];
+  const messages = [{ role: 'interviewer' as const, content: question }];
 
   const [row] = await sql<SessionRow[]>`
     INSERT INTO mock_sessions (collection_id, topic, difficulty, messages)
@@ -871,20 +933,20 @@ export async function respondToMock(
   answer: string,
 ): Promise<{ followUp?: string; evaluation?: MockScore }> {
   const [row] = await sql<SessionRow[]>`SELECT * FROM mock_sessions WHERE id = ${sessionId}`;
-  if (!row) throw new Error("Session not found");
+  if (!row) throw new Error('Session not found');
 
   const session = rowToSession(row);
-  const messages = [...session.messages, { role: "candidate" as const, content: answer }];
+  const messages = [...session.messages, { role: 'candidate' as const, content: answer }];
 
   // Count candidate responses to decide if we should evaluate
-  const candidateResponses = messages.filter((m) => m.role === "candidate").length;
+  const candidateResponses = messages.filter((m) => m.role === 'candidate').length;
   const shouldEvaluate = candidateResponses >= 3;
 
   if (shouldEvaluate) {
     // Final evaluation
     const conversationText = messages
-      .map((m) => `${m.role === "interviewer" ? "Interviewer" : "Candidate"}: ${m.content}`)
-      .join("\n\n");
+      .map((m) => `${m.role === 'interviewer' ? 'Interviewer' : 'Candidate'}: ${m.content}`)
+      .join('\n\n');
 
     let score: MockScore;
     try {
@@ -893,17 +955,22 @@ export async function respondToMock(
         max_tokens: 800,
         system: `You are a senior Anthropic interviewer. Evaluate this mock interview. Return JSON only with this exact schema:
 { "clarity": 1-5, "depth": 1-5, "correctness": 1-5, "communication": 1-5, "overall": 1-5, "feedback": "string", "strengths": ["string"], "improvements": ["string"] }`,
-        messages: [{ role: "user", content: conversationText }],
+        messages: [{ role: 'user', content: conversationText }],
       });
 
-      const text = response.content[0]?.type === "text" ? response.content[0].text : "{}";
+      const text = response.content[0]?.type === 'text' ? response.content[0].text : '{}';
       score = JSON.parse(text);
     } catch (err) {
-      console.error("[mock] Evaluation failed:", err);
+      console.error('[mock] Evaluation failed:', err);
       score = {
-        clarity: 3, depth: 3, correctness: 3, communication: 3, overall: 3,
-        feedback: "Unable to generate detailed evaluation. Review your answers for completeness.",
-        strengths: ["Completed the interview"], improvements: ["Try again for a detailed evaluation"],
+        clarity: 3,
+        depth: 3,
+        correctness: 3,
+        communication: 3,
+        overall: 3,
+        feedback: 'Unable to generate detailed evaluation. Review your answers for completeness.',
+        strengths: ['Completed the interview'],
+        improvements: ['Try again for a detailed evaluation'],
       };
     }
 
@@ -920,24 +987,28 @@ export async function respondToMock(
 
   // Follow-up question
   const conversationText = messages
-    .map((m) => `${m.role === "interviewer" ? "Interviewer" : "Candidate"}: ${m.content}`)
-    .join("\n\n");
+    .map((m) => `${m.role === 'interviewer' ? 'Interviewer' : 'Candidate'}: ${m.content}`)
+    .join('\n\n');
 
   let followUp: string;
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 300,
-      system: "You are a senior Anthropic interviewer conducting a mock interview. Based on the candidate's response, ask a probing follow-up question that goes deeper. Just the question, no preamble.",
-      messages: [{ role: "user", content: conversationText }],
+      system:
+        "You are a senior Anthropic interviewer conducting a mock interview. Based on the candidate's response, ask a probing follow-up question that goes deeper. Just the question, no preamble.",
+      messages: [{ role: 'user', content: conversationText }],
     });
-    followUp = response.content[0]?.type === "text" ? response.content[0].text : "Can you elaborate on that?";
+    followUp =
+      response.content[0]?.type === 'text'
+        ? response.content[0].text
+        : 'Can you elaborate on that?';
   } catch (err) {
-    console.error("[mock] Follow-up failed:", err);
-    followUp = "Can you elaborate on your approach and discuss potential trade-offs?";
+    console.error('[mock] Follow-up failed:', err);
+    followUp = 'Can you elaborate on your approach and discuss potential trade-offs?';
   }
 
-  messages.push({ role: "interviewer", content: followUp });
+  messages.push({ role: 'interviewer', content: followUp });
 
   await sql`UPDATE mock_sessions SET messages = ${JSON.stringify(messages)}::jsonb WHERE id = ${sessionId}`;
 
@@ -956,7 +1027,7 @@ export async function getInterleaveTopicForMock(collectionId?: string): Promise<
     LIMIT 1
   `;
 
-  return row?.topic ?? "coding";
+  return row?.topic ?? 'coding';
 }
 
 export async function getMockSession(sessionId: string): Promise<MockSession | null> {
@@ -976,16 +1047,16 @@ export async function listMockSessions(collectionId?: string): Promise<MockSessi
 ### Step 5: Update `server/cron.ts` — add email digest
 
 ```typescript
-import { sendDailyDigest } from "./agent/email.js";
+import { sendDailyDigest } from './agent/email.js';
 
 // Inside startCronJobs(), add after dailyBriefing schedule:
-cron.schedule("0 8 * * *", async () => {
-  console.log("[cron] Sending daily digest email...");
+cron.schedule('0 8 * * *', async () => {
+  console.log('[cron] Sending daily digest email...');
   try {
     await sendDailyDigest();
-    console.log("[cron] Daily digest sent.");
+    console.log('[cron] Daily digest sent.');
   } catch (err) {
-    console.error("[cron] Daily digest failed:", err);
+    console.error('[cron] Daily digest failed:', err);
   }
 });
 ```
@@ -993,60 +1064,68 @@ cron.schedule("0 8 * * *", async () => {
 ### Step 6: Add mock routes to `server/routes/agent.ts`
 
 ```typescript
-import { startMockInterview, respondToMock, getMockSession, listMockSessions, getInterleaveTopicForMock } from "../agent/mock.js";
-import { mockStartSchema, mockRespondSchema } from "../validation.js";
+import {
+  startMockInterview,
+  respondToMock,
+  getMockSession,
+  listMockSessions,
+  getInterleaveTopicForMock,
+} from '../agent/mock.js';
+import { mockStartSchema, mockRespondSchema } from '../validation.js';
 
 // POST /agent/mock/start
-agent.post("/mock/start", async (c) => {
+agent.post('/mock/start', async (c) => {
   try {
     const raw = await c.req.json();
     const parsed = mockStartSchema.safeParse(raw);
-    if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    if (!parsed.success)
+      return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
 
     let topic = parsed.data.topic;
     if (!topic) {
-      topic = await getInterleaveTopicForMock(parsed.data.collectionId) as any;
+      topic = (await getInterleaveTopicForMock(parsed.data.collectionId)) as any;
     }
 
     const result = await startMockInterview(
       topic!,
-      parsed.data.difficulty ?? "medium",
+      parsed.data.difficulty ?? 'medium',
       parsed.data.collectionId,
     );
     return c.json(result);
   } catch (err) {
-    console.error("[agent/mock/start]", err);
-    return c.json({ error: "Failed to start mock interview" }, 500);
+    console.error('[agent/mock/start]', err);
+    return c.json({ error: 'Failed to start mock interview' }, 500);
   }
 });
 
 // POST /agent/mock/respond
-agent.post("/mock/respond", async (c) => {
+agent.post('/mock/respond', async (c) => {
   try {
     const raw = await c.req.json();
     const parsed = mockRespondSchema.safeParse(raw);
-    if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    if (!parsed.success)
+      return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
 
     const result = await respondToMock(parsed.data.sessionId, parsed.data.answer);
     return c.json(result);
   } catch (err) {
-    console.error("[agent/mock/respond]", err);
-    return c.json({ error: "Failed to process response" }, 500);
+    console.error('[agent/mock/respond]', err);
+    return c.json({ error: 'Failed to process response' }, 500);
   }
 });
 
 // GET /agent/mock/:id
-agent.get("/mock/:id", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID" }, 400);
+agent.get('/mock/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID' }, 400);
   const session = await getMockSession(id);
-  if (!session) return c.json({ error: "Session not found" }, 404);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
   return c.json(session);
 });
 
 // GET /agent/mock
-agent.get("/mock", async (c) => {
-  const collectionId = c.req.query("collection");
+agent.get('/mock', async (c) => {
+  const collectionId = c.req.query('collection');
   const sessions = await listMockSessions(collectionId);
   return c.json(sessions);
 });
@@ -1064,6 +1143,7 @@ git commit -m "feat: add shared briefing helper, email digest, mock interview AI
 ## Task 4: Frontend Types + API Client Updates — `web-builder`
 
 **Files:**
+
 - Modify: `web/src/types.ts` — add Collection, Tag, MockSession types
 - Modify: `web/src/api.ts` — add new API calls
 
@@ -1151,12 +1231,23 @@ export async function getCollections(): Promise<Collection[]> {
   return request<Collection[]>('/collections');
 }
 
-export async function createCollection(input: { name: string; icon?: string; color?: string; srEnabled?: boolean }): Promise<Collection> {
+export async function createCollection(input: {
+  name: string;
+  icon?: string;
+  color?: string;
+  srEnabled?: boolean;
+}): Promise<Collection> {
   return request<Collection>('/collections', { method: 'POST', body: JSON.stringify(input) });
 }
 
-export async function updateCollection(id: string, updates: Partial<Collection>): Promise<Collection> {
-  return request<Collection>(`/collections/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+export async function updateCollection(
+  id: string,
+  updates: Partial<Collection>,
+): Promise<Collection> {
+  return request<Collection>(`/collections/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
 }
 
 export async function deleteCollection(id: string): Promise<void> {
@@ -1186,7 +1277,10 @@ export async function getStatsOverview(collectionId?: string): Promise<StatsOver
   return request<StatsOverview>(`/stats/overview${q}`);
 }
 
-export async function getHeatmap(collectionId?: string, days = 365): Promise<Record<string, number>> {
+export async function getHeatmap(
+  collectionId?: string,
+  days = 365,
+): Promise<Record<string, number>> {
   const params = new URLSearchParams();
   if (collectionId) params.set('collection', collectionId);
   params.set('days', String(days));
@@ -1199,15 +1293,24 @@ export async function getStreaks(collectionId?: string): Promise<Streaks> {
 }
 
 // Mock Interview
-export async function startMockInterview(input: { topic?: string; difficulty?: string; collectionId?: string }): Promise<{ sessionId: string; question: string }> {
+export async function startMockInterview(input: {
+  topic?: string;
+  difficulty?: string;
+  collectionId?: string;
+}): Promise<{ sessionId: string; question: string }> {
   return request<{ sessionId: string; question: string }>('/agent/mock/start', {
-    method: 'POST', body: JSON.stringify(input),
+    method: 'POST',
+    body: JSON.stringify(input),
   });
 }
 
-export async function respondToMock(sessionId: string, answer: string): Promise<{ followUp?: string; evaluation?: MockScore }> {
+export async function respondToMock(
+  sessionId: string,
+  answer: string,
+): Promise<{ followUp?: string; evaluation?: MockScore }> {
   return request<{ followUp?: string; evaluation?: MockScore }>('/agent/mock/respond', {
-    method: 'POST', body: JSON.stringify({ sessionId, answer }),
+    method: 'POST',
+    body: JSON.stringify({ sessionId, answer }),
   });
 }
 
@@ -1238,6 +1341,7 @@ git commit -m "feat: add frontend types and API client for collections, tags, st
 ## Task 5: Frontend — Reusable Components — `web-builder`
 
 **Files:**
+
 - Create: `web/src/components/Heatmap.tsx`
 - Create: `web/src/components/StreakBadge.tsx`
 - Create: `web/src/components/FocusTimer.tsx`
@@ -1249,6 +1353,7 @@ git commit -m "feat: add frontend types and API client for collections, tags, st
 - Create: `web/src/components/ScoreCard.tsx` (extract from ReviewSession)
 
 Each component should be:
+
 - Self-contained, no internal data fetching (pure/presentational)
 - Accept props with TypeScript interfaces
 - Tailwind CSS only
@@ -1286,6 +1391,7 @@ git commit -m "feat: add reusable UI components — heatmap, timer, tags, calend
 ## Task 6: Frontend — New Views + Updated Views — `web-builder`
 
 **Files:**
+
 - Create: `web/src/components/MockInterview.tsx`
 - Modify: `web/src/components/Dashboard.tsx` — add streak, heatmap, collection scope
 - Modify: `web/src/components/TopicProgress.tsx` — add stats, heatmap, bar chart

@@ -1,10 +1,10 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import sql from "./client.js";
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import sql from './client.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbDir = resolve(__dirname, "../../db");
+const dbDir = resolve(__dirname, '../../db');
 
 async function ensureTrackingTable(): Promise<void> {
   await sql`
@@ -33,7 +33,7 @@ async function isExistingDatabase(): Promise<boolean> {
 }
 
 async function seedExistingMigrations(files: string[]): Promise<void> {
-  console.log("  Seeding schema_migrations with existing files...");
+  console.log('  Seeding schema_migrations with existing files...');
   for (const file of files) {
     await sql`
       INSERT INTO schema_migrations (filename)
@@ -45,13 +45,13 @@ async function seedExistingMigrations(files: string[]): Promise<void> {
 }
 
 async function migrate(): Promise<void> {
-  console.log("Running migrations...");
+  console.log('Running migrations...');
 
   try {
     await ensureTrackingTable();
 
     const files = readdirSync(dbDir)
-      .filter((f) => f.endsWith(".sql"))
+      .filter((f) => f.endsWith('.sql'))
       .sort();
 
     const applied = await getAppliedMigrations();
@@ -59,20 +59,20 @@ async function migrate(): Promise<void> {
     // First run on existing database: seed all current files as already-applied
     if (applied.size === 0 && (await isExistingDatabase())) {
       await seedExistingMigrations(files);
-      console.log("Migrations completed (seeded existing — no new migrations to run).");
+      console.log('Migrations completed (seeded existing — no new migrations to run).');
       return;
     }
 
     const pending = files.filter((f) => !applied.has(f));
 
     if (pending.length === 0) {
-      console.log("No new migrations to run.");
+      console.log('No new migrations to run.');
       return;
     }
 
     for (const file of pending) {
       console.log(`  Running ${file}...`);
-      const content = readFileSync(resolve(dbDir, file), "utf-8");
+      const content = readFileSync(resolve(dbDir, file), 'utf-8');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await sql.begin(async (tx: any) => {
@@ -86,7 +86,7 @@ async function migrate(): Promise<void> {
 
     console.log(`Migrations completed successfully (${pending.length} applied).`);
   } catch (error) {
-    console.error("Migration failed:", error);
+    console.error('Migration failed:', error);
     process.exit(1);
   } finally {
     await sql.end();

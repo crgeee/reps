@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
-import sql from "../db/client.js";
+import Anthropic from '@anthropic-ai/sdk';
+import sql from '../db/client.js';
 
 const anthropic = new Anthropic();
-const MODEL = "claude-sonnet-4-6";
+const MODEL = 'claude-sonnet-4-6';
 
 export interface EvaluationResult {
   clarity: number;
@@ -25,10 +25,7 @@ interface NoteRow {
   created_at: string;
 }
 
-export async function evaluateAnswer(
-  taskId: string,
-  answer: string
-): Promise<EvaluationResult> {
+export async function evaluateAnswer(taskId: string, answer: string): Promise<EvaluationResult> {
   const [task] = await sql<TaskRow[]>`
     SELECT id, topic, title FROM tasks WHERE id = ${taskId}
   `;
@@ -43,9 +40,10 @@ export async function evaluateAnswer(
     ORDER BY created_at ASC
   `;
 
-  const notesContext = noteRows.length > 0
-    ? `\n\nExisting notes on this task:\n<user_input>${noteRows.map((n) => `- ${n.text}`).join("\n")}</user_input>`
-    : "";
+  const notesContext =
+    noteRows.length > 0
+      ? `\n\nExisting notes on this task:\n<user_input>${noteRows.map((n) => `- ${n.text}`).join('\n')}</user_input>`
+      : '';
 
   const userPrompt = `Task: [${task.topic}] <user_input>${task.title}</user_input>${notesContext}\n\nCandidate's answer:\n<user_input>${answer}</user_input>`;
 
@@ -70,16 +68,16 @@ Do not include any text outside the JSON object.`;
       model: MODEL,
       max_tokens: 800,
       system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [{ role: 'user', content: userPrompt }],
     });
 
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
 
     try {
       // Extract JSON from response — handle possible markdown fences
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("No JSON object found in response");
+        throw new Error('No JSON object found in response');
       }
       const parsed = JSON.parse(jsonMatch[0]);
 
@@ -87,26 +85,26 @@ Do not include any text outside the JSON object.`;
         clarity: clampScore(parsed.clarity),
         specificity: clampScore(parsed.specificity),
         missionAlignment: clampScore(parsed.missionAlignment),
-        feedback: String(parsed.feedback || "No feedback provided."),
-        suggestedImprovement: String(parsed.suggestedImprovement || "No suggestion provided."),
+        feedback: String(parsed.feedback || 'No feedback provided.'),
+        suggestedImprovement: String(parsed.suggestedImprovement || 'No suggestion provided.'),
       };
     } catch (parseErr) {
-      console.error("[evaluator] JSON parse error:", parseErr);
+      console.error('[evaluator] JSON parse error:', parseErr);
       result = {
         clarity: 3,
         specificity: 3,
         missionAlignment: 3,
-        feedback: text || "Evaluation completed but structured scoring failed.",
-        suggestedImprovement: "Try again for a more detailed evaluation.",
+        feedback: text || 'Evaluation completed but structured scoring failed.',
+        suggestedImprovement: 'Try again for a more detailed evaluation.',
       };
     }
   } catch (err) {
-    console.error("[evaluator] Claude error:", err);
-    throw new Error("Failed to evaluate answer");
+    console.error('[evaluator] Claude error:', err);
+    throw new Error('Failed to evaluate answer');
   }
 
   // Save feedback as a note on the task
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
   const feedbackText = `[AI Evaluation] Clarity: ${result.clarity}/5, Specificity: ${result.specificity}/5, Mission Alignment: ${result.missionAlignment}/5\nFeedback: ${result.feedback}\nSuggested Improvement: ${result.suggestedImprovement}`;
 
   try {
@@ -115,7 +113,7 @@ Do not include any text outside the JSON object.`;
       VALUES (${taskId}, ${feedbackText}, ${today})
     `;
   } catch (err) {
-    console.error("[evaluator] Failed to save feedback note:", err);
+    console.error('[evaluator] Failed to save feedback note:', err);
   }
 
   // Log to agent_logs
@@ -125,7 +123,7 @@ Do not include any text outside the JSON object.`;
       VALUES ('evaluation', ${taskId}, ${userPrompt}, ${JSON.stringify(result)})
     `;
   } catch (err) {
-    console.error("[evaluator] Failed to log evaluation:", err);
+    console.error('[evaluator] Failed to log evaluation:', err);
   }
 
   return result;

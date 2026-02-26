@@ -1,4 +1,4 @@
-import type { MiddlewareHandler } from "hono";
+import type { MiddlewareHandler } from 'hono';
 
 interface RateLimitEntry {
   timestamps: number[];
@@ -33,11 +33,11 @@ function isRateLimited(key: string, windowMs: number, maxRequests: number): bool
 
 export function rateLimiter(maxRequests: number, windowMs: number): MiddlewareHandler {
   return async (c, next) => {
-    const key = c.req.header("Authorization") ?? c.req.header("x-forwarded-for") ?? "global";
+    const key = c.req.header('Authorization') ?? c.req.header('x-forwarded-for') ?? 'global';
     const prefix = `${maxRequests}:${windowMs}:`;
 
     if (isRateLimited(prefix + key, windowMs, maxRequests)) {
-      return c.json({ error: "Too many requests" }, 429);
+      return c.json({ error: 'Too many requests' }, 429);
     }
 
     await next();

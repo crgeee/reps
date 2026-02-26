@@ -15,6 +15,7 @@
 ### Task 1: Create FocusWidget component
 
 **Files:**
+
 - Create: `web/src/components/FocusWidget.tsx`
 
 **Step 1: Create the FocusWidget component**
@@ -46,7 +47,7 @@ function getStoredState<T>(key: string, fallback: T): T {
 export default function FocusWidget() {
   const [expanded, setExpanded] = useState(() => getStoredState('reps_focus_expanded', false));
   const [activePlaylist, setActivePlaylist] = useState<string | null>(() =>
-    getStoredState('reps_focus_playlist', null)
+    getStoredState('reps_focus_playlist', null),
   );
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
@@ -86,7 +87,9 @@ export default function FocusWidget() {
         {timerDisplay ? (
           <span className="text-sm font-mono text-zinc-100 tabular-nums">{timerDisplay}</span>
         ) : (
-          <span className="text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors">Focus</span>
+          <span className="text-sm text-zinc-400 group-hover:text-zinc-200 transition-colors">
+            Focus
+          </span>
         )}
       </button>
     );
@@ -117,7 +120,9 @@ export default function FocusWidget() {
       <div className="border-t border-zinc-800 px-4 py-3">
         <div className="flex items-center gap-2 mb-2">
           <Music className="w-3.5 h-3.5 text-zinc-500" />
-          <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Focus Music</span>
+          <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Focus Music
+          </span>
         </div>
 
         {/* Playlist selector */}
@@ -127,7 +132,9 @@ export default function FocusWidget() {
             className="w-full flex items-center justify-between px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:bg-zinc-750 hover:border-zinc-600 transition-colors"
           >
             <span>{activeLabel ?? 'Select playlist...'}</span>
-            <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${playlistOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${playlistOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {playlistOpen && (
@@ -135,7 +142,10 @@ export default function FocusWidget() {
               {PLAYLISTS.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => { setActivePlaylist(p.id); setPlaylistOpen(false); }}
+                  onClick={() => {
+                    setActivePlaylist(p.id);
+                    setPlaylistOpen(false);
+                  }}
                   className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                     activePlaylist === p.id
                       ? 'bg-zinc-700 text-zinc-100'
@@ -150,7 +160,10 @@ export default function FocusWidget() {
                 <>
                   <div className="border-t border-zinc-700 my-1" />
                   <button
-                    onClick={() => { setActivePlaylist(null); setPlaylistOpen(false); }}
+                    onClick={() => {
+                      setActivePlaylist(null);
+                      setPlaylistOpen(false);
+                    }}
                     className="w-full text-left px-3 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                   >
                     Stop music
@@ -212,6 +225,7 @@ git commit -m "feat: add FocusWidget with pomodoro timer and YouTube focus music
 ### Task 2: Wire FocusWidget into App.tsx
 
 **Files:**
+
 - Modify: `web/src/App.tsx`
 
 **Step 1: Add import and render FocusWidget**
@@ -254,6 +268,7 @@ git commit -m "feat: wire FocusWidget into App layout"
 ### Task 3: Add data attribute to FocusTimer for collapsed display
 
 **Files:**
+
 - Modify: `web/src/components/FocusTimer.tsx`
 
 **Step 1: Add data attribute to the timer display span**
@@ -261,17 +276,20 @@ git commit -m "feat: wire FocusWidget into App layout"
 In `FocusTimer.tsx`, find the countdown display span (around line 129):
 
 ```tsx
-            <span className="text-zinc-100 text-sm font-mono font-semibold tabular-nums">
-              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-            </span>
+<span className="text-zinc-100 text-sm font-mono font-semibold tabular-nums">
+  {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+</span>
 ```
 
 Add a `data-focus-timer-display` attribute so FocusWidget can read the time when collapsed:
 
 ```tsx
-            <span data-focus-timer-display className="text-zinc-100 text-sm font-mono font-semibold tabular-nums">
-              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-            </span>
+<span
+  data-focus-timer-display
+  className="text-zinc-100 text-sm font-mono font-semibold tabular-nums"
+>
+  {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+</span>
 ```
 
 Also, add a `data-focus-timer-running` attribute to the root div so FocusWidget can detect running state. Find the root div (line 108):

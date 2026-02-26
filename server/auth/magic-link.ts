@@ -1,8 +1,8 @@
-import { Resend } from "resend";
-import sql from "../db/client.js";
-import { generateToken, hashToken } from "./crypto.js";
-import { createSession } from "./sessions.js";
-import { findUserByEmail, createUser } from "./users.js";
+import { Resend } from 'resend';
+import sql from '../db/client.js';
+import { generateToken, hashToken } from './crypto.js';
+import { createSession } from './sessions.js';
+import { findUserByEmail, createUser } from './users.js';
 
 const MAGIC_LINK_EXPIRY_MINUTES = 15;
 
@@ -24,9 +24,9 @@ export async function sendMagicLink(email: string): Promise<void> {
     VALUES (${email.toLowerCase()}, ${tokenHash}, ${expiresAt.toISOString()})
   `;
 
-  const appUrl = process.env.APP_URL ?? "https://reps-prep.duckdns.org";
+  const appUrl = process.env.APP_URL ?? 'https://reps-prep.duckdns.org';
   const verifyUrl = `${appUrl}/auth/verify?token=${token}`;
-  const fromAddress = process.env.RESEND_FROM ?? "reps <noreply@reps-prep.duckdns.org>";
+  const fromAddress = process.env.RESEND_FROM ?? 'reps <noreply@reps-prep.duckdns.org>';
 
   const client = getResend();
   if (client) {
@@ -34,7 +34,7 @@ export async function sendMagicLink(email: string): Promise<void> {
       await client.emails.send({
         from: fromAddress,
         to: email.toLowerCase(),
-        subject: "Sign in to reps",
+        subject: 'Sign in to reps',
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; background: #18181b; color: #e4e4e7; padding: 32px; border-radius: 12px;">
             <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 16px; color: #f4f4f5;">reps</h1>
@@ -45,7 +45,7 @@ export async function sendMagicLink(email: string): Promise<void> {
         `,
       });
     } catch (err) {
-      console.error("[magic-link] Failed to send email:", err);
+      console.error('[magic-link] Failed to send email:', err);
     }
   } else {
     // Console fallback for development

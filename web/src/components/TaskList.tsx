@@ -16,7 +16,14 @@ interface TaskListProps {
   statusOptions?: { value: string; label: string }[];
 }
 
-export default function TaskList({ tasks, onRefresh, availableTags = [], collections = [], onTagCreated, statusOptions }: TaskListProps) {
+export default function TaskList({
+  tasks,
+  onRefresh,
+  availableTags = [],
+  collections = [],
+  onTagCreated,
+  statusOptions,
+}: TaskListProps) {
   const { filters, setFilter, resetFilters, filtered, grouped } = useFilteredTasks(tasks);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -26,11 +33,14 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
     return filtered.filter((t) => t.tags?.some((tag) => tag.id === tagFilter));
   }, [filtered, tagFilter]);
 
-  const topicGroups = TOPICS.reduce<Record<Topic, Task[]>>((acc, topic) => {
-    const topicTasks = tagFiltered.filter((t) => t.topic === topic);
-    if (topicTasks.length > 0) acc[topic] = topicTasks;
-    return acc;
-  }, {} as Record<Topic, Task[]>);
+  const topicGroups = TOPICS.reduce<Record<Topic, Task[]>>(
+    (acc, topic) => {
+      const topicTasks = tagFiltered.filter((t) => t.topic === topic);
+      if (topicTasks.length > 0) acc[topic] = topicTasks;
+      return acc;
+    },
+    {} as Record<Topic, Task[]>,
+  );
 
   // Collect all unique tags used in tasks for the filter
   const usedTags = useMemo(() => {
@@ -51,10 +61,17 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold tracking-tight">Tasks</h1>
-        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">{tagFiltered.length} items</span>
+        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">
+          {tagFiltered.length} items
+        </span>
       </div>
 
-      <FilterBar filters={filters} setFilter={setFilter} resetFilters={resetFilters} statusOptions={statusOptions} />
+      <FilterBar
+        filters={filters}
+        setFilter={setFilter}
+        resetFilters={resetFilters}
+        statusOptions={statusOptions}
+      />
 
       {/* Tag filter */}
       {usedTags.length > 0 && (
@@ -93,9 +110,11 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
               : groupTasks;
             if (filteredGroup.length === 0) return null;
 
-            const label = filters.groupBy === 'topic'
-              ? (TOPIC_LABELS[groupKey as Topic] ?? groupKey)
-              : (STATUS_LABELS[groupKey as keyof typeof STATUS_LABELS] ?? formatStatusLabel(groupKey));
+            const label =
+              filters.groupBy === 'topic'
+                ? (TOPIC_LABELS[groupKey as Topic] ?? groupKey)
+                : (STATUS_LABELS[groupKey as keyof typeof STATUS_LABELS] ??
+                  formatStatusLabel(groupKey));
             const isDone = groupKey === 'done';
 
             return (
@@ -107,7 +126,12 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
               >
                 <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/40">
                   {filteredGroup.map((task) => (
-                    <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onRefresh={onRefresh}
+                      onEdit={setEditingTask}
+                    />
                   ))}
                 </div>
               </GroupSection>
@@ -130,7 +154,12 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
               </div>
               <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/40">
                 {topicTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onRefresh={onRefresh}
+                    onEdit={setEditingTask}
+                  />
                 ))}
               </div>
             </div>
@@ -143,7 +172,10 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
           task={editingTask}
           collections={collections}
           availableTags={availableTags}
-          onSaved={() => { onRefresh(); setEditingTask(null); }}
+          onSaved={() => {
+            onRefresh();
+            setEditingTask(null);
+          }}
           onClose={() => setEditingTask(null)}
           onTagCreated={onTagCreated}
         />
@@ -174,20 +206,17 @@ function GroupSection({
       >
         <svg
           className={`w-2.5 h-2.5 text-zinc-600 transition-transform ${collapsed ? '' : 'rotate-90'}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <h2 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
-          {label}
-        </h2>
+        <h2 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</h2>
         <span className="text-[10px] text-zinc-700 font-mono">{count}</span>
       </button>
-      {!collapsed && (
-        <div className="anim-expand-down ml-4">
-          {children}
-        </div>
-      )}
+      {!collapsed && <div className="anim-expand-down ml-4">{children}</div>}
     </div>
   );
 }

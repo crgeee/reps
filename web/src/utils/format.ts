@@ -2,7 +2,9 @@ export function parseUserAgent(ua: string | null): string {
   if (!ua) return 'Unknown device';
   if (ua.includes('reps-cli')) return 'reps CLI';
   const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0];
-  const os = ua.match(/(Mac OS X|Windows NT|Linux|Android|iOS)[\s/]?[\d._]*/)?.[0]?.replace(/_/g, '.');
+  const os = ua
+    .match(/(Mac OS X|Windows NT|Linux|Android|iOS)[\s/]?[\d._]*/)?.[0]
+    ?.replace(/_/g, '.');
   if (browser && os) return `${browser.split('/')[0]} on ${os}`;
   if (browser) return browser.split('/')[0];
   return ua.length > 60 ? ua.slice(0, 60) + '...' : ua;

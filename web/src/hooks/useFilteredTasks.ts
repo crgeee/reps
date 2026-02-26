@@ -54,11 +54,16 @@ function endOfWeekStr(): string {
 function matchesDue(task: Task, due: DueFilter): boolean {
   const today = todayStr();
   switch (due) {
-    case 'all': return true;
-    case 'overdue': return task.nextReview < today && !task.completed;
-    case 'today': return task.nextReview === today;
-    case 'this-week': return task.nextReview >= today && task.nextReview <= endOfWeekStr();
-    case 'no-deadline': return !task.deadline;
+    case 'all':
+      return true;
+    case 'overdue':
+      return task.nextReview < today && !task.completed;
+    case 'today':
+      return task.nextReview === today;
+    case 'this-week':
+      return task.nextReview >= today && task.nextReview <= endOfWeekStr();
+    case 'no-deadline':
+      return !task.deadline;
   }
 }
 
@@ -66,10 +71,18 @@ function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
   const sorted = [...tasks].sort((a, b) => {
     let cmp = 0;
     switch (field) {
-      case 'created': cmp = a.createdAt.localeCompare(b.createdAt); break;
-      case 'next-review': cmp = a.nextReview.localeCompare(b.nextReview); break;
-      case 'deadline': cmp = (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'); break;
-      case 'ease-factor': cmp = a.easeFactor - b.easeFactor; break;
+      case 'created':
+        cmp = a.createdAt.localeCompare(b.createdAt);
+        break;
+      case 'next-review':
+        cmp = a.nextReview.localeCompare(b.nextReview);
+        break;
+      case 'deadline':
+        cmp = (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999');
+        break;
+      case 'ease-factor':
+        cmp = a.easeFactor - b.easeFactor;
+        break;
     }
     return dir === 'asc' ? cmp : -cmp;
   });

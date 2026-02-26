@@ -1,4 +1,4 @@
-const PUSHOVER_API = "https://api.pushover.net/1/messages.json";
+const PUSHOVER_API = 'https://api.pushover.net/1/messages.json';
 
 export async function send(title: string, message: string): Promise<void> {
   const userKey = process.env.PUSHOVER_USER_KEY;
@@ -11,8 +11,8 @@ export async function send(title: string, message: string): Promise<void> {
 
   try {
     const res = await fetch(PUSHOVER_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: apiToken,
         user: userKey,
@@ -26,6 +26,6 @@ export async function send(title: string, message: string): Promise<void> {
       console.error(`[notify] Pushover error ${res.status}: ${body}`);
     }
   } catch (err) {
-    console.error("[notify] Failed to send Pushover notification:", err);
+    console.error('[notify] Failed to send Pushover notification:', err);
   }
 }

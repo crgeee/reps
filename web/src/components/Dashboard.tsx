@@ -51,12 +51,22 @@ export default function Dashboard({
   const topicStats = TOPICS.map((topic) => {
     const topicTasks = tasks.filter((t) => t.topic === topic);
     const done = topicTasks.filter((t) => t.completed).length;
-    const due = topicTasks.filter((t) => !t.completed && new Date(t.nextReview) <= new Date()).length;
+    const due = topicTasks.filter(
+      (t) => !t.completed && new Date(t.nextReview) <= new Date(),
+    ).length;
     const total = topicTasks.length;
-    const avgEF = topicTasks.length > 0
-      ? topicTasks.reduce((s, t) => s + t.easeFactor, 0) / topicTasks.length
-      : 0;
-    return { topic, done, due, total, pct: total > 0 ? Math.round((done / total) * 100) : 0, avgEF };
+    const avgEF =
+      topicTasks.length > 0
+        ? topicTasks.reduce((s, t) => s + t.easeFactor, 0) / topicTasks.length
+        : 0;
+    return {
+      topic,
+      done,
+      due,
+      total,
+      pct: total > 0 ? Math.round((done / total) * 100) : 0,
+      avgEF,
+    };
   }).filter((s) => s.total > 0);
 
   const streakActive = streaks && streaks.currentStreak > 0;
@@ -67,17 +77,28 @@ export default function Dashboard({
       {/* ── Stat strip ── */}
       <div className="flex items-stretch border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-x divide-zinc-800">
         <StatCell label="Due" value={dueTasks.length} accent={dueTasks.length > 0} />
-        <StatCell label="Overdue" value={overdueTasks.length} accent={overdueTasks.length > 0} warn />
+        <StatCell
+          label="Overdue"
+          value={overdueTasks.length}
+          accent={overdueTasks.length > 0}
+          warn
+        />
         <StatCell label="Active" value={activeTasks.length} />
         <StatCell label="Done" value={completedTasks.length} />
         {streaks && (
           <div className="flex items-center gap-1.5 px-4 py-2.5 flex-1 min-w-0">
-            <Flame className={`w-3.5 h-3.5 flex-shrink-0 ${streakActive ? 'text-amber-400' : 'text-zinc-600'}`} />
-            <span className={`text-lg font-bold font-mono tabular-nums leading-none ${streakActive ? 'text-amber-400' : 'text-zinc-500'}`}>
+            <Flame
+              className={`w-3.5 h-3.5 flex-shrink-0 ${streakActive ? 'text-amber-400' : 'text-zinc-600'}`}
+            />
+            <span
+              className={`text-lg font-bold font-mono tabular-nums leading-none ${streakActive ? 'text-amber-400' : 'text-zinc-500'}`}
+            >
               {streaks.currentStreak}
             </span>
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider">streak</span>
-            <span className="text-[10px] text-zinc-700 font-mono ml-auto hidden sm:inline">best {streaks.longestStreak}</span>
+            <span className="text-[10px] text-zinc-700 font-mono ml-auto hidden sm:inline">
+              best {streaks.longestStreak}
+            </span>
           </div>
         )}
       </div>
@@ -119,7 +140,9 @@ export default function Dashboard({
       {/* ── Topic breakdown ── */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Topics</h2>
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+            Topics
+          </h2>
           <button
             onClick={() => onNavigate('progress')}
             className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors uppercase tracking-wider"
@@ -143,12 +166,21 @@ export default function Dashboard({
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-zinc-500 font-mono tabular-nums w-12 text-right">{done}/{total}</span>
-              <span className="text-zinc-600 font-mono tabular-nums w-10 text-right hidden sm:inline">{pct}%</span>
+              <span className="text-zinc-500 font-mono tabular-nums w-12 text-right">
+                {done}/{total}
+              </span>
+              <span className="text-zinc-600 font-mono tabular-nums w-10 text-right hidden sm:inline">
+                {pct}%
+              </span>
               {due > 0 && (
-                <span className="text-amber-500/80 font-mono tabular-nums text-[10px]">{due} due</span>
+                <span className="text-amber-500/80 font-mono tabular-nums text-[10px]">
+                  {due} due
+                </span>
               )}
-              <span className="text-zinc-700 font-mono tabular-nums w-12 text-right hidden md:inline" title="Avg ease factor">
+              <span
+                className="text-zinc-700 font-mono tabular-nums w-12 text-right hidden md:inline"
+                title="Avg ease factor"
+              >
                 EF {avgEF.toFixed(1)}
               </span>
             </div>
@@ -156,7 +188,10 @@ export default function Dashboard({
           {topicStats.length === 0 && (
             <div className="px-3 py-4 text-center text-zinc-600 text-xs">
               No tasks.{' '}
-              <button onClick={() => onNavigate('add')} className="text-zinc-400 underline hover:no-underline">
+              <button
+                onClick={() => onNavigate('add')}
+                className="text-zinc-400 underline hover:no-underline"
+              >
                 Add one
               </button>
             </div>
@@ -166,7 +201,9 @@ export default function Dashboard({
 
       {/* ── Heatmap ── */}
       <div>
-        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Activity</h2>
+        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
+          Activity
+        </h2>
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3 overflow-x-auto">
           <Heatmap data={heatmapData} days={365} />
         </div>
@@ -184,17 +221,28 @@ export default function Dashboard({
               const days = daysUntil(task.nextReview);
               const overdue = days < 0;
               return (
-                <div key={task.id} className="flex items-center gap-3 px-3 py-1.5 text-xs hover:bg-zinc-800/30 transition-colors">
-                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`} />
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 px-3 py-1.5 text-xs hover:bg-zinc-800/30 transition-colors"
+                >
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`}
+                  />
                   <span className="text-zinc-300 flex-1 truncate">{task.title}</span>
-                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">EF {task.easeFactor.toFixed(1)}</span>
-                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">×{task.repetitions}</span>
+                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">
+                    EF {task.easeFactor.toFixed(1)}
+                  </span>
+                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">
+                    ×{task.repetitions}
+                  </span>
                   {task.deadline && (
                     <span className="text-zinc-600 font-mono tabular-nums hidden md:inline text-[10px]">
                       dl {task.deadline}
                     </span>
                   )}
-                  <span className={`font-mono tabular-nums w-16 text-right ${overdue ? 'text-red-400' : 'text-zinc-500'}`}>
+                  <span
+                    className={`font-mono tabular-nums w-16 text-right ${overdue ? 'text-red-400' : 'text-zinc-500'}`}
+                  >
                     {overdue ? `${Math.abs(days)}d late` : days === 0 ? 'today' : `in ${days}d`}
                   </span>
                 </div>
@@ -223,11 +271,7 @@ function StatCell({
   accent?: boolean;
   warn?: boolean;
 }) {
-  const color = warn && value > 0
-    ? 'text-red-400'
-    : accent
-    ? 'text-amber-400'
-    : 'text-zinc-100';
+  const color = warn && value > 0 ? 'text-red-400' : accent ? 'text-amber-400' : 'text-zinc-100';
 
   return (
     <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">

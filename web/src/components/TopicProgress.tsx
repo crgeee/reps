@@ -58,9 +58,7 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       .filter((t) => t.lastReviewed)
       .sort((a, b) => (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? ''));
     const avgEF =
-      active.length > 0
-        ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length
-        : 0;
+      active.length > 0 ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length : 0;
     const dueCount = active.filter((t) => t.nextReview <= today).length;
 
     return {
@@ -97,11 +95,15 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       {stats && (
         <div className="flex items-stretch border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-x divide-zinc-800">
           <div className="flex items-center gap-2 px-4 py-2.5 flex-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-100">{stats.totalReviews}</span>
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-100">
+              {stats.totalReviews}
+            </span>
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider">Reviews</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2.5 flex-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-100">{stats.reviewsLast30Days}</span>
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-100">
+              {stats.reviewsLast30Days}
+            </span>
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider">30d</span>
           </div>
         </div>
@@ -109,7 +111,9 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
 
       {/* Heatmap */}
       <div>
-        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Activity</h2>
+        <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
+          Activity
+        </h2>
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3 overflow-x-auto">
           <Heatmap data={heatmapData} days={365} />
         </div>
@@ -118,7 +122,9 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       {/* Reviews by topic bar chart */}
       {stats && Object.keys(reviewsByTopicData).length > 0 && (
         <div>
-          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Reviews by Topic</h2>
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
+            Reviews by Topic
+          </h2>
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-3">
             <BarChart data={reviewsByTopicData} colors={reviewsByTopicColors} />
           </div>
@@ -132,7 +138,9 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       {/* Per-topic table */}
       {topicStats.length > 0 && (
         <div>
-          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">Breakdown</h2>
+          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
+            Breakdown
+          </h2>
           <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
             {/* Header */}
             <div className="flex items-center gap-3 px-3 py-1.5 text-[10px] text-zinc-600 uppercase tracking-wider font-medium bg-zinc-900/80">
@@ -146,12 +154,18 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
             </div>
             {topicStats.map((stat) => {
               const pct = stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0;
-              const confidence = stat.avgEaseFactor > 0 ? getConfidenceLevel(stat.avgEaseFactor) : null;
+              const confidence =
+                stat.avgEaseFactor > 0 ? getConfidenceLevel(stat.avgEaseFactor) : null;
 
               return (
-                <div key={stat.topic} className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-zinc-800/30 transition-colors">
+                <div
+                  key={stat.topic}
+                  className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-zinc-800/30 transition-colors"
+                >
                   <div className="w-28 flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[stat.topic]}`} />
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[stat.topic]}`}
+                    />
                     <span className="text-zinc-300 truncate">{TOPIC_LABELS[stat.topic]}</span>
                   </div>
                   <div className="flex-1 flex items-center gap-2">
@@ -161,18 +175,24 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-zinc-600 font-mono tabular-nums w-8 text-right">{pct}%</span>
+                    <span className="text-zinc-600 font-mono tabular-nums w-8 text-right">
+                      {pct}%
+                    </span>
                   </div>
                   <span className="w-12 text-right font-mono tabular-nums text-zinc-400">
                     {stat.completed}/{stat.total}
                   </span>
-                  <span className={`w-12 text-right font-mono tabular-nums hidden sm:inline ${stat.dueCount > 0 ? 'text-amber-400' : 'text-zinc-600'}`}>
+                  <span
+                    className={`w-12 text-right font-mono tabular-nums hidden sm:inline ${stat.dueCount > 0 ? 'text-amber-400' : 'text-zinc-600'}`}
+                  >
                     {stat.dueCount}
                   </span>
                   <span className="w-14 text-right font-mono tabular-nums text-zinc-500 hidden sm:inline">
                     {stat.avgEaseFactor > 0 ? stat.avgEaseFactor.toFixed(2) : '--'}
                   </span>
-                  <span className={`w-14 text-right hidden md:inline text-[10px] font-medium ${confidence?.color ?? 'text-zinc-700'}`}>
+                  <span
+                    className={`w-14 text-right hidden md:inline text-[10px] font-medium ${confidence?.color ?? 'text-zinc-700'}`}
+                  >
                     {confidence?.label ?? '--'}
                   </span>
                   <span className="w-20 text-right font-mono tabular-nums text-zinc-600 hidden md:inline">

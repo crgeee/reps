@@ -166,10 +166,7 @@ export async function addNoteAsync(taskId: string, note: Note): Promise<void> {
   });
 }
 
-export async function submitReview(
-  taskId: string,
-  quality: number
-): Promise<Task> {
+export async function submitReview(taskId: string, quality: number): Promise<Task> {
   if (!isApiMode()) {
     throw new Error('submitReview requires API mode. Run `reps config` first.');
   }
@@ -190,10 +187,7 @@ export async function getAgentQuestion(taskId: string): Promise<{ question: stri
   return apiFetch<{ question: string }>(`/agent/question/${taskId}`);
 }
 
-export async function evaluateAnswer(
-  taskId: string,
-  answer: string
-): Promise<EvaluationResult> {
+export async function evaluateAnswer(taskId: string, answer: string): Promise<EvaluationResult> {
   return apiFetch<EvaluationResult>('/agent/evaluate', {
     method: 'POST',
     body: JSON.stringify({ taskId, answer }),
@@ -242,7 +236,10 @@ export async function apiDeviceInitiate(apiUrl: string): Promise<DeviceAuthIniti
   return deviceFetch<DeviceAuthInitiation>(apiUrl, '/auth/device/initiate', { method: 'POST' });
 }
 
-export async function apiDevicePoll(apiUrl: string, deviceCode: string): Promise<DeviceAuthPollResult> {
+export async function apiDevicePoll(
+  apiUrl: string,
+  deviceCode: string,
+): Promise<DeviceAuthPollResult> {
   return deviceFetch<DeviceAuthPollResult>(apiUrl, '/auth/device/poll', {
     method: 'POST',
     body: JSON.stringify({ deviceCode }),

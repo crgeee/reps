@@ -1,5 +1,5 @@
-import sql from "../db/client.js";
-import { generateToken, hashToken } from "./crypto.js";
+import sql from '../db/client.js';
+import { generateToken, hashToken } from './crypto.js';
 
 const SESSION_DURATION_DAYS = 30;
 const SLIDING_WINDOW_DAYS = 15;

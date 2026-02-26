@@ -24,10 +24,7 @@ export function calculateSM2(task: Task, quality: Quality): SM2Result {
     interval = 1;
   }
 
-  easeFactor = Math.max(
-    1.3,
-    easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-  );
+  easeFactor = Math.max(1.3, easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
 
   const nextReview = new Date();
   nextReview.setDate(nextReview.getDate() + interval);

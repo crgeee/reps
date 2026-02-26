@@ -11,9 +11,16 @@ interface TagPickerProps {
 }
 
 const TAG_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-  '#6b7280', '#14b8a6',
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#06b6d4',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+  '#6b7280',
+  '#14b8a6',
 ];
 
 export default function TagPicker({
@@ -30,11 +37,15 @@ export default function TagPicker({
   const [savingTag, setSavingTag] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useClickOutside(ref, useCallback(() => { setOpen(false); setCreating(false); }, []));
-
-  const filtered = availableTags.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
+  useClickOutside(
+    ref,
+    useCallback(() => {
+      setOpen(false);
+      setCreating(false);
+    }, []),
   );
+
+  const filtered = availableTags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
 
   function toggleTag(id: string) {
     if (selectedTagIds.includes(id)) {
@@ -75,10 +86,7 @@ export default function TagPicker({
                 key={t.id}
                 className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-800 rounded-full text-[10px] text-zinc-300"
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: t.color }}
-                />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
                 {t.name}
               </span>
             ))}
@@ -115,7 +123,9 @@ export default function TagPicker({
                   type="button"
                   onClick={() => toggleTag(tag.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                    selected ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                    selected
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                   }`}
                 >
                   <span
@@ -123,9 +133,7 @@ export default function TagPicker({
                     style={{ backgroundColor: tag.color }}
                   />
                   <span className="flex-1">{tag.name}</span>
-                  {selected && (
-                    <span className="text-emerald-400 text-xs">✓</span>
-                  )}
+                  {selected && <span className="text-emerald-400 text-xs">✓</span>}
                 </button>
               );
             })}
@@ -159,7 +167,9 @@ export default function TagPicker({
                         type="button"
                         onClick={() => setNewColor(color)}
                         className={`w-5 h-5 rounded-full transition-all duration-150 ${
-                          newColor === color ? 'ring-2 ring-zinc-300 ring-offset-1 ring-offset-zinc-900' : ''
+                          newColor === color
+                            ? 'ring-2 ring-zinc-300 ring-offset-1 ring-offset-zinc-900'
+                            : ''
                         }`}
                         style={{ backgroundColor: color }}
                       />

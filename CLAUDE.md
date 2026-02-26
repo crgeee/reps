@@ -302,9 +302,9 @@ API base URL from `import.meta.env.VITE_API_URL`. Use plain fetch + useEffect or
 module.exports = {
   apps: [
     {
-      name: "reps",
-      script: "dist/server/index.js",
-      env: { NODE_ENV: "production" },
+      name: 'reps',
+      script: 'dist/server/index.js',
+      env: { NODE_ENV: 'production' },
     },
   ],
 };

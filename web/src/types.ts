@@ -176,10 +176,10 @@ export interface CustomTopic {
 export const STATUSES: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
-  'todo': 'Todo',
+  todo: 'Todo',
   'in-progress': 'In Progress',
-  'review': 'Review',
-  'done': 'Done',
+  review: 'Review',
+  done: 'Done',
 };
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
@@ -200,7 +200,16 @@ export const PRIORITY_COLORS: Record<Priority, string> = {
   high: 'text-red-400',
 };
 
-export const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'] as const;
+export const COLOR_SWATCHES = [
+  '#3b82f6',
+  '#8b5cf6',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#ec4899',
+  '#06b6d4',
+  '#71717a',
+] as const;
 
 export function formatStatusLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');

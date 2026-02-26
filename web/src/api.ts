@@ -90,7 +90,10 @@ export async function getCustomTopics(): Promise<CustomTopic[]> {
   return request<CustomTopic[]>('/users/me/topics');
 }
 
-export async function createCustomTopic(input: { name: string; color?: string }): Promise<CustomTopic> {
+export async function createCustomTopic(input: {
+  name: string;
+  color?: string;
+}): Promise<CustomTopic> {
   return request<CustomTopic>('/users/me/topics', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -117,7 +120,12 @@ export async function adminUpdateUser(
   });
 }
 
-export async function getAdminStats(): Promise<{ users: number; tasks: number; activeSessions: number; totalReviews: number }> {
+export async function getAdminStats(): Promise<{
+  users: number;
+  tasks: number;
+  activeSessions: number;
+  totalReviews: number;
+}> {
   return request('/users/admin/stats');
 }
 
@@ -177,9 +185,13 @@ export async function getCollections(): Promise<Collection[]> {
   return request<Collection[]>('/collections');
 }
 
-export async function createCollection(
-  input: { name: string; icon?: string; color?: string; srEnabled?: boolean; sortOrder?: number }
-): Promise<Collection> {
+export async function createCollection(input: {
+  name: string;
+  icon?: string;
+  color?: string;
+  srEnabled?: boolean;
+  sortOrder?: number;
+}): Promise<Collection> {
   return request<Collection>('/collections', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -188,7 +200,7 @@ export async function createCollection(
 
 export async function updateCollection(
   id: string,
-  updates: Partial<Collection>
+  updates: Partial<Collection>,
 ): Promise<Collection> {
   return request<Collection>(`/collections/${id}`, {
     method: 'PATCH',
@@ -202,7 +214,7 @@ export async function deleteCollection(id: string): Promise<void> {
 
 export async function createCollectionStatus(
   collectionId: string,
-  input: { name: string; color?: string | null; sortOrder?: number }
+  input: { name: string; color?: string | null; sortOrder?: number },
 ): Promise<CollectionStatus> {
   return request<CollectionStatus>(`/collections/${collectionId}/statuses`, {
     method: 'POST',
@@ -213,7 +225,7 @@ export async function createCollectionStatus(
 export async function updateCollectionStatus(
   collectionId: string,
   statusId: string,
-  updates: Partial<{ name: string; color: string | null; sortOrder: number }>
+  updates: Partial<{ name: string; color: string | null; sortOrder: number }>,
 ): Promise<CollectionStatus> {
   return request<CollectionStatus>(`/collections/${collectionId}/statuses/${statusId}`, {
     method: 'PATCH',
@@ -223,7 +235,7 @@ export async function updateCollectionStatus(
 
 export async function deleteCollectionStatus(
   collectionId: string,
-  statusId: string
+  statusId: string,
 ): Promise<void> {
   await request<unknown>(`/collections/${collectionId}/statuses/${statusId}`, { method: 'DELETE' });
 }
@@ -273,7 +285,7 @@ export async function getStreaks(collectionId?: string): Promise<Streaks> {
 
 export async function startMockInterview(
   topic: Topic,
-  difficulty: MockDifficulty
+  difficulty: MockDifficulty,
 ): Promise<MockSession> {
   return request<MockSession>('/mock/sessions', {
     method: 'POST',
@@ -283,14 +295,14 @@ export async function startMockInterview(
 
 export async function respondToMock(
   sessionId: string,
-  answer: string
+  answer: string,
 ): Promise<{ followUp?: string; score?: MockScore; done: boolean }> {
   return request<{ followUp?: string; score?: MockScore; done: boolean }>(
     `/mock/sessions/${sessionId}/respond`,
     {
       method: 'POST',
       body: JSON.stringify({ answer }),
-    }
+    },
   );
 }
 
@@ -304,10 +316,7 @@ export async function getQuestion(taskId: string): Promise<{ question: string }>
   return request<{ question: string }>(`/agent/question/${taskId}`);
 }
 
-export async function evaluateAnswer(
-  taskId: string,
-  answer: string
-): Promise<EvaluationResult> {
+export async function evaluateAnswer(taskId: string, answer: string): Promise<EvaluationResult> {
   return request<EvaluationResult>('/agent/evaluate', {
     method: 'POST',
     body: JSON.stringify({ taskId, answer }),

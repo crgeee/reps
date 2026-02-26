@@ -110,7 +110,12 @@ export default function CollectionEditModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div role="dialog" aria-modal="true" aria-label="Edit collection" className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit collection"
+        className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5"
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-100">Edit Collection</h2>
@@ -164,9 +169,7 @@ export default function CollectionEditModal({
 
         {/* Custom Statuses */}
         <div>
-          <label className="block text-xs text-zinc-500 mb-2">
-            Statuses ({statuses.length})
-          </label>
+          <label className="block text-xs text-zinc-500 mb-2">Statuses ({statuses.length})</label>
           <div className="space-y-1.5">
             {statuses.map((status) => (
               <div key={status.id} className="flex items-center gap-2">

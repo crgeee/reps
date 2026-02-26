@@ -36,10 +36,7 @@ function formatScore(score: number): string {
 
 const program = new Command();
 
-program
-  .name('reps')
-  .description('AI-powered interview prep tracker')
-  .version('1.0.0');
+program.name('reps').description('AI-powered interview prep tracker').version('1.0.0');
 
 program
   .command('dashboard')
@@ -139,8 +136,7 @@ program
 
     const readline = await import('node:readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ask = (q: string): Promise<string> =>
-      new Promise((resolve) => rl.question(q, resolve));
+    const ask = (q: string): Promise<string> => new Promise((resolve) => rl.question(q, resolve));
 
     for (const task of due) {
       console.log(`\n${formatTask(task)}`);
@@ -262,7 +258,9 @@ program
     console.log(`\n${chalk.bold(task.title)}`);
     console.log(`  Topic: ${task.topic}`);
     console.log(`  Status: ${task.completed ? 'done' : 'pending'}`);
-    console.log(`  Ease: ${task.easeFactor} | Reps: ${task.repetitions} | Interval: ${task.interval}d`);
+    console.log(
+      `  Ease: ${task.easeFactor} | Reps: ${task.repetitions} | Interval: ${task.interval}d`,
+    );
     console.log(`  Next review: ${task.nextReview}`);
     if (task.deadline) console.log(`  Deadline: ${task.deadline}`);
     if (task.notes.length > 0) {
@@ -307,8 +305,7 @@ program
   .action(async () => {
     const readline = await import('node:readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ask = (q: string): Promise<string> =>
-      new Promise((resolve) => rl.question(q, resolve));
+    const ask = (q: string): Promise<string> => new Promise((resolve) => rl.question(q, resolve));
 
     const currentConfig = getApiConfig();
     const defaultUrl = currentConfig?.apiUrl ?? 'http://localhost:3000';
@@ -364,8 +361,7 @@ program
 
     const readline = await import('node:readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ask = (q: string): Promise<string> =>
-      new Promise((resolve) => rl.question(q, resolve));
+    const ask = (q: string): Promise<string> => new Promise((resolve) => rl.question(q, resolve));
 
     const answer = await ask('Switch to API mode? (y/n): ');
     if (answer.toLowerCase() === 'y') {

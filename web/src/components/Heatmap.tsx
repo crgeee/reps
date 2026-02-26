@@ -18,7 +18,12 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function Heatmap({ data, days = 365 }: HeatmapProps) {
-  const [tooltip, setTooltip] = useState<{ date: string; count: number; x: number; y: number } | null>(null);
+  const [tooltip, setTooltip] = useState<{
+    date: string;
+    count: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const { cells, monthLabels, maxCount } = useMemo(() => {
     const today = new Date();
@@ -36,10 +41,7 @@ export default function Heatmap({ data, days = 365 }: HeatmapProps) {
 
     // Pad to start on Sunday
     const firstDay = dates[0]!.getDay(); // 0=Sun
-    const paddedDates: (Date | null)[] = [
-      ...Array(firstDay).fill(null),
-      ...dates,
-    ];
+    const paddedDates: (Date | null)[] = [...Array(firstDay).fill(null), ...dates];
 
     // Group into weeks (columns)
     const weeks: (Date | null)[][] = [];
@@ -122,7 +124,13 @@ export default function Heatmap({ data, days = 365 }: HeatmapProps) {
       {/* Legend */}
       <div className="flex items-center gap-1 mt-2 ml-6">
         <span className="text-[9px] text-zinc-600 mr-1">Less</span>
-        {['bg-zinc-800', 'bg-emerald-900', 'bg-emerald-700', 'bg-emerald-500', 'bg-emerald-400'].map((c) => (
+        {[
+          'bg-zinc-800',
+          'bg-emerald-900',
+          'bg-emerald-700',
+          'bg-emerald-500',
+          'bg-emerald-400',
+        ].map((c) => (
           <div key={c} className={`w-3 h-3 rounded-sm ${c}`} />
         ))}
         <span className="text-[9px] text-zinc-600 ml-1">More</span>

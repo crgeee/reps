@@ -34,5 +34,7 @@ export const logger = {
   warn: (message: string, context?: Record<string, unknown>) => log('warn', message, context),
   info: (message: string, context?: Record<string, unknown>) => log('info', message, context),
   /** Add a custom handler (e.g. remote reporting, toast notifications) */
-  addHandler: (handler: LogHandler) => { handlers.push(handler); },
+  addHandler: (handler: LogHandler) => {
+    handlers.push(handler);
+  },
 };

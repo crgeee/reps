@@ -33,13 +33,21 @@ interface BoardViewProps {
 }
 
 const DEFAULT_STATUS_COLORS: Record<TaskStatus, string> = {
-  'todo': '#3f3f46',
+  todo: '#3f3f46',
   'in-progress': '#1e3a5f',
-  'review': '#78350f',
-  'done': '#14532d',
+  review: '#78350f',
+  done: '#14532d',
 };
 
-const SortableCard = memo(function SortableCard({ task, onRefresh, onEdit }: { task: Task; onRefresh: () => void; onEdit?: (task: Task) => void }) {
+const SortableCard = memo(function SortableCard({
+  task,
+  onRefresh,
+  onEdit,
+}: {
+  task: Task;
+  onRefresh: () => void;
+  onEdit?: (task: Task) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'card', status: task.status },
@@ -64,14 +72,22 @@ const SortableCard = memo(function SortableCard({ task, onRefresh, onEdit }: { t
   );
 });
 
-export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, collections = [], availableTags = [], onTagCreated, collectionStatuses, statusOptions }: BoardViewProps) {
+export default function BoardView({
+  tasks,
+  onRefresh,
+  onOptimisticUpdate,
+  onBackgroundRefresh,
+  collections = [],
+  availableTags = [],
+  onTagCreated,
+  collectionStatuses,
+  statusOptions,
+}: BoardViewProps) {
   const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   // Derive status list from collection statuses or fall back to defaults
   const { statusList, statusLabels, statusColors } = useMemo(() => {
@@ -101,55 +117,61 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
     return map;
   }, [filtered, statusList]);
 
-  const activeTask = activeId ? tasks.find((t) => t.id === activeId) ?? null : null;
+  const activeTask = activeId ? (tasks.find((t) => t.id === activeId) ?? null) : null;
 
-  const findColumnForOver = useCallback((overId: string | number, overData: Record<string, unknown> | undefined): string | null => {
-    const id = String(overId);
-    if (overData?.type === 'column' && statusList.includes(id)) {
-      return id;
-    }
-    if (overData?.type === 'card' && overData.status) {
-      return overData.status as string;
-    }
-    return null;
-  }, [statusList]);
+  const findColumnForOver = useCallback(
+    (overId: string | number, overData: Record<string, unknown> | undefined): string | null => {
+      const id = String(overId);
+      if (overData?.type === 'column' && statusList.includes(id)) {
+        return id;
+      }
+      if (overData?.type === 'card' && overData.status) {
+        return overData.status as string;
+      }
+      return null;
+    },
+    [statusList],
+  );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   }, []);
 
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    setActiveId(null);
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      setActiveId(null);
 
-    const { active, over } = event;
-    if (!over) return;
+      const { active, over } = event;
+      if (!over) return;
 
-    const taskId = active.id as string;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
+      const taskId = active.id as string;
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
 
-    const targetStatus = findColumnForOver(over.id, over.data.current);
-    if (!targetStatus || targetStatus === task.status) return;
+      const targetStatus = findColumnForOver(over.id, over.data.current);
+      if (!targetStatus || targetStatus === task.status) return;
 
-    // Optimistic: move card in local state immediately (no loading spinner)
-    if (onOptimisticUpdate) {
-      onOptimisticUpdate(taskId, {
-        status: targetStatus,
-        completed: targetStatus === 'done',
-      });
-    }
+      // Optimistic: move card in local state immediately (no loading spinner)
+      if (onOptimisticUpdate) {
+        onOptimisticUpdate(taskId, {
+          status: targetStatus,
+          completed: targetStatus === 'done',
+        });
+      }
 
-    // Sync with server in background
-    try {
-      await updateTask(taskId, { status: targetStatus });
-      // Quietly refresh to pick up any server-side changes
-      if (onBackgroundRefresh) onBackgroundRefresh();
-    } catch (err) {
-      logger.error('Failed to update task status', { taskId, targetStatus, error: String(err) });
-      // Revert: full refresh to get correct state
-      onRefresh();
-    }
-  }, [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, findColumnForOver]);
+      // Sync with server in background
+      try {
+        await updateTask(taskId, { status: targetStatus });
+        // Quietly refresh to pick up any server-side changes
+        if (onBackgroundRefresh) onBackgroundRefresh();
+      } catch (err) {
+        logger.error('Failed to update task status', { taskId, targetStatus, error: String(err) });
+        // Revert: full refresh to get correct state
+        onRefresh();
+      }
+    },
+    [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, findColumnForOver],
+  );
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
@@ -169,10 +191,18 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold tracking-tight">Board</h1>
-        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">{filtered.length} tasks</span>
+        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">
+          {filtered.length} tasks
+        </span>
       </div>
 
-      <FilterBar filters={filters} setFilter={setFilter} resetFilters={resetFilters} hideStatus statusOptions={statusOptions} />
+      <FilterBar
+        filters={filters}
+        setFilter={setFilter}
+        resetFilters={resetFilters}
+        hideStatus
+        statusOptions={statusOptions}
+      />
 
       <DndContext
         sensors={sensors}
@@ -204,7 +234,10 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
           task={editingTask}
           collections={collections}
           availableTags={availableTags}
-          onSaved={() => { onRefresh(); setEditingTask(null); }}
+          onSaved={() => {
+            onRefresh();
+            setEditingTask(null);
+          }}
           onClose={() => setEditingTask(null)}
           onTagCreated={onTagCreated}
         />

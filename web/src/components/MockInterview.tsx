@@ -262,7 +262,9 @@ export default function MockInterview() {
 
             {score.improvements.length > 0 && (
               <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Areas to Improve</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">
+                  Areas to Improve
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {score.improvements.map((s, i) => (
                     <span

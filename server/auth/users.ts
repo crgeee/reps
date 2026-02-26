@@ -1,4 +1,4 @@
-import sql from "../db/client.js";
+import sql from '../db/client.js';
 
 export interface User {
   id: string;
@@ -83,12 +83,12 @@ export async function updateUserProfile(
   },
 ): Promise<User | null> {
   const fieldMap: Record<string, string> = {
-    displayName: "display_name",
-    timezone: "timezone",
-    theme: "theme",
-    notifyDaily: "notify_daily",
-    notifyWeekly: "notify_weekly",
-    dailyReviewGoal: "daily_review_goal",
+    displayName: 'display_name',
+    timezone: 'timezone',
+    theme: 'theme',
+    notifyDaily: 'notify_daily',
+    notifyWeekly: 'notify_weekly',
+    dailyReviewGoal: 'daily_review_goal',
   };
 
   const dbUpdates: Record<string, unknown> = {};
@@ -100,7 +100,7 @@ export async function updateUserProfile(
 
   if (Object.keys(dbUpdates).length === 0) return getUserById(id);
 
-  dbUpdates["updated_at"] = new Date().toISOString();
+  dbUpdates['updated_at'] = new Date().toISOString();
 
   const [row] = await sql<UserRow[]>`
     UPDATE users SET ${sql(dbUpdates)} WHERE id = ${id} RETURNING *
@@ -119,8 +119,8 @@ export async function adminUpdateUser(
   updates: { isAdmin?: boolean; isBlocked?: boolean },
 ): Promise<User | null> {
   const fieldMap: Record<string, string> = {
-    isAdmin: "is_admin",
-    isBlocked: "is_blocked",
+    isAdmin: 'is_admin',
+    isBlocked: 'is_blocked',
   };
 
   const dbUpdates: Record<string, unknown> = {};
@@ -132,7 +132,7 @@ export async function adminUpdateUser(
 
   if (Object.keys(dbUpdates).length === 0) return getUserById(id);
 
-  dbUpdates["updated_at"] = new Date().toISOString();
+  dbUpdates['updated_at'] = new Date().toISOString();
 
   const [row] = await sql<UserRow[]>`
     UPDATE users SET ${sql(dbUpdates)} WHERE id = ${id} RETURNING *
