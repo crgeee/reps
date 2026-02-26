@@ -74,6 +74,7 @@ async function migrate(): Promise<void> {
       console.log(`  Running ${file}...`);
       const content = readFileSync(resolve(dbDir, file), "utf-8");
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await sql.begin(async (tx: any) => {
         await tx.unsafe(content);
         await tx`
