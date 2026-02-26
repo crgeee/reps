@@ -43,7 +43,9 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [dueTasks, setDueTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(
+    () => localStorage.getItem('reps_active_collection')
+  );
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +55,26 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleCollectionChange = useCallback((id: string | null) => {
+    if (id) {
+      localStorage.setItem('reps_active_collection', id);
+    } else {
+      localStorage.removeItem('reps_active_collection');
+    }
+    setActiveCollectionId(id);
+  }, []);
+
+  const handleCollectionUpdated = useCallback((updated: Collection) => {
+    setCollections((prev) => prev.map((c) => c.id === updated.id ? updated : c));
+  }, []);
+
+  const handleCollectionDeleted = useCallback((id: string) => {
+    setCollections((prev) => prev.filter((c) => c.id !== id));
+    if (activeCollectionId === id) {
+      handleCollectionChange(null);
+    }
+  }, [activeCollectionId, handleCollectionChange]);
 
   const setView = useCallback((v: View) => {
     window.location.hash = v === 'dashboard' ? '' : v;
@@ -118,14 +140,15 @@ export default function App() {
     try {
       const cols = await getCollections();
       setCollections(cols);
-      // Set first collection as active if none selected yet
-      if (activeCollectionId === null && cols.length > 0) {
-        setActiveCollectionId(null); // Keep "All" as default
+      // Validate stored collection still exists
+      const stored = localStorage.getItem('reps_active_collection');
+      if (stored && !cols.some((c) => c.id === stored)) {
+        handleCollectionChange(null);
       }
     } catch {
       // Collections are optional — silently fail
     }
-  }, [activeCollectionId]);
+  }, [handleCollectionChange]);
 
   const fetchTags = useCallback(async () => {
     try {
@@ -210,8 +233,10 @@ export default function App() {
           <CollectionSwitcher
             collections={collections}
             activeId={activeCollectionId}
-            onChange={setActiveCollectionId}
+            onChange={handleCollectionChange}
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
+            onCollectionUpdated={handleCollectionUpdated}
+            onCollectionDeleted={handleCollectionDeleted}
           />
 
           {/* Desktop nav */}
