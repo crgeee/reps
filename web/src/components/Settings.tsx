@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { User, SessionInfo, CustomTopic } from '../types';
+import type { User, AdminUser, SessionInfo, CustomTopic } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import {
   updateProfile,
@@ -10,6 +10,7 @@ import {
   deleteCustomTopic,
   getAdminUsers,
   getAdminStats,
+  adminUpdateUser,
 } from '../api';
 import { buildTimezoneOptions } from '../utils/timezone';
 import { parseUserAgent, formatRelative } from '../utils/format';
@@ -45,7 +46,7 @@ export default function Settings({ user, onUserUpdate }: Props) {
   const [newTopicColor, setNewTopicColor] = useState<string>(COLOR_SWATCHES[0]);
   const [topicError, setTopicError] = useState<string | null>(null);
 
-  const [adminUsers, setAdminUsers] = useState<User[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminStats, setAdminStats] = useState<{ users: number; tasks: number; activeSessions: number; totalReviews: number } | null>(null);
 
   const fetchSessions = useCallback(async () => {
@@ -371,14 +372,87 @@ export default function Settings({ user, onUserUpdate }: Props) {
           {adminUsers.length > 0 && (
             <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
               <h3 className="text-sm font-semibold text-zinc-400 mb-3">All Users</h3>
-              {adminUsers.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg">
-                  <span className="text-zinc-200 text-sm flex-1">{u.email}</span>
-                  {u.displayName && <span className="text-zinc-500 text-xs">{u.displayName}</span>}
-                  <span className="text-zinc-600 text-xs">{new Date(u.createdAt).toLocaleDateString()}</span>
-                  {u.isAdmin && <span className="text-xs font-medium text-amber-500">admin</span>}
-                </div>
-              ))}
+              {adminUsers.map((u) => {
+                const isSelf = u.id === user.id;
+                return (
+                  <div
+                    key={u.id}
+                    className={`px-4 py-3 bg-zinc-900 border rounded-lg ${u.isBlocked ? 'border-red-900/50 opacity-60' : 'border-zinc-800'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-zinc-200 text-sm font-medium truncate">{u.email}</span>
+                          {u.isAdmin && (
+                            <span className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">ADMIN</span>
+                          )}
+                          {u.isBlocked && (
+                            <span className="text-[10px] font-semibold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">BLOCKED</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+                          {u.displayName && <span>{u.displayName}</span>}
+                          <span>Joined {new Date(u.createdAt).toLocaleDateString()}</span>
+                          <span>{u.taskCount} task{u.taskCount !== 1 ? 's' : ''}</span>
+                          {u.lastActiveAt && <span>Active {formatRelative(u.lastActiveAt)}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          title={isSelf ? "Can't change own admin status" : u.isAdmin ? 'Remove admin' : 'Make admin'}
+                          disabled={isSelf}
+                          onClick={async () => {
+                            const action = u.isAdmin ? 'remove admin from' : 'grant admin to';
+                            if (!confirm(`Are you sure you want to ${action} ${u.email}?`)) return;
+                            try {
+                              await adminUpdateUser(u.id, { isAdmin: !u.isAdmin });
+                              setAdminUsers((prev) => prev.map((au) =>
+                                au.id === u.id ? { ...au, isAdmin: !au.isAdmin } : au
+                              ));
+                            } catch { /* ignore */ }
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            isSelf
+                              ? 'text-zinc-700 cursor-not-allowed'
+                              : u.isAdmin
+                                ? 'text-amber-500 hover:bg-amber-500/10'
+                                : 'text-zinc-600 hover:text-amber-500 hover:bg-amber-500/10'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                          </svg>
+                        </button>
+                        <button
+                          title={isSelf ? "Can't block yourself" : u.isBlocked ? 'Unblock user' : 'Block user'}
+                          disabled={isSelf}
+                          onClick={async () => {
+                            const action = u.isBlocked ? 'unblock' : 'block';
+                            if (!confirm(`Are you sure you want to ${action} ${u.email}?`)) return;
+                            try {
+                              await adminUpdateUser(u.id, { isBlocked: !u.isBlocked });
+                              setAdminUsers((prev) => prev.map((au) =>
+                                au.id === u.id ? { ...au, isBlocked: !au.isBlocked } : au
+                              ));
+                            } catch { /* ignore */ }
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            isSelf
+                              ? 'text-zinc-700 cursor-not-allowed'
+                              : u.isBlocked
+                                ? 'text-red-400 hover:bg-red-500/10'
+                                : 'text-zinc-600 hover:text-red-400 hover:bg-red-500/10'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
