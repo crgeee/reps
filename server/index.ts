@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
 import { authMiddleware } from "./middleware/auth.js";
+import { rateLimiter } from "./middleware/rate-limit.js";
 import authRoutes from "./routes/auth.js";
 import tasks from "./routes/tasks.js";
 import agent from "./routes/agent.js";
@@ -33,6 +34,9 @@ app.use(
 // Body size limit — 1MB default
 app.use("/*", bodyLimit({ maxSize: 1024 * 1024 }));
 
+// Global rate limit — 100 req/min
+app.use("/*", rateLimiter(100, 60_000));
+
 // Health check (no auth required)
 app.get("/health", (c) => c.json({ status: "ok" }));
 
@@ -41,6 +45,9 @@ app.route("/auth", authRoutes);
 
 // Apply auth middleware to all protected routes
 app.use("/*", authMiddleware);
+
+// Stricter rate limit for agent routes — 10 req/min
+app.use("/agent/*", rateLimiter(10, 60_000));
 
 // Mount protected routes
 app.route("/tasks", tasks);

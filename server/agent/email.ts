@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 import { getDailyBriefingData } from "./shared.js";
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 let resendClient: Resend | null = null;
 
 function getResend(): Resend | null {
@@ -29,7 +33,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
   const dueList =
     data.dueToday.length > 0
       ? data.dueToday
-          .map((t) => `<li><strong>[${t.topic}]</strong> ${t.title}</li>`)
+          .map((t) => `<li><strong>[${escapeHtml(t.topic)}]</strong> ${escapeHtml(t.title)}</li>`)
           .join("")
       : "<li>No reviews due today!</li>";
 
@@ -39,7 +43,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
       : "Start a new streak today!";
 
   const weakestText = data.weakestTopic
-    ? `Your weakest area is <strong>${data.weakestTopic.topic}</strong> (avg ease: ${data.weakestTopic.avgEase}).`
+    ? `Your weakest area is <strong>${escapeHtml(data.weakestTopic.topic)}</strong> (avg ease: ${data.weakestTopic.avgEase}).`
     : "";
 
   const dateStr = new Date().toLocaleDateString("en-US", {
