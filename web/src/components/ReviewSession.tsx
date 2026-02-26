@@ -126,6 +126,11 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
       </div>
       <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
         <div
+          role="progressbar"
+          aria-valuenow={currentIndex + 1}
+          aria-valuemin={1}
+          aria-valuemax={dueTasks.length}
+          aria-label={`Review progress: ${currentIndex + 1} of ${dueTasks.length}`}
           className="h-full bg-amber-500 rounded-full transition-all duration-500"
           style={{ width: `${((currentIndex + 1) / dueTasks.length) * 100}%` }}
         />
@@ -139,7 +144,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
         </p>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm">
+          <div role="alert" className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm">
             {error}
           </div>
         )}
@@ -206,6 +211,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="Type your answer here..."
+              aria-label="Your answer"
               rows={8}
               className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 resize-y transition-all duration-200"
             />
