@@ -10,9 +10,11 @@ const users = new Hono<AppEnv>();
 
 // --- Validation ---
 
+const VALID_TIMEZONES = new Set(Intl.supportedValuesOf("timeZone"));
+
 const updateProfileSchema = z.object({
-  displayName: z.string().max(100).optional(),
-  timezone: z.string().max(100).optional(),
+  displayName: z.string().max(100).nullable().optional(),
+  timezone: z.string().max(100).refine((tz) => VALID_TIMEZONES.has(tz), { message: "Invalid timezone" }).optional(),
   theme: z.enum(["dark", "light", "system"]).optional(),
   notifyDaily: z.boolean().optional(),
   notifyWeekly: z.boolean().optional(),
