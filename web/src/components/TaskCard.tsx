@@ -1,9 +1,17 @@
 import { useState } from 'react';
-import type { Task } from '../types';
+import type { Task, Topic } from '../types';
 import { TOPIC_LABELS, TOPIC_COLORS } from '../types';
 import { updateTask, deleteTask, addNote } from '../api';
 import { logger } from '../logger';
 import TagBadge from './TagBadge';
+
+const TOPIC_BORDER_COLORS: Record<Topic, string> = {
+  coding: 'border-l-blue-500',
+  'system-design': 'border-l-purple-500',
+  behavioral: 'border-l-green-500',
+  papers: 'border-l-amber-500',
+  custom: 'border-l-slate-500',
+};
 
 interface TaskCardProps {
   task: Task;
@@ -59,7 +67,7 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps, on
   }
 
   return (
-    <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
+    <div className={`bg-zinc-900/80 rounded-lg border border-zinc-800/60 border-l-[3px] ${TOPIC_BORDER_COLORS[task.topic]} overflow-hidden`}>
       <div className="flex items-center gap-3 p-3" {...dragHandleProps}>
         <button
           onClick={handleMarkDone}
@@ -115,7 +123,7 @@ export default function TaskCard({ task, onRefresh, compact, dragHandleProps, on
 
       {/* Meta row */}
       {!compact && (
-        <div className="px-3 pb-2 flex flex-wrap items-center gap-3 text-[10px] text-zinc-600">
+        <div className="px-3 pb-2 flex flex-wrap items-center gap-3 text-[10px] text-zinc-600 font-mono">
           <span>Review: {task.nextReview}</span>
           <span>EF: {task.easeFactor.toFixed(1)}</span>
           <span>Reps: {task.repetitions}</span>

@@ -88,9 +88,12 @@ export default function Dashboard({
       {dueTasks.length > 0 && (
         <button
           onClick={onStartReview}
-          className="w-full py-4 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-lg"
+          className="w-full py-4 bg-amber-500 text-zinc-950 font-bold rounded-lg hover:bg-amber-400 transition-all duration-200 text-lg glow-amber"
         >
-          Start Review ({dueTasks.length} {dueTasks.length === 1 ? 'task' : 'tasks'} due)
+          Start Review
+          <span className="ml-2 text-amber-900/80 font-mono text-base">
+            {dueTasks.length} {dueTasks.length === 1 ? 'task' : 'tasks'} due
+          </span>
         </button>
       )}
 
@@ -182,9 +185,9 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="p-4 bg-zinc-900 rounded-lg">
-      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${accent ? 'text-amber-400' : 'text-zinc-100'}`}>
+    <div className="p-4 bg-zinc-900/80 border border-zinc-800/60 rounded-lg">
+      <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 font-medium">{label}</p>
+      <p className={`text-3xl font-bold font-mono tabular-nums tracking-tight ${accent ? 'text-amber-400' : 'text-zinc-100'}`}>
         {value}
       </p>
     </div>
