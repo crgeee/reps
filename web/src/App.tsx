@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Task, Collection, Tag } from './types';
 import { getTasks, getDueTasks, getStoredApiKey, setApiKey, getCollections, getTags } from './api';
 import { logger } from './logger';
@@ -23,15 +23,17 @@ function getViewFromHash(): View {
   return VALID_VIEWS.has(hash) ? (hash as View) : 'dashboard';
 }
 
-const NAV_ITEMS: { view: View; label: string }[] = [
+const PRIMARY_NAV: { view: View; label: string }[] = [
   { view: 'dashboard', label: 'Dashboard' },
   { view: 'tasks', label: 'Tasks' },
   { view: 'board', label: 'Board' },
   { view: 'review', label: 'Review' },
-  { view: 'add', label: 'Add Task' },
+];
+
+const MORE_NAV: { view: View; label: string }[] = [
   { view: 'progress', label: 'Progress' },
   { view: 'calendar', label: 'Calendar' },
-  { view: 'mock', label: 'Mock' },
+  { view: 'mock', label: 'Mock Interview' },
 ];
 
 export default function App() {
@@ -45,6 +47,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [hasApiKey, setHasApiKey] = useState(!!getStoredApiKey());
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   const setView = useCallback((v: View) => {
     window.location.hash = v === 'dashboard' ? '' : v;
@@ -58,6 +62,18 @@ export default function App() {
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
+
+  // Close "More" dropdown on outside click
+  useEffect(() => {
+    if (!moreOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [moreOpen]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -140,6 +156,8 @@ export default function App() {
     ? dueTasks.filter((t) => t.collectionId === activeCollectionId)
     : dueTasks;
 
+  const isMoreView = MORE_NAV.some((n) => n.view === view);
+
   if (!hasApiKey) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
@@ -169,7 +187,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
       <header className="border-b border-zinc-800">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3">
           <button
             onClick={() => setView('dashboard')}
             className="text-2xl font-bold tracking-tight hover:text-zinc-300 transition-colors flex-shrink-0"
@@ -184,8 +202,8 @@ export default function App() {
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
           />
 
-          <nav className="flex gap-1 overflow-x-auto flex-1 justify-center">
-            {NAV_ITEMS.map(({ view: v, label }) => (
+          <nav className="flex items-center gap-1 flex-1 justify-center">
+            {PRIMARY_NAV.map(({ view: v, label }) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -198,7 +216,55 @@ export default function App() {
                 {label}
               </button>
             ))}
+
+            {/* More dropdown */}
+            <div ref={moreRef} className="relative">
+              <button
+                onClick={() => setMoreOpen((o) => !o)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+                  isMoreView
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                }`}
+              >
+                More
+                <svg className={`w-3.5 h-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {moreOpen && (
+                <div className="absolute top-full right-0 mt-1 w-44 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
+                  {MORE_NAV.map(({ view: v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => { setView(v); setMoreOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        view === v
+                          ? 'bg-zinc-800 text-zinc-100'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
+
+          {/* Add task button */}
+          <button
+            onClick={() => setView('add')}
+            className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-lg font-light transition-colors ${
+              view === 'add'
+                ? 'bg-zinc-100 text-zinc-900'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+            }`}
+            title="Add task"
+          >
+            +
+          </button>
 
           <button
             onClick={() => {
