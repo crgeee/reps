@@ -20,7 +20,7 @@ export interface Task {
   title: string;
   notes: Note[];
   completed: boolean;
-  status: TaskStatus;
+  status: string;
   deadline?: string;
   repetitions: number;
   interval: number;
