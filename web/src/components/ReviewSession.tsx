@@ -37,7 +37,7 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
   if (!task || step === 'done') {
     return (
       <div className="max-w-2xl mx-auto text-center py-16 space-y-6">
-        <h1 className="text-3xl font-bold">Review Complete</h1>
+        <h1 className="text-lg font-bold">Review Complete</h1>
         <p className="text-zinc-400">
           {dueTasks.length === 0
             ? 'No tasks due for review right now.'

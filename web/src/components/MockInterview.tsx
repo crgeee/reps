@@ -85,12 +85,10 @@ export default function MockInterview() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Brain className="w-6 h-6 text-purple-400" />
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mock Interview</h1>
-          <p className="text-zinc-400 text-sm">Simulated interview with AI evaluation</p>
-        </div>
+      <div className="flex items-center gap-2">
+        <Brain className="w-4 h-4 text-purple-400" />
+        <h1 className="text-lg font-bold tracking-tight">Mock Interview</h1>
+        <span className="text-[10px] text-zinc-600 uppercase tracking-wider">AI-evaluated</span>
       </div>
 
       {error && (

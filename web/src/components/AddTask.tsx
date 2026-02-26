@@ -58,7 +58,7 @@ export default function AddTask({
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Add Task</h1>
+      <h1 className="text-lg font-bold tracking-tight">Add Task</h1>
 
       {error && (
         <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
