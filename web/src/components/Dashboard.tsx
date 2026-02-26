@@ -5,7 +5,7 @@ interface DashboardProps {
   tasks: Task[];
   dueTasks: Task[];
   onStartReview: () => void;
-  onNavigate: (view: 'dashboard' | 'tasks' | 'review' | 'add' | 'progress') => void;
+  onNavigate: (view: 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress') => void;
 }
 
 function isOverdue(task: Task): boolean {

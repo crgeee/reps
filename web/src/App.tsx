@@ -6,12 +6,14 @@ import TaskList from './components/TaskList';
 import ReviewSession from './components/ReviewSession';
 import AddTask from './components/AddTask';
 import TopicProgress from './components/TopicProgress';
+import BoardView from './components/BoardView';
 
-type View = 'dashboard' | 'tasks' | 'review' | 'add' | 'progress';
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress';
 
 const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'dashboard', label: 'Dashboard' },
   { view: 'tasks', label: 'Tasks' },
+  { view: 'board', label: 'Board' },
   { view: 'review', label: 'Review' },
   { view: 'add', label: 'Add Task' },
   { view: 'progress', label: 'Progress' },
@@ -142,6 +144,7 @@ export default function App() {
               />
             )}
             {view === 'tasks' && <TaskList tasks={tasks} onRefresh={fetchData} />}
+            {view === 'board' && <BoardView tasks={tasks} onRefresh={fetchData} />}
             {view === 'review' && (
               <ReviewSession dueTasks={dueTasks} onComplete={fetchData} />
             )}
