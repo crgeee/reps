@@ -6,6 +6,7 @@ interface FocusTimerProps {
 }
 
 const DURATIONS = [
+  { label: '50m', seconds: 50 * 60 },
   { label: '25m', seconds: 25 * 60 },
   { label: '15m', seconds: 15 * 60 },
   { label: '5m', seconds: 5 * 60 },
