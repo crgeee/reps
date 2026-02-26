@@ -104,7 +104,10 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
 
     // Optimistic: move card in local state immediately (no loading spinner)
     if (onOptimisticUpdate) {
-      onOptimisticUpdate(taskId, { status: targetStatus });
+      onOptimisticUpdate(taskId, {
+        status: targetStatus,
+        completed: targetStatus === 'done',
+      });
     }
 
     // Sync with server in background

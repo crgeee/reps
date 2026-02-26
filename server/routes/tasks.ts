@@ -320,6 +320,14 @@ tasks.patch("/:id", async (c) => {
     }
   }
 
+  // Keep completed and status in sync
+  if ("status" in updates && !("completed" in updates)) {
+    updates["completed"] = updates["status"] === "done";
+  }
+  if ("completed" in updates && !("status" in updates)) {
+    updates["status"] = updates["completed"] ? "done" : "todo";
+  }
+
   // Only run UPDATE if there are scalar fields to update
   let row: TaskRow | undefined;
   if (Object.keys(updates).length > 0) {
