@@ -8,7 +8,6 @@ export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-const AMBIGUOUS_CHARS = /[0OIl1]/g;
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 export function generateUserCode(): string {

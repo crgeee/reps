@@ -6,6 +6,7 @@ export interface User {
   displayName: string | null;
   emailVerified: boolean;
   isAdmin: boolean;
+  isBlocked: boolean;
   timezone: string;
   theme: string;
   notifyDaily: boolean;
@@ -21,6 +22,7 @@ interface UserRow {
   display_name: string | null;
   email_verified: boolean;
   is_admin: boolean;
+  is_blocked: boolean;
   timezone: string;
   theme: string;
   notify_daily: boolean;
@@ -37,6 +39,7 @@ function rowToUser(row: UserRow): User {
     displayName: row.display_name,
     emailVerified: row.email_verified,
     isAdmin: row.is_admin,
+    isBlocked: row.is_blocked,
     timezone: row.timezone,
     theme: row.theme,
     notifyDaily: row.notify_daily,
@@ -109,4 +112,31 @@ export async function updateUserProfile(
 export async function listUsers(): Promise<User[]> {
   const rows = await sql<UserRow[]>`SELECT * FROM users ORDER BY created_at ASC`;
   return rows.map(rowToUser);
+}
+
+export async function adminUpdateUser(
+  id: string,
+  updates: { isAdmin?: boolean; isBlocked?: boolean },
+): Promise<User | null> {
+  const fieldMap: Record<string, string> = {
+    isAdmin: "is_admin",
+    isBlocked: "is_blocked",
+  };
+
+  const dbUpdates: Record<string, unknown> = {};
+  for (const [camel, snake] of Object.entries(fieldMap)) {
+    if (camel in updates) {
+      dbUpdates[snake] = (updates as Record<string, unknown>)[camel];
+    }
+  }
+
+  if (Object.keys(dbUpdates).length === 0) return getUserById(id);
+
+  dbUpdates["updated_at"] = new Date().toISOString();
+
+  const [row] = await sql<UserRow[]>`
+    UPDATE users SET ${sql(dbUpdates)} WHERE id = ${id} RETURNING *
+  `;
+
+  return row ? rowToUser(row) : null;
 }

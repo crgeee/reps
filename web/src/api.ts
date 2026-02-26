@@ -13,6 +13,7 @@ import type {
   Topic,
   MockDifficulty,
   User,
+  AdminUser,
   SessionInfo,
   CustomTopic,
 } from './types';
@@ -102,8 +103,18 @@ export async function deleteCustomTopic(id: string): Promise<void> {
 
 // Admin
 
-export async function getAdminUsers(): Promise<User[]> {
-  return request<User[]>('/users/admin/users');
+export async function getAdminUsers(): Promise<AdminUser[]> {
+  return request<AdminUser[]>('/users/admin/users');
+}
+
+export async function adminUpdateUser(
+  userId: string,
+  updates: { isAdmin?: boolean; isBlocked?: boolean },
+): Promise<User> {
+  return request<User>(`/users/admin/users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
 }
 
 export async function getAdminStats(): Promise<{ users: number; tasks: number; activeSessions: number; totalReviews: number }> {

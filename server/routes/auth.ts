@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { sendMagicLink, verifyMagicLink } from "../auth/magic-link.js";
-import { deleteSessionByToken, getUserSessions, deleteSession } from "../auth/sessions.js";
+import { deleteSessionByToken } from "../auth/sessions.js";
 import { initiateDeviceAuth, pollDeviceAuth, approveDeviceAuth, denyDeviceAuth } from "../auth/device-flow.js";
 import { getUserById } from "../auth/users.js";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";

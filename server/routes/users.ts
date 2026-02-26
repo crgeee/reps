@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import sql from "../db/client.js";
-import { getUserById, updateUserProfile, listUsers } from "../auth/users.js";
+import { getUserById, updateUserProfile, adminUpdateUser } from "../auth/users.js";
 import { getUserSessions, deleteSession } from "../auth/sessions.js";
 import { validateUuid } from "../validation.js";
 
@@ -138,7 +138,7 @@ users.delete("/me/topics/:id", async (c) => {
 
 // --- Admin routes ---
 
-// GET /users/admin/users — list all users (admin only)
+// GET /users/admin/users — list all users with task counts and last active (admin only)
 users.get("/admin/users", async (c) => {
   const userId = c.get("userId") as string;
   if (!userId) return c.json({ error: "Not authenticated" }, 401);
@@ -146,8 +146,79 @@ users.get("/admin/users", async (c) => {
   const user = await getUserById(userId);
   if (!user?.isAdmin) return c.json({ error: "Forbidden" }, 403);
 
-  const allUsers = await listUsers();
-  return c.json(allUsers);
+  const rows = await sql<Array<{
+    id: string;
+    email: string;
+    display_name: string | null;
+    email_verified: boolean;
+    is_admin: boolean;
+    is_blocked: boolean;
+    timezone: string;
+    theme: string;
+    notify_daily: boolean;
+    notify_weekly: boolean;
+    daily_review_goal: number;
+    created_at: string;
+    updated_at: string;
+    task_count: string;
+    last_active_at: string | null;
+  }>>`
+    SELECT u.*,
+      COALESCE(t.cnt, 0)::text AS task_count,
+      s.last_active_at
+    FROM users u
+    LEFT JOIN (SELECT user_id, COUNT(*) AS cnt FROM tasks GROUP BY user_id) t ON t.user_id = u.id
+    LEFT JOIN (SELECT user_id, MAX(last_used_at) AS last_active_at FROM sessions GROUP BY user_id) s ON s.user_id = u.id
+    ORDER BY u.created_at ASC
+  `;
+
+  return c.json(rows.map((r) => ({
+    id: r.id,
+    email: r.email,
+    displayName: r.display_name,
+    emailVerified: r.email_verified,
+    isAdmin: r.is_admin,
+    isBlocked: r.is_blocked,
+    timezone: r.timezone,
+    theme: r.theme,
+    notifyDaily: r.notify_daily,
+    notifyWeekly: r.notify_weekly,
+    dailyReviewGoal: r.daily_review_goal,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    taskCount: parseInt(r.task_count, 10),
+    lastActiveAt: r.last_active_at,
+  })));
+});
+
+const adminUpdateSchema = z.object({
+  isAdmin: z.boolean().optional(),
+  isBlocked: z.boolean().optional(),
+});
+
+// PATCH /users/admin/users/:id — toggle admin/blocked (admin only)
+users.patch("/admin/users/:id", async (c) => {
+  const userId = c.get("userId") as string;
+  if (!userId) return c.json({ error: "Not authenticated" }, 401);
+
+  const currentUser = await getUserById(userId);
+  if (!currentUser?.isAdmin) return c.json({ error: "Forbidden" }, 403);
+
+  const targetId = c.req.param("id");
+  if (!validateUuid(targetId)) return c.json({ error: "Invalid ID format" }, 400);
+
+  if (targetId === userId) return c.json({ error: "Cannot modify your own account" }, 400);
+
+  const raw = await c.req.json();
+  const parsed = adminUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  }
+
+  const updated = await adminUpdateUser(targetId, parsed.data);
+  if (!updated) return c.json({ error: "User not found" }, 404);
+
+  return c.json(updated);
 });
 
 // GET /users/admin/stats — basic admin stats (admin only)

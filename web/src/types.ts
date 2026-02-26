@@ -142,6 +142,7 @@ export interface User {
   displayName: string | null;
   emailVerified: boolean;
   isAdmin: boolean;
+  isBlocked: boolean;
   timezone: string;
   theme: string;
   notifyDaily: boolean;
@@ -149,6 +150,11 @@ export interface User {
   dailyReviewGoal: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminUser extends User {
+  taskCount: number;
+  lastActiveAt: string | null;
 }
 
 export interface SessionInfo {
