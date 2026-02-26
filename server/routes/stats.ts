@@ -14,7 +14,6 @@ stats.get("/overview", async (c) => {
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0]!;
 
     let totalReviews = 0;
     let reviewsLast30 = 0;
@@ -25,7 +24,7 @@ stats.get("/overview", async (c) => {
       const [counts] = await sql<[{ total: string; last30: string }]>`
         SELECT
           COUNT(*)::text AS total,
-          COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgoStr})::text AS last30
+          COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgo})::text AS last30
         FROM review_events WHERE collection_id = ${collectionId}
       `;
       totalReviews = parseInt(counts.total, 10);
@@ -49,7 +48,7 @@ stats.get("/overview", async (c) => {
       const [counts] = await sql<[{ total: string; last30: string }]>`
         SELECT
           COUNT(*)::text AS total,
-          COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgoStr})::text AS last30
+          COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgo})::text AS last30
         FROM review_events
       `;
       totalReviews = parseInt(counts.total, 10);
@@ -88,21 +87,20 @@ stats.get("/heatmap", async (c) => {
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    const cutoffStr = cutoff.toISOString().split("T")[0]!;
 
     let rows: { date: string; count: string }[];
     if (collectionId) {
       rows = await sql<{ date: string; count: string }[]>`
         SELECT reviewed_at::text AS date, COUNT(*)::text AS count
         FROM review_events
-        WHERE reviewed_at >= ${cutoffStr} AND collection_id = ${collectionId}
+        WHERE reviewed_at >= ${cutoff} AND collection_id = ${collectionId}
         GROUP BY reviewed_at ORDER BY reviewed_at
       `;
     } else {
       rows = await sql<{ date: string; count: string }[]>`
         SELECT reviewed_at::text AS date, COUNT(*)::text AS count
         FROM review_events
-        WHERE reviewed_at >= ${cutoffStr}
+        WHERE reviewed_at >= ${cutoff}
         GROUP BY reviewed_at ORDER BY reviewed_at
       `;
     }
