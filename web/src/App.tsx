@@ -14,15 +14,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Spinner from './components/Spinner';
 import CalendarView from './components/CalendarView';
 import MockInterview from './components/MockInterview';
+import ExportView from './components/ExportView';
 import CollectionSwitcher from './components/CollectionSwitcher';
 import FocusWidget from './components/FocusWidget';
 import LoginPage from './components/LoginPage';
 import Settings from './components/Settings';
 import DeviceApproval from './components/DeviceApproval';
 
-type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock' | 'settings' | 'device-approve';
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock' | 'export' | 'settings' | 'device-approve';
 
-const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock', 'settings', 'device-approve']);
+const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock', 'export', 'settings', 'device-approve']);
 
 function getViewFromHash(): View {
   const hash = window.location.hash.slice(1);
@@ -40,6 +41,7 @@ const MORE_NAV: { view: View; label: string }[] = [
   { view: 'progress', label: 'Progress' },
   { view: 'calendar', label: 'Calendar' },
   { view: 'mock', label: 'Mock Interview' },
+  { view: 'export', label: 'Export' },
   { view: 'settings', label: 'Settings' },
 ];
 
@@ -481,6 +483,7 @@ export default function App() {
               </div>
             )}
             {view === 'mock' && <MockInterview />}
+            {view === 'export' && <ExportView />}
             {view === 'settings' && user && (
               <Settings user={user} onUserUpdate={handleUserUpdate} />
             )}

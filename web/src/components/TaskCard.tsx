@@ -1,7 +1,7 @@
 import { useState, memo } from 'react';
 import type { Task, Topic } from '../types';
 import { TOPIC_LABELS, TOPIC_COLORS } from '../types';
-import { updateTask, deleteTask, addNote } from '../api';
+import { updateTask, deleteTask, addNote, getTaskEventUrl } from '../api';
 import { logger } from '../logger';
 import TagBadge from './TagBadge';
 import NotesList from './NotesList';
@@ -115,6 +115,34 @@ export default memo(function TaskCard({ task, onRefresh, compact, dragHandleProp
             {task.notes.length}n
           </button>
         )}
+
+        {/* Add to Calendar */}
+        <a
+          href={getTaskEventUrl(task.id)}
+          download
+          className="text-zinc-700 hover:text-amber-400 transition-colors p-0.5 flex-shrink-0"
+          title="Add to calendar"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </a>
+
+        {/* Copy to clipboard */}
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            const text = `${task.title}\nTopic: ${task.topic}\nNext Review: ${task.nextReview}\nEF: ${task.easeFactor.toFixed(1)} | Reps: ${task.repetitions}${task.notes.length > 0 ? '\n\nNotes:\n' + task.notes.map((n) => `- ${n.text}`).join('\n') : ''}`;
+            await navigator.clipboard.writeText(text);
+          }}
+          className="text-zinc-700 hover:text-blue-400 transition-colors p-0.5 flex-shrink-0"
+          title="Copy to clipboard"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </button>
 
         {/* Delete */}
         <button

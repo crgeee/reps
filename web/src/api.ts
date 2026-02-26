@@ -310,3 +310,33 @@ export async function summarizePaper(taskId: string): Promise<void> {
 export async function triggerBriefing(): Promise<{ message: string }> {
   return request<{ message: string }>('/agent/briefing', { method: 'POST' });
 }
+
+// Export & Calendar
+
+export async function getCalendarToken(): Promise<{ token: string | null }> {
+  return request<{ token: string | null }>('/export/calendar/token');
+}
+
+export async function generateCalendarToken(): Promise<{ token: string; url: string }> {
+  return request<{ token: string; url: string }>('/export/calendar/token', {
+    method: 'POST',
+  });
+}
+
+export async function downloadMarkdownExport(): Promise<void> {
+  const res = await fetch(`${BASE_URL}/export/tasks.md`, {
+    headers: { Authorization: `Bearer ${getApiKey()}` },
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `reps-export-${new Date().toISOString().split('T')[0]}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function getTaskEventUrl(taskId: string): string {
+  return `${BASE_URL}/export/tasks/${taskId}/event.ics`;
+}
