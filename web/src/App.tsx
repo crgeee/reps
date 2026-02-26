@@ -13,6 +13,7 @@ import Spinner from './components/Spinner';
 import CalendarView from './components/CalendarView';
 import MockInterview from './components/MockInterview';
 import CollectionSwitcher from './components/CollectionSwitcher';
+import FocusWidget from './components/FocusWidget';
 
 type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
 
@@ -419,6 +420,7 @@ export default function App() {
           </ErrorBoundary>
         )}
       </main>
+      <FocusWidget />
     </div>
   );
 }
