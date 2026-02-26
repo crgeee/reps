@@ -275,7 +275,7 @@ export default function App() {
               </button>
 
               {moreOpen && (
-                <div className="absolute top-full right-0 mt-1 w-44 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
+                <div className="anim-slide-down absolute top-full right-0 mt-1 w-44 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
                   {MORE_NAV.map(({ view: v, label }) => (
                     <button
                       key={v}
@@ -341,7 +341,7 @@ export default function App() {
             </button>
 
             {mobileMenuOpen && (
-              <div className="absolute top-full right-0 mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
+              <div className="anim-slide-down absolute top-full right-0 mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50">
                 {ALL_NAV.map(({ view: v, label }) => (
                   <button
                     key={v}
@@ -407,6 +407,7 @@ export default function App() {
           </div>
         ) : (
           <ErrorBoundary key={view}>
+            <div className="anim-page-enter">
             {view === 'dashboard' && (
               <Dashboard
                 tasks={filteredTasks}
@@ -470,6 +471,7 @@ export default function App() {
               <Settings user={user} onUserUpdate={handleUserUpdate} />
             )}
             {view === 'device-approve' && <DeviceApproval />}
+            </div>
           </ErrorBoundary>
         )}
       </main>

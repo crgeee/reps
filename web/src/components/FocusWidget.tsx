@@ -39,7 +39,6 @@ export default function FocusWidget() {
   }, [activePlaylist]);
 
   // Poll the timer display from the DOM when collapsed
-  // (FocusTimer manages its own state, so we read the data attribute)
   useEffect(() => {
     if (expanded) {
       setTimerDisplay(null);
@@ -72,7 +71,7 @@ export default function FocusWidget() {
       <button
         onClick={() => setExpanded(true)}
         aria-label={timerDisplay ? `Focus timer: ${timerDisplay} remaining` : 'Open focus widget'}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-full shadow-lg hover:bg-zinc-800 hover:border-zinc-600 transition-all duration-200 group"
+        className="anim-scale-in fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-full shadow-lg hover:bg-zinc-800 hover:border-zinc-600 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 group"
       >
         <Timer className="w-4 h-4 text-amber-400" />
         {timerDisplay ? (
@@ -85,7 +84,7 @@ export default function FocusWidget() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden">
+    <div className="anim-slide-up fixed bottom-4 right-4 z-50 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800">
         <div className="flex items-center gap-2">
@@ -95,7 +94,7 @@ export default function FocusWidget() {
         <button
           onClick={() => setExpanded(false)}
           aria-label="Collapse focus widget"
-          className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors rounded"
+          className="p-1 text-zinc-500 hover:text-zinc-300 hover:rotate-90 transition-all duration-200 rounded"
         >
           <X className="w-4 h-4" />
         </button>
@@ -120,11 +119,11 @@ export default function FocusWidget() {
             className="w-full flex items-center justify-between px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600 transition-colors"
           >
             <span>{activeLabel ?? 'Select playlist...'}</span>
-            <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${playlistOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${playlistOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {playlistOpen && (
-            <div className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 z-10">
+            <div className="anim-slide-up-dropdown absolute bottom-full left-0 right-0 mb-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 z-10">
               {PLAYLISTS.map((p) => (
                 <button
                   key={p.id}
@@ -170,7 +169,7 @@ export default function FocusWidget() {
 
         {/* YouTube embed */}
         {activePlaylist && (
-          <div className="rounded-lg overflow-hidden bg-black">
+          <div className="anim-expand-down rounded-lg overflow-hidden bg-black">
             <iframe
               width="100%"
               height="158"

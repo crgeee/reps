@@ -139,7 +139,7 @@ export default memo(function TaskCard({ task, onRefresh, compact, dragHandleProp
       )}
 
       {expanded && (
-        <div className="border-t border-zinc-800/50 px-3 py-2">
+        <div className="anim-expand-down border-t border-zinc-800/50 px-3 py-2">
           <NotesList notes={task.notes} onAddNote={async (text) => { await addNote(task.id, text); onRefresh(); }} />
         </div>
       )}

@@ -183,7 +183,7 @@ function GroupSection({
         <span className="text-[10px] text-zinc-700 font-mono">{count}</span>
       </button>
       {!collapsed && (
-        <div className="ml-4">
+        <div className="anim-expand-down ml-4">
           {children}
         </div>
       )}
