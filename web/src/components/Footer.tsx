@@ -1,3 +1,5 @@
+import { Github, Shield, FileText, Coffee } from 'lucide-react';
+
 interface FooterProps {
   onNavigate?: (view: string) => void;
 }
@@ -18,16 +20,18 @@ export default function Footer({ onNavigate }: FooterProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleLink('privacy')}
-            className="hover:text-zinc-400 transition-colors"
+            className="hover:text-zinc-400 transition-colors flex items-center gap-1"
           >
-            Privacy Policy
+            <Shield size={12} />
+            Privacy
           </button>
           <span className="text-zinc-800">|</span>
           <button
             onClick={() => handleLink('terms')}
-            className="hover:text-zinc-400 transition-colors"
+            className="hover:text-zinc-400 transition-colors flex items-center gap-1"
           >
-            Terms of Service
+            <FileText size={12} />
+            Terms
           </button>
           <span className="text-zinc-800">|</span>
           <a
@@ -35,17 +39,19 @@ export default function Footer({ onNavigate }: FooterProps) {
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-zinc-400 transition-colors"
+            aria-label="GitHub"
           >
-            GitHub
+            <Github size={14} />
           </a>
           <span className="text-zinc-800">|</span>
           <a
             href="https://buymeacoffee.com/crgeee"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-amber-500 transition-colors"
+            className="hover:text-amber-500 transition-colors flex items-center gap-1"
           >
-            Buy Me a Coffee
+            <Coffee size={12} />
+            Support
           </a>
         </div>
       </div>
