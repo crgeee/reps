@@ -52,33 +52,53 @@ export default memo(function TaskCard({ task, onRefresh, compact, dragHandleProp
   }
 
   return (
-    <div className={`bg-zinc-900/80 rounded-lg border border-zinc-800/60 border-l-[3px] ${TOPIC_BORDER_COLORS[task.topic]} overflow-hidden`}>
-      <div className="flex items-center gap-3 p-3" {...dragHandleProps}>
+    <div className={`border-l-2 ${TOPIC_BORDER_COLORS[task.topic]} bg-zinc-900/40 hover:bg-zinc-800/40 transition-colors`}>
+      <div className="flex items-center gap-2 px-3 py-1.5" {...dragHandleProps}>
+        {/* Checkbox */}
         <button
           onClick={handleMarkDone}
           disabled={submitting}
-          className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+          className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
             task.completed ? 'bg-green-600 border-green-600' : 'border-zinc-600 hover:border-zinc-400'
           }`}
         >
           {task.completed && (
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           )}
         </button>
 
-        <button onClick={() => onEdit ? onEdit(task) : setExpanded(!expanded)} className="flex-1 text-left min-w-0">
-          <span className={`text-sm font-medium truncate block ${task.completed ? 'line-through text-zinc-500' : ''}`}>
+        {/* Title */}
+        <button
+          onClick={() => onEdit ? onEdit(task) : setExpanded(!expanded)}
+          className="flex-1 text-left min-w-0"
+        >
+          <span className={`text-xs truncate block ${task.completed ? 'line-through text-zinc-600' : 'text-zinc-200'}`}>
             {task.title}
           </span>
         </button>
 
+        {/* Inline tags */}
+        {!compact && task.tags && task.tags.length > 0 && (
+          <div className="flex gap-0.5 flex-shrink-0 hidden sm:flex">
+            {task.tags.slice(0, 2).map((tag) => (
+              <TagBadge key={tag.id} tag={tag} size="sm" />
+            ))}
+            {task.tags.length > 2 && (
+              <span className="text-[9px] text-zinc-600 font-mono">+{task.tags.length - 2}</span>
+            )}
+          </div>
+        )}
+
+        {/* Meta — inline monospace stats */}
         {!compact && (
-          <div className="flex items-center gap-2 text-[11px] text-zinc-500 flex-shrink-0">
+          <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-mono tabular-nums flex-shrink-0 hidden sm:flex">
             <span className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[task.topic]}`} />
             <span>{TOPIC_LABELS[task.topic]}</span>
-            {task.deadline && <span>Due: {task.deadline}</span>}
+            <span>EF{task.easeFactor.toFixed(1)}</span>
+            <span>×{task.repetitions}</span>
+            {task.deadline && <span className="text-zinc-700">dl {task.deadline}</span>}
           </div>
         )}
 
@@ -86,44 +106,40 @@ export default memo(function TaskCard({ task, onRefresh, compact, dragHandleProp
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`} />
         )}
 
+        {/* Notes count */}
         {task.notes.length > 0 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-zinc-600 hover:text-zinc-400 transition-colors p-0.5 flex-shrink-0 text-[10px]"
+            className="text-zinc-700 hover:text-zinc-400 transition-colors flex-shrink-0 text-[10px] font-mono"
           >
-            {task.notes.length}
+            {task.notes.length}n
           </button>
         )}
 
+        {/* Delete */}
         <button
           onClick={handleDelete}
           disabled={submitting}
-          className="text-zinc-700 hover:text-red-400 transition-colors p-0.5 flex-shrink-0"
+          className="text-zinc-800 hover:text-red-400 transition-colors p-0.5 flex-shrink-0"
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      {/* Meta row */}
+      {/* Mobile meta row */}
       {!compact && (
-        <div className="px-3 pb-2 flex flex-wrap items-center gap-3 text-[10px] text-zinc-600 font-mono">
-          <span>Review: {task.nextReview}</span>
-          <span>EF: {task.easeFactor.toFixed(1)}</span>
-          <span>Reps: {task.repetitions}</span>
-          {task.tags && task.tags.length > 0 && (
-            <div className="flex gap-1 flex-wrap">
-              {task.tags.map((tag) => (
-                <TagBadge key={tag.id} tag={tag} size="sm" />
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-2 px-3 pb-1.5 text-[10px] text-zinc-700 font-mono tabular-nums sm:hidden">
+          <span className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[task.topic]}`} />
+          <span>{TOPIC_LABELS[task.topic]}</span>
+          <span>EF{task.easeFactor.toFixed(1)}</span>
+          <span>×{task.repetitions}</span>
         </div>
       )}
 
       {expanded && (
-        <div className="border-t border-zinc-800 p-3">
+        <div className="border-t border-zinc-800/50 px-3 py-2">
           <NotesList notes={task.notes} onAddNote={async (text) => { await addNote(task.id, text); onRefresh(); }} />
         </div>
       )}

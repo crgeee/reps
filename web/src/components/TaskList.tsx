@@ -48,18 +48,21 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
   }, [tasks, availableTags]);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight">Tasks</h1>
+        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">{tagFiltered.length} items</span>
+      </div>
 
       <FilterBar filters={filters} setFilter={setFilter} resetFilters={resetFilters} statusOptions={statusOptions} />
 
       {/* Tag filter */}
       {usedTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[10px] text-zinc-600 uppercase tracking-wider">Tags</span>
           <button
             onClick={() => setTagFilter(null)}
-            className={`px-2 py-1 text-xs rounded-md transition-colors ${
+            className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
               tagFilter === null
                 ? 'bg-zinc-800 text-zinc-100'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
@@ -82,7 +85,7 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
       {filters.groupBy !== 'none' ? (
         <>
           {grouped.size === 0 && tagFiltered.length === 0 && (
-            <p className="text-zinc-500 py-12 text-center">No tasks found.</p>
+            <p className="text-zinc-600 py-8 text-center text-xs">No tasks found.</p>
           )}
           {Array.from(grouped.entries()).map(([groupKey, groupTasks]) => {
             const filteredGroup = tagFilter
@@ -102,9 +105,11 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
                 count={filteredGroup.length}
                 defaultCollapsed={isDone}
               >
-                {filteredGroup.map((task) => (
-                  <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
-                ))}
+                <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/40">
+                  {filteredGroup.map((task) => (
+                    <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
+                  ))}
+                </div>
               </GroupSection>
             );
           })}
@@ -112,18 +117,18 @@ export default function TaskList({ tasks, onRefresh, availableTags = [], collect
       ) : (
         <>
           {Object.entries(topicGroups).length === 0 && (
-            <p className="text-zinc-500 py-12 text-center">No tasks found.</p>
+            <p className="text-zinc-600 py-8 text-center text-xs">No tasks found.</p>
           )}
           {Object.entries(topicGroups).map(([topic, topicTasks]) => (
             <div key={topic}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${TOPIC_COLORS[topic as Topic]}`} />
-                <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[topic as Topic]}`} />
+                <h2 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
                   {TOPIC_LABELS[topic as Topic]}
                 </h2>
-                <span className="text-xs text-zinc-600">{topicTasks.length}</span>
+                <span className="text-[10px] text-zinc-700 font-mono">{topicTasks.length}</span>
               </div>
-              <div className="space-y-2">
+              <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/40">
                 {topicTasks.map((task) => (
                   <TaskCard key={task.id} task={task} onRefresh={onRefresh} onEdit={setEditingTask} />
                 ))}
@@ -164,21 +169,21 @@ function GroupSection({
     <div>
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-2 mb-3 group"
+        className="flex items-center gap-2 mb-1.5 group"
       >
         <svg
-          className={`w-3 h-3 text-zinc-500 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          className={`w-2.5 h-2.5 text-zinc-600 transition-transform ${collapsed ? '' : 'rotate-90'}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+        <h2 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
           {label}
         </h2>
-        <span className="text-xs text-zinc-600">{count}</span>
+        <span className="text-[10px] text-zinc-700 font-mono">{count}</span>
       </button>
       {!collapsed && (
-        <div className="space-y-2 ml-5">
+        <div className="ml-4">
           {children}
         </div>
       )}

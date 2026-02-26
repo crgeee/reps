@@ -166,8 +166,11 @@ export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBack
   }, [statusList.length]);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Board</h1>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight">Board</h1>
+        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">{filtered.length} tasks</span>
+      </div>
 
       <FilterBar filters={filters} setFilter={setFilter} resetFilters={resetFilters} hideStatus statusOptions={statusOptions} />
 
@@ -235,14 +238,14 @@ const Column = memo(function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`border-t-2 rounded-lg p-3 space-y-2 transition-colors ${
+      className={`border-t-2 rounded-lg p-2 space-y-0 transition-colors ${
         isOver ? 'bg-zinc-800/50' : 'bg-zinc-900/30'
       }`}
       style={{ borderTopColor: borderColor ?? '#3f3f46' }}
     >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">{label}</h3>
-        <span className="text-xs text-zinc-600 font-mono tabular-nums">{tasks.length}</span>
+      <div className="flex items-center justify-between mb-1.5 px-1">
+        <h3 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</h3>
+        <span className="text-[10px] text-zinc-700 font-mono tabular-nums">{tasks.length}</span>
       </div>
 
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>

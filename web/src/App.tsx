@@ -372,7 +372,7 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
         {error && (
           <div className="mb-6 p-4 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
             {error}
@@ -441,8 +441,8 @@ export default function App() {
               />
             )}
             {view === 'calendar' && (
-              <div className="space-y-6">
-                <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+              <div className="space-y-4">
+                <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
                 <CalendarView tasks={filteredTasks} />
               </div>
             )}
