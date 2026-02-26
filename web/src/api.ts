@@ -244,17 +244,17 @@ export async function deleteTag(id: string): Promise<void> {
 // Stats
 
 export async function getStatsOverview(collectionId?: string): Promise<StatsOverview> {
-  const qs = collectionId ? `?collectionId=${collectionId}` : '';
+  const qs = collectionId ? `?collection=${collectionId}` : '';
   return request<StatsOverview>(`/stats/overview${qs}`);
 }
 
 export async function getHeatmap(collectionId?: string): Promise<Record<string, number>> {
-  const qs = collectionId ? `?collectionId=${collectionId}` : '';
+  const qs = collectionId ? `?collection=${collectionId}` : '';
   return request<Record<string, number>>(`/stats/heatmap${qs}`);
 }
 
 export async function getStreaks(collectionId?: string): Promise<Streaks> {
-  const qs = collectionId ? `?collectionId=${collectionId}` : '';
+  const qs = collectionId ? `?collection=${collectionId}` : '';
   return request<Streaks>(`/stats/streaks${qs}`);
 }
 
