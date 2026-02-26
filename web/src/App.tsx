@@ -15,6 +15,13 @@ import CollectionSwitcher from './components/CollectionSwitcher';
 
 type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
 
+const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock']);
+
+function getViewFromHash(): View {
+  const hash = window.location.hash.slice(1);
+  return VALID_VIEWS.has(hash) ? (hash as View) : 'dashboard';
+}
+
 const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'dashboard', label: 'Dashboard' },
   { view: 'tasks', label: 'Tasks' },
@@ -27,7 +34,7 @@ const NAV_ITEMS: { view: View; label: string }[] = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<View>('dashboard');
+  const [view, setViewState] = useState<View>(getViewFromHash);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [dueTasks, setDueTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -37,6 +44,19 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [hasApiKey, setHasApiKey] = useState(!!getStoredApiKey());
+
+  const setView = useCallback((v: View) => {
+    window.location.hash = v === 'dashboard' ? '' : v;
+    setViewState(v);
+  }, []);
+
+  useEffect(() => {
+    function onHashChange() {
+      setViewState(getViewFromHash());
+    }
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -51,6 +71,23 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Background refresh: re-fetches without loading spinner
+  const refreshQuietly = useCallback(async () => {
+    try {
+      const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
+      setTasks(allTasks);
+      setDueTasks(due);
+    } catch (err) {
+      logger.error('Background refresh failed', { error: String(err) });
+    }
+  }, []);
+
+  // Optimistic task update: patches local state immediately, syncs with server in background
+  const optimisticUpdateTask = useCallback((taskId: string, updates: Partial<Task>) => {
+    setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, ...updates } : t));
+    setDueTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, ...updates } : t));
   }, []);
 
   const fetchCollections = useCallback(async () => {
@@ -209,7 +246,12 @@ export default function App() {
               />
             )}
             {view === 'board' && (
-              <BoardView tasks={filteredTasks} onRefresh={fetchData} />
+              <BoardView
+                tasks={filteredTasks}
+                onRefresh={fetchData}
+                onOptimisticUpdate={optimisticUpdateTask}
+                onBackgroundRefresh={refreshQuietly}
+              />
             )}
             {view === 'review' && (
               <ReviewSession dueTasks={filteredDueTasks} onComplete={fetchData} />
