@@ -611,7 +611,13 @@ export default function App() {
                 />
               )}
               {view === 'review' && (
-                <ReviewSession dueTasks={filteredDueTasks} onComplete={fetchData} />
+                <ReviewSession
+                  dueTasks={filteredDueTasks}
+                  onComplete={() => {
+                    fetchData();
+                    setView('dashboard');
+                  }}
+                />
               )}
               {view === 'add' && (
                 <AddTask
