@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { User } from '../types';
 import { getMe, logout as apiLogout, updateProfile } from '../api';
+import { detectBrowserTimezone } from '../utils/timezone';
 
 interface AuthState {
   user: User | null;
@@ -25,7 +26,6 @@ export function useAuth() {
       // Auto-detect timezone on first login (when still default "UTC")
       if (!tzSynced.current && user.timezone === 'UTC') {
         tzSynced.current = true;
-        const { detectBrowserTimezone } = await import('../utils/timezone');
         const detected = detectBrowserTimezone();
         if (detected && detected !== 'UTC') {
           try {
