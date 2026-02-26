@@ -110,6 +110,12 @@ interface TagRow {
   color: string | null;
 }
 
+// postgres.js may return DATE columns as ISO timestamps — normalize to yyyy-MM-dd
+function toDateStr(val: string | null | undefined): string | undefined {
+  if (!val) return undefined;
+  return val.slice(0, 10);
+}
+
 function rowToTask(
   row: TaskRow,
   notes: Note[],
@@ -121,13 +127,13 @@ function rowToTask(
     title: row.title,
     completed: row.completed,
     status: row.status as Task["status"],
-    deadline: row.deadline ?? undefined,
+    deadline: toDateStr(row.deadline),
     repetitions: row.repetitions,
     interval: row.interval,
     easeFactor: row.ease_factor,
-    nextReview: row.next_review,
-    lastReviewed: row.last_reviewed ?? undefined,
-    createdAt: row.created_at,
+    nextReview: toDateStr(row.next_review)!,
+    lastReviewed: toDateStr(row.last_reviewed),
+    createdAt: toDateStr(row.created_at)!,
     collectionId: row.collection_id,
     description: row.description ?? undefined,
     priority: row.priority,
@@ -140,7 +146,7 @@ function rowToNote(row: NoteRow): Note {
   return {
     id: row.id,
     text: row.text,
-    createdAt: row.created_at,
+    createdAt: toDateStr(row.created_at)!,
   };
 }
 
