@@ -3,6 +3,8 @@ module.exports = {
     {
       name: "reps",
       script: "dist/server/index.js",
+      node_args: "--env-file=.env",
+      cwd: "/var/www/reps",
       env: {
         NODE_ENV: "production",
       },

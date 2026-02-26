@@ -7,8 +7,8 @@
     "build:server": "tsc --project tsconfig.server.json",
     "build:web": "cd web && vite build",
     "build": "npm run build:server && npm run build:web",
-    "migrate": "tsx server/db/migrate.ts",
-    "dev:server": "tsx watch server/index.ts",
+    "migrate": "node --env-file=.env --import=tsx/esm server/db/migrate.ts",
+    "dev:server": "node --env-file=.env --import=tsx/esm --watch server/index.ts",
     "dev:web": "cd web && vite",
     "start": "node dist/server/index.js",
     "cli": "tsx src/index.ts"
