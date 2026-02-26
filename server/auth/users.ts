@@ -71,7 +71,7 @@ export async function getUserById(id: string): Promise<User | null> {
 export async function updateUserProfile(
   id: string,
   updates: {
-    displayName?: string;
+    displayName?: string | null;
     timezone?: string;
     theme?: string;
     notifyDaily?: boolean;
