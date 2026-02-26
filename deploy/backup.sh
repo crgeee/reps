@@ -25,8 +25,15 @@ mkdir -p "$BACKUP_DIR"
 
 echo "[$(date -Iseconds)] Starting backup..."
 
+# Load DATABASE_URL from .env if available
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../.env"
+if [ -f "$ENV_FILE" ]; then
+  export DATABASE_URL=$(grep '^DATABASE_URL=' "$ENV_FILE" | cut -d= -f2-)
+fi
+
 # Dump and compress
-if pg_dump -U reps reps | gzip > "$BACKUP_FILE"; then
+if pg_dump "${DATABASE_URL:-postgresql://reps@localhost/reps}" | gzip > "$BACKUP_FILE"; then
   SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
   echo "[$(date -Iseconds)] Backup successful: ${BACKUP_FILE} (${SIZE})"
 else
