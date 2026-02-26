@@ -1,11 +1,34 @@
-import { useState, useMemo } from 'react';
-import type { Task, Topic, Tag, Collection } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, STATUS_LABELS, formatStatusLabel } from '../types';
+import { useState, useMemo, memo, useCallback } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import type { Task, Topic, TaskStatus, Tag, Collection, CollectionStatus } from '../types';
+import {
+  TOPICS,
+  TOPIC_LABELS,
+  TOPIC_COLORS,
+  STATUSES,
+  STATUS_LABELS,
+  formatStatusLabel,
+} from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
 import TagBadge from './TagBadge';
 import TaskEditModal from './TaskEditModal';
+import { updateTask } from '../api';
+import { logger } from '../logger';
+
+type LayoutMode = 'list' | 'board';
 
 interface TaskListProps {
   tasks: Task[];
@@ -14,7 +37,17 @@ interface TaskListProps {
   collections?: Collection[];
   onTagCreated?: (tag: Tag) => void;
   statusOptions?: { value: string; label: string }[];
+  onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
+  onBackgroundRefresh?: () => void;
+  collectionStatuses?: CollectionStatus[];
 }
+
+const DEFAULT_STATUS_COLORS: Record<TaskStatus, string> = {
+  todo: '#3f3f46',
+  'in-progress': '#1e3a5f',
+  review: '#78350f',
+  done: '#14532d',
+};
 
 export default function TaskList({
   tasks,
@@ -23,10 +56,21 @@ export default function TaskList({
   collections = [],
   onTagCreated,
   statusOptions,
+  onOptimisticUpdate,
+  onBackgroundRefresh,
+  collectionStatuses,
 }: TaskListProps) {
   const { filters, setFilter, resetFilters, filtered, grouped } = useFilteredTasks(tasks);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [layout, setLayout] = useState<LayoutMode>(() => {
+    return (localStorage.getItem('reps_task_layout') as LayoutMode) || 'list';
+  });
+
+  function handleLayoutChange(mode: LayoutMode) {
+    setLayout(mode);
+    localStorage.setItem('reps_task_layout', mode);
+  }
 
   const tagFiltered = useMemo(() => {
     if (!tagFilter) return filtered;
@@ -61,15 +105,19 @@ export default function TaskList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold tracking-tight">Tasks</h1>
-        <span className="text-[10px] text-zinc-600 font-mono tabular-nums">
-          {tagFiltered.length} items
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-zinc-600 font-mono tabular-nums">
+            {tagFiltered.length} items
+          </span>
+          <LayoutToggle layout={layout} onChange={handleLayoutChange} />
+        </div>
       </div>
 
       <FilterBar
         filters={filters}
         setFilter={setFilter}
         resetFilters={resetFilters}
+        hideStatus={layout === 'board'}
         statusOptions={statusOptions}
       />
 
@@ -99,7 +147,17 @@ export default function TaskList({
         </div>
       )}
 
-      {filters.groupBy !== 'none' ? (
+      {layout === 'board' ? (
+        <BoardLayout
+          tasks={tasks}
+          filtered={tagFiltered}
+          onRefresh={onRefresh}
+          onEdit={setEditingTask}
+          onOptimisticUpdate={onOptimisticUpdate}
+          onBackgroundRefresh={onBackgroundRefresh}
+          collectionStatuses={collectionStatuses}
+        />
+      ) : filters.groupBy !== 'none' ? (
         <>
           {grouped.size === 0 && tagFiltered.length === 0 && (
             <p className="text-zinc-600 py-8 text-center text-xs">No tasks found.</p>
@@ -218,5 +276,277 @@ function GroupSection({
       </button>
       {!collapsed && <div className="anim-expand-down ml-4">{children}</div>}
     </div>
+  );
+}
+
+/* ── Layout Toggle ── */
+
+function LayoutToggle({
+  layout,
+  onChange,
+}: {
+  layout: LayoutMode;
+  onChange: (mode: LayoutMode) => void;
+}) {
+  return (
+    <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+      <button
+        onClick={() => onChange('list')}
+        aria-label="List view"
+        aria-pressed={layout === 'list'}
+        className={`p-1.5 rounded-md transition-colors ${
+          layout === 'list' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+        }`}
+      >
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <button
+        onClick={() => onChange('board')}
+        aria-label="Board view"
+        aria-pressed={layout === 'board'}
+        className={`p-1.5 rounded-md transition-colors ${
+          layout === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+        }`}
+      >
+        <svg
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4a1 1 0 001-1V5a1 1 0 00-1-1zM19 4h-4a1 1 0 00-1 1v14a1 1 0 001 1h4a1 1 0 001-1V5a1 1 0 00-1-1z"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/* ── Board Layout (integrated from BoardView) ── */
+
+const SortableCard = memo(function SortableCard({
+  task,
+  onRefresh,
+  onEdit,
+}: {
+  task: Task;
+  onRefresh: () => void;
+  onEdit?: (task: Task) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+    data: { type: 'card', status: task.status },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <TaskCard
+        task={task}
+        onRefresh={onRefresh}
+        compact
+        dragHandleProps={{ ...attributes, ...listeners }}
+        onEdit={onEdit}
+      />
+    </div>
+  );
+});
+
+const BoardColumn = memo(function BoardColumn({
+  status,
+  label,
+  tasks,
+  onRefresh,
+  borderColor,
+  onEdit,
+}: {
+  status: string;
+  label: string;
+  tasks: Task[];
+  onRefresh: () => void;
+  borderColor?: string;
+  onEdit?: (task: Task) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: status,
+    data: { type: 'column' },
+  });
+
+  const itemIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`border-t-2 rounded-lg p-2 space-y-0 transition-colors ${
+        isOver ? 'bg-zinc-800/50' : 'bg-zinc-900/30'
+      }`}
+      style={{ borderTopColor: borderColor ?? '#3f3f46' }}
+    >
+      <div className="flex items-center justify-between mb-1.5 px-1">
+        <h3 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</h3>
+        <span className="text-[10px] text-zinc-700 font-mono tabular-nums">{tasks.length}</span>
+      </div>
+
+      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+        {tasks.map((task) => (
+          <SortableCard key={task.id} task={task} onRefresh={onRefresh} onEdit={onEdit} />
+        ))}
+      </SortableContext>
+
+      {tasks.length === 0 && (
+        <p className={`text-xs text-center py-8 ${isOver ? 'text-zinc-500' : 'text-zinc-700'}`}>
+          Drop here
+        </p>
+      )}
+    </div>
+  );
+});
+
+function BoardLayout({
+  tasks,
+  filtered,
+  onRefresh,
+  onEdit,
+  onOptimisticUpdate,
+  onBackgroundRefresh,
+  collectionStatuses,
+}: {
+  tasks: Task[];
+  filtered: Task[];
+  onRefresh: () => void;
+  onEdit: (task: Task) => void;
+  onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
+  onBackgroundRefresh?: () => void;
+  collectionStatuses?: CollectionStatus[];
+}) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const { statusList, statusLabels, statusColors } = useMemo(() => {
+    if (collectionStatuses && collectionStatuses.length > 0) {
+      const list: string[] = [];
+      const labels: Record<string, string> = {};
+      const colors: Record<string, string> = {};
+      for (const s of collectionStatuses) {
+        list.push(s.name);
+        labels[s.name] = formatStatusLabel(s.name);
+        colors[s.name] = s.color ?? '#3f3f46';
+      }
+      return { statusList: list, statusLabels: labels, statusColors: colors };
+    }
+    return {
+      statusList: STATUSES as string[],
+      statusLabels: STATUS_LABELS as Record<string, string>,
+      statusColors: DEFAULT_STATUS_COLORS as Record<string, string>,
+    };
+  }, [collectionStatuses]);
+
+  const columns = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (const s of statusList) {
+      map[s] = filtered.filter((t) => t.status === s);
+    }
+    return map;
+  }, [filtered, statusList]);
+
+  const activeTask = activeId ? (tasks.find((t) => t.id === activeId) ?? null) : null;
+
+  const findColumnForOver = useCallback(
+    (overId: string | number, overData: Record<string, unknown> | undefined): string | null => {
+      const id = String(overId);
+      if (overData?.type === 'column' && statusList.includes(id)) return id;
+      if (overData?.type === 'card' && overData.status) return overData.status as string;
+      return null;
+    },
+    [statusList],
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      setActiveId(null);
+      const { active, over } = event;
+      if (!over) return;
+
+      const taskId = active.id as string;
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      const targetStatus = findColumnForOver(over.id, over.data.current);
+      if (!targetStatus || targetStatus === task.status) return;
+
+      if (onOptimisticUpdate) {
+        onOptimisticUpdate(taskId, { status: targetStatus, completed: targetStatus === 'done' });
+      }
+
+      try {
+        await updateTask(taskId, { status: targetStatus });
+        if (onBackgroundRefresh) onBackgroundRefresh();
+      } catch (err) {
+        logger.error('Failed to update task status', { taskId, targetStatus, error: String(err) });
+        onRefresh();
+      }
+    },
+    [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, findColumnForOver],
+  );
+
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+  }, []);
+
+  const gridColsClass = useMemo(() => {
+    const count = statusList.length;
+    if (count <= 2) return 'grid-cols-1 sm:grid-cols-2';
+    if (count === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+    if (count === 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+    if (count === 5) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-5';
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6';
+  }, [statusList.length]);
+
+  return (
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className={`grid ${gridColsClass} gap-4 min-h-[60vh]`}>
+        {statusList.map((status) => (
+          <BoardColumn
+            key={status}
+            status={status}
+            label={statusLabels[status] ?? status}
+            tasks={columns[status] ?? []}
+            onRefresh={onRefresh}
+            borderColor={statusColors[status]}
+            onEdit={onEdit}
+          />
+        ))}
+      </div>
+
+      <DragOverlay dropAnimation={null}>
+        {activeTask && <TaskCard task={activeTask} onRefresh={() => {}} compact />}
+      </DragOverlay>
+    </DndContext>
   );
 }
