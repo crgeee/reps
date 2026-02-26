@@ -22,6 +22,8 @@ const createTaskSchema = z.object({
   nextReview: dateStr.optional(),
   lastReviewed: dateStr.nullable().optional(),
   createdAt: dateStr.optional(),
+  collectionId: uuidStr.nullable().optional(),
+  tagIds: z.array(uuidStr).optional(),
 });
 
 const patchTaskSchema = z.object({
@@ -35,6 +37,7 @@ const patchTaskSchema = z.object({
   easeFactor: z.number().min(1.3).max(5.0).optional(),
   nextReview: dateStr.optional(),
   lastReviewed: dateStr.nullable().optional(),
+  tagIds: z.array(uuidStr).optional(),
 });
 
 const addNoteSchema = z.object({
@@ -82,6 +85,7 @@ interface TaskRow {
   next_review: string;
   last_reviewed: string | null;
   created_at: string;
+  collection_id: string | null;
 }
 
 interface NoteRow {
@@ -91,7 +95,18 @@ interface NoteRow {
   created_at: string;
 }
 
-function rowToTask(row: TaskRow, notes: Note[]): Task {
+interface TagRow {
+  task_id: string;
+  tag_id: string;
+  name: string;
+  color: string | null;
+}
+
+function rowToTask(
+  row: TaskRow,
+  notes: Note[],
+  tags: { id: string; name: string; color: string | null }[] = []
+): Task & { collectionId: string | null; tags: { id: string; name: string; color: string | null }[] } {
   return {
     id: row.id,
     topic: row.topic as Task["topic"],
@@ -105,7 +120,9 @@ function rowToTask(row: TaskRow, notes: Note[]): Task {
     nextReview: row.next_review,
     lastReviewed: row.last_reviewed ?? undefined,
     createdAt: row.created_at,
+    collectionId: row.collection_id,
     notes,
+    tags,
   };
 }
 
@@ -121,13 +138,42 @@ function today(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+async function fetchTagsByTaskIds(taskIds: string[]): Promise<Map<string, { id: string; name: string; color: string | null }[]>> {
+  const tagsByTask = new Map<string, { id: string; name: string; color: string | null }[]>();
+  if (taskIds.length === 0) return tagsByTask;
+
+  const tagRows = await sql<TagRow[]>`
+    SELECT tt.task_id, t.id AS tag_id, t.name, t.color
+    FROM task_tags tt JOIN tags t ON t.id = tt.tag_id
+    WHERE tt.task_id = ANY(${taskIds})
+  `;
+
+  for (const tr of tagRows) {
+    const arr = tagsByTask.get(tr.task_id) ?? [];
+    arr.push({ id: tr.tag_id, name: tr.name, color: tr.color });
+    tagsByTask.set(tr.task_id, arr);
+  }
+
+  return tagsByTask;
+}
+
 // --- routes ---
 
 // GET /tasks/due must be registered before /tasks/:id to avoid route collision
 tasks.get("/due", async (c) => {
+  const collectionId = c.req.query("collection");
+  if (collectionId && !validateUuid(collectionId)) {
+    return c.json({ error: "Invalid collection ID" }, 400);
+  }
+
+  const collectionFilter = collectionId
+    ? sql`AND collection_id = ${collectionId}`
+    : sql``;
+
   const rows = await sql<TaskRow[]>`
     SELECT * FROM tasks
     WHERE next_review <= ${today()} AND completed = false
+    ${collectionFilter}
     ORDER BY next_review ASC
   `;
 
@@ -144,13 +190,26 @@ tasks.get("/due", async (c) => {
     notesByTask.set(nr.task_id, arr);
   }
 
-  const result = rows.map((r) => rowToTask(r, notesByTask.get(r.id) ?? []));
+  const tagsByTask = await fetchTagsByTaskIds(taskIds);
+
+  const result = rows.map((r) =>
+    rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? [])
+  );
   return c.json(result);
 });
 
 // GET /tasks
 tasks.get("/", async (c) => {
-  const rows = await sql<TaskRow[]>`SELECT * FROM tasks ORDER BY created_at DESC`;
+  const collectionId = c.req.query("collection");
+  if (collectionId && !validateUuid(collectionId)) {
+    return c.json({ error: "Invalid collection ID" }, 400);
+  }
+
+  const collectionFilter = collectionId
+    ? sql`WHERE collection_id = ${collectionId}`
+    : sql``;
+
+  const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${collectionFilter} ORDER BY created_at DESC`;
 
   const noteRows = await sql<NoteRow[]>`SELECT * FROM notes ORDER BY created_at ASC`;
 
@@ -161,7 +220,25 @@ tasks.get("/", async (c) => {
     notesByTask.set(nr.task_id, arr);
   }
 
-  const result = rows.map((r) => rowToTask(r, notesByTask.get(r.id) ?? []));
+  const taskIds = rawRows.map((r) => r.id);
+  const tagsByTask = await fetchTagsByTaskIds(taskIds);
+
+  // Tag filtering — keep tasks that have ALL specified tags
+  const tagFilter = c.req.query("tags");
+  let filteredRows: TaskRow[] = [...rawRows];
+  if (tagFilter) {
+    const filterTagIds = tagFilter.split(",").filter(validateUuid);
+    if (filterTagIds.length > 0) {
+      filteredRows = filteredRows.filter((r) => {
+        const taskTags = tagsByTask.get(r.id) ?? [];
+        return filterTagIds.every((tid) => taskTags.some((t) => t.id === tid));
+      });
+    }
+  }
+
+  const result = filteredRows.map((r) =>
+    rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? [])
+  );
   return c.json(result);
 });
 
@@ -177,7 +254,7 @@ tasks.post("/", async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id)
     VALUES (
       ${id},
       ${body.topic},
@@ -190,12 +267,25 @@ tasks.post("/", async (c) => {
       ${body.easeFactor ?? 2.5},
       ${body.nextReview ?? now},
       ${body.lastReviewed ?? null},
-      ${body.createdAt ?? now}
+      ${body.createdAt ?? now},
+      ${body.collectionId ?? null}
     )
     RETURNING *
   `;
 
-  return c.json(rowToTask(row, []), 201);
+  // Insert initial tags if provided
+  const tagIds = body.tagIds ?? [];
+  for (const tagId of tagIds) {
+    await sql`INSERT INTO task_tags (task_id, tag_id) VALUES (${id}, ${tagId}) ON CONFLICT DO NOTHING`;
+  }
+
+  const tags = tagIds.length > 0
+    ? await sql<{ id: string; name: string; color: string | null }[]>`
+        SELECT t.id, t.name, t.color FROM tags t WHERE t.id = ANY(${tagIds})
+      `
+    : [];
+
+  return c.json(rowToTask(row, [], tags), 201);
 });
 
 // PATCH /tasks/:id
@@ -230,26 +320,43 @@ tasks.patch("/:id", async (c) => {
     }
   }
 
-  if (Object.keys(updates).length === 0) {
-    return c.json({ error: "No valid fields to update" }, 400);
+  // Only run UPDATE if there are scalar fields to update
+  let row: TaskRow | undefined;
+  if (Object.keys(updates).length > 0) {
+    const [updated] = await sql<TaskRow[]>`
+      UPDATE tasks SET ${sql(updates as Record<string, unknown>)}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    if (!updated) {
+      return c.json({ error: "Task not found" }, 404);
+    }
+    row = updated;
+  } else {
+    // No scalar updates — just verify task exists
+    const [existing] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id}`;
+    if (!existing) {
+      return c.json({ error: "Task not found" }, 404);
+    }
+    row = existing;
   }
 
-  // postgres.js dynamic update
-  const [row] = await sql<TaskRow[]>`
-    UPDATE tasks SET ${sql(updates as Record<string, unknown>)}
-    WHERE id = ${id}
-    RETURNING *
-  `;
-
-  if (!row) {
-    return c.json({ error: "Task not found" }, 404);
+  // Handle tag replacement if tagIds provided
+  if (Array.isArray(body.tagIds)) {
+    await sql`DELETE FROM task_tags WHERE task_id = ${id}`;
+    for (const tagId of body.tagIds) {
+      if (validateUuid(tagId)) {
+        await sql`INSERT INTO task_tags (task_id, tag_id) VALUES (${id}, ${tagId}) ON CONFLICT DO NOTHING`;
+      }
+    }
   }
 
-  // Fetch notes for the task
+  // Fetch notes and tags for the task
   const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${id} ORDER BY created_at ASC`;
   const notes = noteRows.map(rowToNote);
+  const tagsByTask = await fetchTagsByTaskIds([id]);
 
-  return c.json(rowToTask(row, notes));
+  return c.json(rowToTask(row, notes, tagsByTask.get(id) ?? []));
 });
 
 // DELETE /tasks/:id
@@ -327,7 +434,15 @@ tasks.post("/:id/review", async (c) => {
     RETURNING *
   `;
 
-  return c.json(rowToTask(updated, noteRows.map(rowToNote)));
+  // Insert review event for streaks/heatmap tracking
+  await sql`
+    INSERT INTO review_events (task_id, collection_id, quality, reviewed_at)
+    VALUES (${id}, ${taskRow.collection_id ?? null}, ${quality}, ${today()})
+  `;
+
+  const tagsByTask = await fetchTagsByTaskIds([id]);
+
+  return c.json(rowToTask(updated, noteRows.map(rowToNote), tagsByTask.get(id) ?? []));
 });
 
 // POST /sync — bulk upsert from CLI

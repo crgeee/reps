@@ -5,6 +5,9 @@ import { bodyLimit } from "hono/body-limit";
 import { authMiddleware } from "./middleware/auth.js";
 import tasks from "./routes/tasks.js";
 import agent from "./routes/agent.js";
+import collections from "./routes/collections.js";
+import tags from "./routes/tags.js";
+import statsRoutes from "./routes/stats.js";
 
 // Import and start cron jobs
 import { startCronJobs } from "./cron.js";
@@ -35,6 +38,9 @@ app.use("/*", authMiddleware);
 // Mount routes
 app.route("/tasks", tasks);
 app.route("/agent", agent);
+app.route("/collections", collections);
+app.route("/tags", tags);
+app.route("/stats", statsRoutes);
 
 const port = parseInt(process.env.PORT || "3000", 10);
 
