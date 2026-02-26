@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-echo "→ Pulling latest changes..."
-git pull
+echo "→ Switching to main and pulling latest..."
+git checkout main
+git pull origin main
 
 echo "→ Installing root dependencies..."
 npm ci
