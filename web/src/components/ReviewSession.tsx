@@ -119,22 +119,22 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Progress */}
       <div className="flex items-center justify-between text-sm text-zinc-500">
-        <span>
-          Task {currentIndex + 1} of {dueTasks.length}
+        <span className="font-mono tabular-nums">
+          {currentIndex + 1} / {dueTasks.length}
         </span>
-        <span>{TOPIC_LABELS[task.topic]}</span>
+        <span className="text-xs uppercase tracking-widest">{TOPIC_LABELS[task.topic]}</span>
       </div>
       <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className="h-full bg-zinc-400 rounded-full transition-all duration-500"
+          className="h-full bg-amber-500 rounded-full transition-all duration-500"
           style={{ width: `${((currentIndex + 1) / dueTasks.length) * 100}%` }}
         />
       </div>
 
       {/* Task card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+      <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-6">
         <h2 className="text-xl font-bold mb-1">{task.title}</h2>
-        <p className="text-sm text-zinc-500 mb-6">
+        <p className="text-sm text-zinc-600 mb-6 font-mono">
           Reps: {task.repetitions} | EF: {task.easeFactor.toFixed(2)} | Interval: {task.interval}d
         </p>
 

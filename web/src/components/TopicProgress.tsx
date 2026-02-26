@@ -98,13 +98,13 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       {/* Stats summary from API */}
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-zinc-900 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total Reviews</p>
-            <p className="text-2xl font-bold text-zinc-100">{stats.totalReviews}</p>
+          <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-lg p-4">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 font-medium">Total Reviews</p>
+            <p className="text-3xl font-bold text-zinc-100 font-mono tabular-nums">{stats.totalReviews}</p>
           </div>
-          <div className="bg-zinc-900 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Last 30 Days</p>
-            <p className="text-2xl font-bold text-zinc-100">{stats.reviewsLast30Days}</p>
+          <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-lg p-4">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 font-medium">Last 30 Days</p>
+            <p className="text-3xl font-bold text-zinc-100 font-mono tabular-nums">{stats.reviewsLast30Days}</p>
           </div>
         </div>
       )}
@@ -139,7 +139,7 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
           const confidence = stat.avgEaseFactor > 0 ? getConfidenceLevel(stat.avgEaseFactor) : null;
 
           return (
-            <div key={stat.topic} className="bg-zinc-900 rounded-lg border border-zinc-800 p-5 transition-all duration-200">
+            <div key={stat.topic} className="bg-zinc-900/80 rounded-lg border border-zinc-800/60 p-5 transition-all duration-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${TOPIC_COLORS[stat.topic]}`} />
@@ -169,28 +169,28 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
               {/* Stats row */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
                 <div>
-                  <p className="text-zinc-500">Total</p>
-                  <p className="font-medium">{stat.total}</p>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Total</p>
+                  <p className="font-bold font-mono tabular-nums">{stat.total}</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500">Completed</p>
-                  <p className="font-medium text-green-400">{stat.completed}</p>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Completed</p>
+                  <p className="font-bold font-mono tabular-nums text-green-400">{stat.completed}</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500">Due</p>
-                  <p className={`font-medium ${stat.dueCount > 0 ? 'text-amber-400' : ''}`}>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Due</p>
+                  <p className={`font-bold font-mono tabular-nums ${stat.dueCount > 0 ? 'text-amber-400' : ''}`}>
                     {stat.dueCount}
                   </p>
                 </div>
                 <div>
-                  <p className="text-zinc-500">Avg EF</p>
-                  <p className="font-medium">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Avg EF</p>
+                  <p className="font-bold font-mono tabular-nums">
                     {stat.avgEaseFactor > 0 ? stat.avgEaseFactor.toFixed(2) : '--'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-zinc-500">Last Reviewed</p>
-                  <p className="font-medium">{stat.lastReviewed ?? '--'}</p>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Last Reviewed</p>
+                  <p className="font-bold font-mono tabular-nums">{stat.lastReviewed ?? '--'}</p>
                 </div>
               </div>
             </div>

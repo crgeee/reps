@@ -213,8 +213,8 @@ export default function App() {
           onSubmit={(e) => { e.preventDefault(); handleSetApiKey(); }}
           data-1p-ignore
         >
-          <h1 className="text-4xl font-bold tracking-tight mb-2">reps</h1>
-          <p className="text-zinc-400 mb-8">Enter your API key to connect.</p>
+          <h1 className="text-5xl font-extrabold tracking-tight mb-2 wordmark">reps</h1>
+          <p className="text-zinc-500 text-sm mb-8">Enter your API key to connect.</p>
           <input
             type="text"
             value={apiKeyInput}
@@ -222,11 +222,11 @@ export default function App() {
             placeholder="API key"
             autoComplete="off"
             data-1p-ignore
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 mb-4 [-webkit-text-security:disc]"
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-700/50 focus:ring-1 focus:ring-amber-700/30 mb-4 [-webkit-text-security:disc] transition-all duration-200"
           />
           <button
             type="submit"
-            className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
+            className="w-full py-3 bg-amber-500 text-zinc-950 font-semibold rounded-lg hover:bg-amber-400 transition-colors glow-amber"
           >
             Connect
           </button>
@@ -242,7 +242,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           <button
             onClick={() => setView('dashboard')}
-            className="text-2xl font-bold tracking-tight hover:text-zinc-300 transition-colors flex-shrink-0"
+            className="text-2xl font-extrabold tracking-tight flex-shrink-0 wordmark transition-opacity hover:opacity-80"
           >
             reps
           </button>
