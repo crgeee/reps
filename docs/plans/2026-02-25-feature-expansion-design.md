@@ -10,6 +10,7 @@
 Expand reps from a single-purpose interview prep tracker into a flexible, collection-based task + review system with 8 new features inspired by Todoist, TickTick, Things 3, Anki/RemNote, and LeetCode.
 
 **Design principles:**
+
 - DRY — shared helpers, no duplicated queries or logic
 - Reusable — components and API patterns that work across features
 - Performance — single-query aggregations, frontend caching, no unnecessary roundtrips
@@ -91,6 +92,7 @@ GET /stats/streaks?collection=uuid
 ```
 
 Returns:
+
 ```json
 {
   "currentStreak": 12,
@@ -104,6 +106,7 @@ GET /stats/heatmap?collection=uuid&days=365
 ```
 
 Returns:
+
 ```json
 {
   "2026-02-25": 5,
@@ -260,6 +263,7 @@ GET /stats/overview?collection=uuid
 ```
 
 Returns:
+
 ```json
 {
   "totalReviews": 142,
@@ -276,6 +280,7 @@ Single SQL query with CTEs for all aggregations. Reuses streak/heatmap logic fro
 ### Web
 
 Enhanced Progress page:
+
 - Bar chart: reviews by topic (reusable `<BarChart data={Record<string,number>} />`)
 - Ease factor as "confidence" indicator per topic
 - Heatmap (reused from Feature 2)
@@ -336,6 +341,7 @@ System prompt includes: "You are a senior Anthropic interviewer conducting a mul
 ### Interleaving (evidence-based)
 
 "Surprise me" mode:
+
 1. Query tasks with lowest `ease_factor` across all SR-enabled topics
 2. Pick topic that hasn't been practiced in the longest time
 3. This implements interleaving (43% improvement per Rohrer & Taylor 2007)
@@ -358,6 +364,7 @@ System prompt includes: "You are a senior Anthropic interviewer conducting a mul
 ### Web
 
 New view: `MockInterview`
+
 - Topic/difficulty selector (or "Surprise me")
 - Chat-style interface for Q&A rounds
 - Focus timer running alongside (reuses Feature 3)
@@ -368,14 +375,14 @@ New view: `MockInterview`
 
 ## Agent Ownership
 
-| Agent | Files Owned | New Work |
-|---|---|---|
-| `db-architect` | `server/db/**`, `db/schema.sql` | `collections`, `review_events`, `tags`, `task_tags`, `mock_sessions` tables; migration script; add `collection_id` to tasks; indexes |
-| `api-builder` | `server/routes/**`, `server/middleware/**`, `server/index.ts` | `/collections` CRUD, `/tags` CRUD, `/stats/*` endpoints, tag filtering on tasks, collection filtering on all routes, mock session CRUD endpoints |
-| `agent-builder` | `server/agent/**`, `server/cron.ts` | Mock interview AI logic (`server/agent/mock.ts`), daily digest email (`server/agent/email.ts`), shared briefing data helper (`server/agent/shared.ts`), update coach.ts to use shared helper |
-| `web-builder` | `web/**` | Collection switcher, Heatmap, StreakBadge, FocusTimer, TagPicker, TagBadge, CalendarView, MockInterview view, BarChart, enhanced Progress/Dashboard, filter bar |
-| `cli-updater` | `src/api-client.ts`, `src/index.ts` | No changes this round |
-| `deploy-engineer` | `deploy/**` | No changes this round |
+| Agent             | Files Owned                                                   | New Work                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db-architect`    | `server/db/**`, `db/schema.sql`                               | `collections`, `review_events`, `tags`, `task_tags`, `mock_sessions` tables; migration script; add `collection_id` to tasks; indexes                                                         |
+| `api-builder`     | `server/routes/**`, `server/middleware/**`, `server/index.ts` | `/collections` CRUD, `/tags` CRUD, `/stats/*` endpoints, tag filtering on tasks, collection filtering on all routes, mock session CRUD endpoints                                             |
+| `agent-builder`   | `server/agent/**`, `server/cron.ts`                           | Mock interview AI logic (`server/agent/mock.ts`), daily digest email (`server/agent/email.ts`), shared briefing data helper (`server/agent/shared.ts`), update coach.ts to use shared helper |
+| `web-builder`     | `web/**`                                                      | Collection switcher, Heatmap, StreakBadge, FocusTimer, TagPicker, TagBadge, CalendarView, MockInterview view, BarChart, enhanced Progress/Dashboard, filter bar                              |
+| `cli-updater`     | `src/api-client.ts`, `src/index.ts`                           | No changes this round                                                                                                                                                                        |
+| `deploy-engineer` | `deploy/**`                                                   | No changes this round                                                                                                                                                                        |
 
 ## Dependency Order
 
@@ -391,17 +398,17 @@ api-builder (routes depend on schema)
 
 ## DRY / Reuse Summary
 
-| Pattern | Where Reused |
-|---|---|
-| `getDailyBriefingData()` | `coach.ts`, `email.ts`, `/stats/overview` |
-| `<Heatmap />` component | Dashboard, Progress page |
-| `<StreakBadge />` component | Dashboard, Progress page |
-| `<TagPicker />` component | AddTask, TaskList, filter bar |
-| `<TagBadge />` component | TaskList, Dashboard, ReviewSession |
-| `<FocusTimer />` component | ReviewSession, MockInterview |
-| `<BarChart />` component | Progress page, stats |
-| Collection scoping | All routes, all views, all stats |
-| `review_events` table | Streaks, heatmap, stats — single source of truth |
+| Pattern                     | Where Reused                                     |
+| --------------------------- | ------------------------------------------------ |
+| `getDailyBriefingData()`    | `coach.ts`, `email.ts`, `/stats/overview`        |
+| `<Heatmap />` component     | Dashboard, Progress page                         |
+| `<StreakBadge />` component | Dashboard, Progress page                         |
+| `<TagPicker />` component   | AddTask, TaskList, filter bar                    |
+| `<TagBadge />` component    | TaskList, Dashboard, ReviewSession               |
+| `<FocusTimer />` component  | ReviewSession, MockInterview                     |
+| `<BarChart />` component    | Progress page, stats                             |
+| Collection scoping          | All routes, all views, all stats                 |
+| `review_events` table       | Streaks, heatmap, stats — single source of truth |
 
 ## Performance Notes
 

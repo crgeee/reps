@@ -144,7 +144,10 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
         </p>
 
         {error && (
-          <div role="alert" className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm">
+          <div
+            role="alert"
+            className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm"
+          >
             {error}
           </div>
         )}

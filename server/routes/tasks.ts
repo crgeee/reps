@@ -1,10 +1,18 @@
-import { Hono } from "hono";
-import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
-import sql from "../db/client.js";
-import { calculateSM2 } from "../../src/spaced-repetition.js";
-import { validateUuid, buildUpdates, dateStr, topicEnum, uuidStr, statusEnum, priorityEnum } from "../validation.js";
-import type { Task, Note, Quality } from "../../src/types.js";
+import { Hono } from 'hono';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
+import sql from '../db/client.js';
+import { calculateSM2 } from '../../src/spaced-repetition.js';
+import {
+  validateUuid,
+  buildUpdates,
+  dateStr,
+  topicEnum,
+  uuidStr,
+  statusEnum,
+  priorityEnum,
+} from '../validation.js';
+import type { Task, Note, Quality } from '../../src/types.js';
 
 type AppEnv = { Variables: { userId: string } };
 const tasks = new Hono<AppEnv>();
@@ -67,11 +75,15 @@ const syncTaskSchema = z.object({
   nextReview: z.string(),
   lastReviewed: z.string().nullable().optional(),
   createdAt: z.string(),
-  notes: z.array(z.object({
-    id: z.string(),
-    text: z.string().max(10000),
-    createdAt: z.string(),
-  })).optional(),
+  notes: z
+    .array(
+      z.object({
+        id: z.string(),
+        text: z.string().max(10000),
+        createdAt: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 const syncSchema = z.array(syncTaskSchema).max(500);
@@ -120,14 +132,19 @@ function toDateStr(val: string | Date | null | undefined): string | undefined {
 function rowToTask(
   row: TaskRow,
   notes: Note[],
-  tags: { id: string; name: string; color: string | null }[] = []
-): Task & { collectionId: string | null; description?: string; priority: string; tags: { id: string; name: string; color: string | null }[] } {
+  tags: { id: string; name: string; color: string | null }[] = [],
+): Task & {
+  collectionId: string | null;
+  description?: string;
+  priority: string;
+  tags: { id: string; name: string; color: string | null }[];
+} {
   return {
     id: row.id,
-    topic: row.topic as Task["topic"],
+    topic: row.topic as Task['topic'],
     title: row.title,
     completed: row.completed,
-    status: row.status as Task["status"],
+    status: row.status as Task['status'],
     deadline: toDateStr(row.deadline),
     repetitions: row.repetitions,
     interval: row.interval,
@@ -162,10 +179,12 @@ function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
 }
 
 function today(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toISOString().split('T')[0];
 }
 
-async function fetchTagsByTaskIds(taskIds: string[]): Promise<Map<string, { id: string; name: string; color: string | null }[]>> {
+async function fetchTagsByTaskIds(
+  taskIds: string[],
+): Promise<Map<string, { id: string; name: string; color: string | null }[]>> {
   const tagsByTask = new Map<string, { id: string; name: string; color: string | null }[]>();
   if (taskIds.length === 0) return tagsByTask;
 
@@ -187,16 +206,14 @@ async function fetchTagsByTaskIds(taskIds: string[]): Promise<Map<string, { id: 
 // --- routes ---
 
 // GET /tasks/due must be registered before /tasks/:id to avoid route collision
-tasks.get("/due", async (c) => {
-  const userId = c.get("userId") as string;
-  const collectionId = c.req.query("collection");
+tasks.get('/due', async (c) => {
+  const userId = c.get('userId') as string;
+  const collectionId = c.req.query('collection');
   if (collectionId && !validateUuid(collectionId)) {
-    return c.json({ error: "Invalid collection ID" }, 400);
+    return c.json({ error: 'Invalid collection ID' }, 400);
   }
 
-  const collectionFilter = collectionId
-    ? sql`AND collection_id = ${collectionId}`
-    : sql``;
+  const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
   const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
 
@@ -211,7 +228,9 @@ tasks.get("/due", async (c) => {
   const taskIds = rows.map((r) => r.id);
   const noteRows =
     taskIds.length > 0
-      ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
+      ? await sql<
+          NoteRow[]
+        >`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
       : [];
 
   const notesByTask = groupNotes(noteRows);
@@ -219,40 +238,43 @@ tasks.get("/due", async (c) => {
   const tagsByTask = await fetchTagsByTaskIds(taskIds);
 
   const result = rows.map((r) =>
-    rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? [])
+    rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? []),
   );
   return c.json(result);
 });
 
 // GET /tasks
-tasks.get("/", async (c) => {
-  const userId = c.get("userId") as string;
-  const collectionId = c.req.query("collection");
+tasks.get('/', async (c) => {
+  const userId = c.get('userId') as string;
+  const collectionId = c.req.query('collection');
   if (collectionId && !validateUuid(collectionId)) {
-    return c.json({ error: "Invalid collection ID" }, 400);
+    return c.json({ error: 'Invalid collection ID' }, 400);
   }
 
   const userFilter = userId ? sql`WHERE user_id = ${userId}` : sql`WHERE 1=1`;
-  const collectionFilter = collectionId
-    ? sql`AND collection_id = ${collectionId}`
-    : sql``;
+  const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
-  const rawRows = await sql<TaskRow[]>`SELECT * FROM tasks ${userFilter} ${collectionFilter} ORDER BY created_at DESC`;
+  const rawRows = await sql<
+    TaskRow[]
+  >`SELECT * FROM tasks ${userFilter} ${collectionFilter} ORDER BY created_at DESC`;
 
   const taskIds = rawRows.map((r) => r.id);
-  const noteRows = taskIds.length > 0
-    ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
-    : [];
+  const noteRows =
+    taskIds.length > 0
+      ? await sql<
+          NoteRow[]
+        >`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
+      : [];
 
   const notesByTask = groupNotes(noteRows);
 
   const tagsByTask = await fetchTagsByTaskIds(taskIds);
 
   // Tag filtering — keep tasks that have ALL specified tags
-  const tagFilter = c.req.query("tags");
+  const tagFilter = c.req.query('tags');
   let filteredRows: TaskRow[] = [...rawRows];
   if (tagFilter) {
-    const filterTagIds = tagFilter.split(",").filter(validateUuid);
+    const filterTagIds = tagFilter.split(',').filter(validateUuid);
     if (filterTagIds.length > 0) {
       filteredRows = filteredRows.filter((r) => {
         const taskTags = tagsByTask.get(r.id) ?? [];
@@ -262,18 +284,18 @@ tasks.get("/", async (c) => {
   }
 
   const result = filteredRows.map((r) =>
-    rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? [])
+    rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? []),
   );
   return c.json(result);
 });
 
 // POST /tasks
-tasks.post("/", async (c) => {
-  const userId = c.get("userId") as string;
+tasks.post('/', async (c) => {
+  const userId = c.get('userId') as string;
   const raw = await c.req.json();
   const parsed = createTaskSchema.safeParse(raw);
   if (!parsed.success) {
-    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   }
   const body = parsed.data;
   const id = uuidv4();
@@ -286,7 +308,7 @@ tasks.post("/", async (c) => {
       ${body.topic},
       ${body.title},
       ${body.completed ?? false},
-      ${body.status ?? "todo"},
+      ${body.status ?? 'todo'},
       ${body.deadline ?? null},
       ${body.repetitions ?? 0},
       ${body.interval ?? 1},
@@ -296,7 +318,7 @@ tasks.post("/", async (c) => {
       ${body.createdAt ?? now},
       ${body.collectionId ?? null},
       ${body.description ?? null},
-      ${body.priority ?? "none"},
+      ${body.priority ?? 'none'},
       ${userId ?? null}
     )
     RETURNING *
@@ -312,50 +334,51 @@ tasks.post("/", async (c) => {
     `;
   }
 
-  const tags = tagIds.length > 0
-    ? await sql<{ id: string; name: string; color: string | null }[]>`
+  const tags =
+    tagIds.length > 0
+      ? await sql<{ id: string; name: string; color: string | null }[]>`
         SELECT t.id, t.name, t.color FROM tags t WHERE t.id = ANY(${tagIds})
       `
-    : [];
+      : [];
 
   return c.json(rowToTask(row, [], tags), 201);
 });
 
 // PATCH /tasks/:id
-tasks.patch("/:id", async (c) => {
-  const userId = c.get("userId") as string;
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+tasks.patch('/:id', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
   const raw = await c.req.json();
   const parsed = patchTaskSchema.safeParse(raw);
   if (!parsed.success) {
-    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   }
   const body = parsed.data;
 
   // Build dynamic SET clause from provided fields
   const updates = buildUpdates(body as Record<string, unknown>, {
-    topic: "topic",
-    title: "title",
-    completed: "completed",
-    status: "status",
-    deadline: "deadline",
-    repetitions: "repetitions",
-    interval: "interval",
-    easeFactor: "ease_factor",
-    nextReview: "next_review",
-    lastReviewed: "last_reviewed",
-    collectionId: "collection_id",
-    description: "description",
-    priority: "priority",
+    topic: 'topic',
+    title: 'title',
+    completed: 'completed',
+    status: 'status',
+    deadline: 'deadline',
+    repetitions: 'repetitions',
+    interval: 'interval',
+    easeFactor: 'ease_factor',
+    nextReview: 'next_review',
+    lastReviewed: 'last_reviewed',
+    collectionId: 'collection_id',
+    description: 'description',
+    priority: 'priority',
   });
 
   // Keep completed and status in sync
-  if ("status" in updates && !("completed" in updates)) {
-    updates["completed"] = updates["status"] === "done";
+  if ('status' in updates && !('completed' in updates)) {
+    updates['completed'] = updates['status'] === 'done';
   }
-  if ("completed" in updates && !("status" in updates)) {
-    updates["status"] = updates["completed"] ? "done" : "todo";
+  if ('completed' in updates && !('status' in updates)) {
+    updates['status'] = updates['completed'] ? 'done' : 'todo';
   }
 
   // Only run UPDATE if there are scalar fields to update
@@ -368,7 +391,7 @@ tasks.patch("/:id", async (c) => {
       RETURNING *
     `;
     if (!updated) {
-      return c.json({ error: "Task not found" }, 404);
+      return c.json({ error: 'Task not found' }, 404);
     }
     row = updated;
   } else {
@@ -376,7 +399,7 @@ tasks.patch("/:id", async (c) => {
     const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
     const [existing] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id} ${userWhere}`;
     if (!existing) {
-      return c.json({ error: "Task not found" }, 404);
+      return c.json({ error: 'Task not found' }, 404);
     }
     row = existing;
   }
@@ -395,7 +418,9 @@ tasks.patch("/:id", async (c) => {
   }
 
   // Fetch notes and tags for the task
-  const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${id} ORDER BY created_at ASC`;
+  const noteRows = await sql<
+    NoteRow[]
+  >`SELECT * FROM notes WHERE task_id = ${id} ORDER BY created_at ASC`;
   const notes = noteRows.map(rowToNote);
   const tagsByTask = await fetchTagsByTaskIds([id]);
 
@@ -403,37 +428,37 @@ tasks.patch("/:id", async (c) => {
 });
 
 // DELETE /tasks/:id
-tasks.delete("/:id", async (c) => {
-  const userId = c.get("userId") as string;
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+tasks.delete('/:id', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
   const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${id} ${userWhere} RETURNING *`;
 
   if (!row) {
-    return c.json({ error: "Task not found" }, 404);
+    return c.json({ error: 'Task not found' }, 404);
   }
 
   return c.json({ deleted: true, id });
 });
 
 // POST /tasks/:id/notes
-tasks.post("/:id/notes", async (c) => {
-  const userId = c.get("userId") as string;
-  const taskId = c.req.param("id");
-  if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
+tasks.post('/:id/notes', async (c) => {
+  const userId = c.get('userId') as string;
+  const taskId = c.req.param('id');
+  if (!validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
   const raw = await c.req.json();
   const parsed = addNoteSchema.safeParse(raw);
   if (!parsed.success) {
-    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   }
 
   // Verify task exists and belongs to user
   const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
   const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId} ${userWhere}`;
   if (!task) {
-    return c.json({ error: "Task not found" }, 404);
+    return c.json({ error: 'Task not found' }, 404);
   }
 
   const now = today();
@@ -448,14 +473,14 @@ tasks.post("/:id/notes", async (c) => {
 });
 
 // POST /tasks/:id/review
-tasks.post("/:id/review", async (c) => {
-  const userId = c.get("userId") as string;
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+tasks.post('/:id/review', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
   const raw = await c.req.json();
   const parsed = reviewSchema.safeParse(raw);
   if (!parsed.success) {
-    return c.json({ error: "quality must be an integer 0-5" }, 400);
+    return c.json({ error: 'quality must be an integer 0-5' }, 400);
   }
   const quality = parsed.data.quality as Quality;
 
@@ -463,11 +488,13 @@ tasks.post("/:id/review", async (c) => {
   const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
   const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id} ${userWhere}`;
   if (!taskRow) {
-    return c.json({ error: "Task not found" }, 404);
+    return c.json({ error: 'Task not found' }, 404);
   }
 
   // Convert to Task shape for calculateSM2
-  const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${id} ORDER BY created_at ASC`;
+  const noteRows = await sql<
+    NoteRow[]
+  >`SELECT * FROM notes WHERE task_id = ${id} ORDER BY created_at ASC`;
   const currentTask = rowToTask(taskRow, noteRows.map(rowToNote));
 
   const sm2 = calculateSM2(currentTask, quality);
@@ -495,13 +522,13 @@ tasks.post("/:id/review", async (c) => {
 });
 
 // POST /sync — bulk upsert from CLI
-tasks.post("/sync", async (c) => {
-  const userId = c.get("userId") as string;
+tasks.post('/sync', async (c) => {
+  const userId = c.get('userId') as string;
   const raw = await c.req.json();
   const arr = Array.isArray(raw) ? raw : raw.tasks;
   const parsed = syncSchema.safeParse(arr);
   if (!parsed.success) {
-    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   }
   const incomingTasks = parsed.data;
 
@@ -517,7 +544,7 @@ tasks.post("/sync", async (c) => {
           ${t.topic},
           ${t.title},
           ${t.completed},
-          ${t.status ?? "todo"},
+          ${t.status ?? 'todo'},
           ${t.deadline ?? null},
           ${t.repetitions},
           ${t.interval},
@@ -541,13 +568,16 @@ tasks.post("/sync", async (c) => {
       `;
 
       if (t.notes && t.notes.length > 0) {
-        await Promise.all(t.notes.map((n) =>
-          tx`
+        await Promise.all(
+          t.notes.map(
+            (n) =>
+              tx`
             INSERT INTO notes (id, task_id, text, created_at)
             VALUES (${n.id}, ${t.id}, ${n.text}, ${n.createdAt})
             ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text
-          `
-        ));
+          `,
+          ),
+        );
       }
 
       upserted++;

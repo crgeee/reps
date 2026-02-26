@@ -3,7 +3,9 @@ import { approveDevice, denyDevice } from '../api';
 
 export default function DeviceApproval() {
   const [code, setCode] = useState('');
-  const [status, setStatus] = useState<'idle' | 'approving' | 'approved' | 'denied' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'approving' | 'approved' | 'denied' | 'error'>(
+    'idle',
+  );
   const [error, setError] = useState<string | null>(null);
 
   async function handleApprove() {
@@ -56,9 +58,7 @@ export default function DeviceApproval() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Approve CLI Device</h1>
-      <p className="text-zinc-400">
-        Enter the code shown in your terminal to connect the CLI.
-      </p>
+      <p className="text-zinc-400">Enter the code shown in your terminal to connect the CLI.</p>
 
       {error && (
         <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">

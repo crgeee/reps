@@ -9,17 +9,17 @@ export default function TermsOfService() {
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-100">Acceptance of Terms</h2>
         <p className="text-zinc-400">
-          By accessing or using reps, you agree to be bound by these terms. If you do not agree,
-          do not use the service.
+          By accessing or using reps, you agree to be bound by these terms. If you do not agree, do
+          not use the service.
         </p>
       </section>
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-100">Description of Service</h2>
         <p className="text-zinc-400">
-          reps is an interview preparation tracker with spaced repetition scheduling,
-          AI-powered coaching, and progress analytics. The service is provided as-is and may
-          change without notice.
+          reps is an interview preparation tracker with spaced repetition scheduling, AI-powered
+          coaching, and progress analytics. The service is provided as-is and may change without
+          notice.
         </p>
       </section>
 
@@ -36,8 +36,8 @@ export default function TermsOfService() {
         <h2 className="text-sm font-semibold text-zinc-100">AI-Generated Content</h2>
         <p className="text-zinc-400">
           reps uses AI (powered by Anthropic&rsquo;s Claude) to generate interview questions,
-          evaluate answers, and provide coaching. AI-generated content is for practice purposes
-          only and should not be taken as professional advice. Responses may contain inaccuracies.
+          evaluate answers, and provide coaching. AI-generated content is for practice purposes only
+          and should not be taken as professional advice. Responses may contain inaccuracies.
         </p>
       </section>
 
@@ -69,8 +69,8 @@ export default function TermsOfService() {
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-100">Termination</h2>
         <p className="text-zinc-400">
-          We reserve the right to suspend or terminate accounts that violate these terms.
-          You may stop using the service at any time.
+          We reserve the right to suspend or terminate accounts that violate these terms. You may
+          stop using the service at any time.
         </p>
       </section>
 
@@ -86,7 +86,10 @@ export default function TermsOfService() {
         <h2 className="text-sm font-semibold text-zinc-100">Contact</h2>
         <p className="text-zinc-400">
           Questions about these terms? Reach out at{' '}
-          <a href="mailto:legal@reps-prep.duckdns.org" className="text-amber-500 hover:text-amber-400 transition-colors">
+          <a
+            href="mailto:legal@reps-prep.duckdns.org"
+            className="text-amber-500 hover:text-amber-400 transition-colors"
+          >
             legal@reps-prep.duckdns.org
           </a>
         </p>

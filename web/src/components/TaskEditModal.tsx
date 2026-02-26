@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Task, Collection, Tag, Topic, Priority, CollectionStatus } from '../types';
-import { TOPICS, TOPIC_LABELS, PRIORITIES, PRIORITY_LABELS, PRIORITY_COLORS, formatStatusLabel } from '../types';
+import {
+  TOPICS,
+  TOPIC_LABELS,
+  PRIORITIES,
+  PRIORITY_LABELS,
+  PRIORITY_COLORS,
+  formatStatusLabel,
+} from '../types';
 import { updateTask, deleteTask, addNote, createTag } from '../api';
 import TagPicker from './TagPicker';
 import NotesList from './NotesList';
@@ -37,15 +44,14 @@ export default function TaskEditModal({
   const [saving, setSaving] = useState(false);
 
   // Derive statuses from collection
-  const activeCollection = collectionId
-    ? collections.find((c) => c.id === collectionId)
-    : null;
-  const statusOptions: string[] = activeCollection?.statuses && activeCollection.statuses.length > 0
-    ? activeCollection.statuses
-        .slice()
-        .sort((a: CollectionStatus, b: CollectionStatus) => a.sortOrder - b.sortOrder)
-        .map((s: CollectionStatus) => s.name)
-    : DEFAULT_STATUSES;
+  const activeCollection = collectionId ? collections.find((c) => c.id === collectionId) : null;
+  const statusOptions: string[] =
+    activeCollection?.statuses && activeCollection.statuses.length > 0
+      ? activeCollection.statuses
+          .slice()
+          .sort((a: CollectionStatus, b: CollectionStatus) => a.sortOrder - b.sortOrder)
+          .map((s: CollectionStatus) => s.name)
+      : DEFAULT_STATUSES;
 
   async function handleSave() {
     if (!title.trim()) return;
@@ -100,7 +106,9 @@ export default function TaskEditModal({
   return (
     <div
       className="anim-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         role="dialog"
@@ -207,7 +215,8 @@ export default function TaskEditModal({
               <option value="">None</option>
               {collections.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.icon ? `${c.icon} ` : ''}{c.name}
+                  {c.icon ? `${c.icon} ` : ''}
+                  {c.name}
                 </option>
               ))}
             </select>

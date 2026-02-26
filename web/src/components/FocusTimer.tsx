@@ -14,7 +14,10 @@ const DURATIONS = [
 
 function playBeep() {
   try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const ctx = new (
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    )();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -106,7 +109,10 @@ export default function FocusTimer({ onComplete }: FocusTimerProps) {
   const done = remaining === 0;
 
   return (
-    <div data-focus-timer-running={running || undefined} className="flex items-center gap-4 p-3 bg-zinc-900 border border-zinc-800 rounded-lg transition-all duration-200">
+    <div
+      data-focus-timer-running={running || undefined}
+      className="flex items-center gap-4 p-3 bg-zinc-900 border border-zinc-800 rounded-lg transition-all duration-200"
+    >
       <div className="relative flex-shrink-0">
         <svg width={72} height={72} className="-rotate-90">
           <circle cx={36} cy={36} r={r} fill="none" stroke="#27272a" strokeWidth={4} />
@@ -127,7 +133,10 @@ export default function FocusTimer({ onComplete }: FocusTimerProps) {
           {done ? (
             <span className="text-emerald-400 text-xs font-semibold">Done</span>
           ) : (
-            <span data-focus-timer-display className="text-zinc-100 text-sm font-mono font-semibold tabular-nums">
+            <span
+              data-focus-timer-display
+              className="text-zinc-100 text-sm font-mono font-semibold tabular-nums"
+            >
               {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
             </span>
           )}

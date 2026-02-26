@@ -1,5 +1,5 @@
-import sql from "../db/client.js";
-import type { Task } from "../../src/types.js";
+import sql from '../db/client.js';
+import type { Task } from '../../src/types.js';
 
 interface TaskRow {
   id: string;
@@ -25,16 +25,16 @@ export interface BriefingData {
 }
 
 function today(): string {
-  return new Date().toISOString().split("T")[0]!;
+  return new Date().toISOString().split('T')[0]!;
 }
 
 function mapTaskRow(row: TaskRow): Task {
   return {
     id: row.id,
-    topic: row.topic as Task["topic"],
+    topic: row.topic as Task['topic'],
     title: row.title,
     completed: row.completed,
-    status: row.status as Task["status"],
+    status: row.status as Task['status'],
     deadline: row.deadline ?? undefined,
     repetitions: row.repetitions,
     interval: row.interval,
@@ -46,11 +46,14 @@ function mapTaskRow(row: TaskRow): Task {
   };
 }
 
-export async function getDailyBriefingData(collectionId?: string, userId?: string): Promise<BriefingData> {
+export async function getDailyBriefingData(
+  collectionId?: string,
+  userId?: string,
+): Promise<BriefingData> {
   const todayStr = today();
   const deadlineCutoff = new Date();
   deadlineCutoff.setDate(deadlineCutoff.getDate() + 7);
-  const deadlineStr = deadlineCutoff.toISOString().split("T")[0]!;
+  const deadlineStr = deadlineCutoff.toISOString().split('T')[0]!;
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
   const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
 
@@ -75,9 +78,9 @@ export async function getDailyBriefingData(collectionId?: string, userId?: strin
       )
       SELECT COUNT(*)::text AS cnt FROM dates
     `;
-    streakCount = parseInt(streakRow?.cnt ?? "0", 10);
+    streakCount = parseInt(streakRow?.cnt ?? '0', 10);
   } catch (err) {
-    console.warn("[shared] streak query failed:", err);
+    console.warn('[shared] streak query failed:', err);
     streakCount = 0;
   }
 

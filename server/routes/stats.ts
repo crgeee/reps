@@ -1,17 +1,17 @@
-import { Hono } from "hono";
-import sql from "../db/client.js";
-import { validateUuid } from "../validation.js";
+import { Hono } from 'hono';
+import sql from '../db/client.js';
+import { validateUuid } from '../validation.js';
 
 type AppEnv = { Variables: { userId: string } };
 const stats = new Hono<AppEnv>();
 
 // GET /stats/overview?collection=uuid
-stats.get("/overview", async (c) => {
+stats.get('/overview', async (c) => {
   try {
-    const userId = c.get("userId") as string;
-    const collectionId = c.req.query("collection");
+    const userId = c.get('userId') as string;
+    const collectionId = c.req.query('collection');
     if (collectionId && !validateUuid(collectionId)) {
-      return c.json({ error: "Invalid collection ID" }, 400);
+      return c.json({ error: 'Invalid collection ID' }, 400);
     }
 
     const thirtyDaysAgo = new Date();
@@ -48,21 +48,31 @@ stats.get("/overview", async (c) => {
     const averageEaseByTopic: Record<string, number> = {};
     for (const r of easeRows) averageEaseByTopic[r.topic] = parseFloat(r.avg_ef);
 
-    return c.json({ totalReviews, reviewsLast30Days: reviewsLast30, reviewsByTopic, averageEaseByTopic });
+    return c.json({
+      totalReviews,
+      reviewsLast30Days: reviewsLast30,
+      reviewsByTopic,
+      averageEaseByTopic,
+    });
   } catch (err) {
-    console.error("[stats/overview]", err);
-    return c.json({ totalReviews: 0, reviewsLast30Days: 0, reviewsByTopic: {}, averageEaseByTopic: {} });
+    console.error('[stats/overview]', err);
+    return c.json({
+      totalReviews: 0,
+      reviewsLast30Days: 0,
+      reviewsByTopic: {},
+      averageEaseByTopic: {},
+    });
   }
 });
 
 // GET /stats/heatmap?collection=uuid&days=365
-stats.get("/heatmap", async (c) => {
+stats.get('/heatmap', async (c) => {
   try {
-    const userId = c.get("userId") as string;
-    const collectionId = c.req.query("collection");
-    const days = Math.min(parseInt(c.req.query("days") ?? "365", 10), 365);
+    const userId = c.get('userId') as string;
+    const collectionId = c.req.query('collection');
+    const days = Math.min(parseInt(c.req.query('days') ?? '365', 10), 365);
     if (collectionId && !validateUuid(collectionId)) {
-      return c.json({ error: "Invalid collection ID" }, 400);
+      return c.json({ error: 'Invalid collection ID' }, 400);
     }
 
     const cutoff = new Date();
@@ -82,18 +92,18 @@ stats.get("/heatmap", async (c) => {
     for (const r of rows) heatmap[r.date] = parseInt(r.count, 10);
     return c.json(heatmap);
   } catch (err) {
-    console.error("[stats/heatmap]", err);
+    console.error('[stats/heatmap]', err);
     return c.json({});
   }
 });
 
 // GET /stats/streaks?collection=uuid
-stats.get("/streaks", async (c) => {
+stats.get('/streaks', async (c) => {
   try {
-    const userId = c.get("userId") as string;
-    const collectionId = c.req.query("collection");
+    const userId = c.get('userId') as string;
+    const collectionId = c.req.query('collection');
     if (collectionId && !validateUuid(collectionId)) {
-      return c.json({ error: "Invalid collection ID" }, 400);
+      return c.json({ error: 'Invalid collection ID' }, 400);
     }
 
     const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
@@ -110,7 +120,7 @@ stats.get("/streaks", async (c) => {
     }
 
     const dates = rows.map((r) => r.review_date);
-    const todayStr = new Date().toISOString().split("T")[0]!;
+    const todayStr = new Date().toISOString().split('T')[0]!;
 
     let currentStreak = 0;
     let checkDate = new Date(todayStr);
@@ -120,7 +130,7 @@ stats.get("/streaks", async (c) => {
     } else {
       const yesterday = new Date(todayStr);
       yesterday.setDate(yesterday.getDate() - 1);
-      if (dates[0] === yesterday.toISOString().split("T")[0]) {
+      if (dates[0] === yesterday.toISOString().split('T')[0]) {
         currentStreak = 1;
         checkDate = yesterday;
       }
@@ -131,7 +141,7 @@ stats.get("/streaks", async (c) => {
       for (let i = 1; ; i++) {
         const prev = new Date(checkDate);
         prev.setDate(prev.getDate() - i);
-        const prevStr = prev.toISOString().split("T")[0]!;
+        const prevStr = prev.toISOString().split('T')[0]!;
         if (dateSet.has(prevStr)) {
           currentStreak++;
         } else {
@@ -160,7 +170,7 @@ stats.get("/streaks", async (c) => {
       lastReviewDate: dates[0],
     });
   } catch (err) {
-    console.error("[stats/streaks]", err);
+    console.error('[stats/streaks]', err);
     return c.json({ currentStreak: 0, longestStreak: 0, lastReviewDate: null });
   }
 });

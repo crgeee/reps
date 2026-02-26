@@ -59,7 +59,8 @@ export default function ExportView() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-zinc-300">Calendar Subscription</h2>
         <p className="text-xs text-zinc-500">
-          Subscribe to your review schedule in Apple Calendar, Google Calendar, or any app that supports iCal feeds.
+          Subscribe to your review schedule in Apple Calendar, Google Calendar, or any app that
+          supports iCal feeds.
         </p>
 
         {loading ? (
@@ -96,7 +97,8 @@ export default function ExportView() {
               </button>
             </div>
             <p className="text-[10px] text-zinc-700">
-              Regenerating will invalidate the current URL. Any existing subscriptions will stop updating.
+              Regenerating will invalidate the current URL. Any existing subscriptions will stop
+              updating.
             </p>
           </div>
         ) : (
@@ -110,8 +112,16 @@ export default function ExportView() {
         )}
 
         <div className="text-[10px] text-zinc-600 space-y-1 pt-2">
-          <p><strong>Apple Calendar:</strong> Click "Open in Calendar" or copy the URL, then File → New Calendar Subscription.</p>
-          <p><strong>Google Calendar:</strong> Copy the URL, replace <code className="text-zinc-500">webcal://</code> with <code className="text-zinc-500">https://</code>, then Settings → Add calendar → From URL.</p>
+          <p>
+            <strong>Apple Calendar:</strong> Click "Open in Calendar" or copy the URL, then File →
+            New Calendar Subscription.
+          </p>
+          <p>
+            <strong>Google Calendar:</strong> Copy the URL, replace{' '}
+            <code className="text-zinc-500">webcal://</code> with{' '}
+            <code className="text-zinc-500">https://</code>, then Settings → Add calendar → From
+            URL.
+          </p>
         </div>
       </section>
 

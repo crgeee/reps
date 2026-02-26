@@ -11,7 +11,7 @@ export function getUtcOffset(tz: string): string {
       timeZone: tz,
       timeZoneName: 'shortOffset',
     }).formatToParts(now);
-    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+    const offsetPart = parts.find((p) => p.type === 'timeZoneName');
     return offsetPart?.value ?? '';
   } catch {
     return '';

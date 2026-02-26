@@ -13,12 +13,14 @@
 ### Task 1: Database Migration — Add `status` Column
 
 **Files:**
+
 - Create: `db/002_add_status.sql`
 - Modify: `server/db/migrate.ts:9-14` (load multiple SQL files)
 
 **Step 1: Create migration SQL file**
 
 Create `db/002_add_status.sql`:
+
 ```sql
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'todo'
   CHECK (status IN ('todo', 'in-progress', 'review', 'done'));
@@ -31,31 +33,31 @@ UPDATE tasks SET status = 'done' WHERE completed = true;
 Modify `server/db/migrate.ts` to glob `db/*.sql` sorted by filename and execute each:
 
 ```typescript
-import { readFileSync, readdirSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import sql from "./client.js";
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import sql from './client.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbDir = resolve(__dirname, "../../db");
+const dbDir = resolve(__dirname, '../../db');
 
 async function migrate(): Promise<void> {
-  console.log("Running migrations...");
+  console.log('Running migrations...');
 
   try {
     const files = readdirSync(dbDir)
-      .filter((f) => f.endsWith(".sql"))
+      .filter((f) => f.endsWith('.sql'))
       .sort();
 
     for (const file of files) {
       console.log(`  Running ${file}...`);
-      const content = readFileSync(resolve(dbDir, file), "utf-8");
+      const content = readFileSync(resolve(dbDir, file), 'utf-8');
       await sql.unsafe(content);
     }
 
-    console.log("Migrations completed successfully.");
+    console.log('Migrations completed successfully.');
   } catch (error) {
-    console.error("Migration failed:", error);
+    console.error('Migration failed:', error);
     process.exit(1);
   } finally {
     await sql.end();
@@ -82,6 +84,7 @@ git commit -m "feat: add status column to tasks table with migration"
 ### Task 2: Server — Add `status` to Validation, Types, and Row Mapping
 
 **Files:**
+
 - Modify: `server/validation.ts` (add statusEnum)
 - Modify: `server/routes/tasks.ts:26-36` (add status to patchTaskSchema, createTaskSchema, fieldMap, TaskRow, rowToTask)
 - Modify: `src/types.ts` (add TaskStatus type and status field to Task)
@@ -90,49 +93,58 @@ git commit -m "feat: add status column to tasks table with migration"
 **Step 1: Add statusEnum to server/validation.ts**
 
 Add after line 11:
+
 ```typescript
-export const statusEnum = z.enum(["todo", "in-progress", "review", "done"]);
+export const statusEnum = z.enum(['todo', 'in-progress', 'review', 'done']);
 ```
 
 **Step 2: Update server/routes/tasks.ts**
 
 Add `status` to imports from validation:
+
 ```typescript
-import { validateUuid, dateStr, topicEnum, statusEnum, uuidStr } from "../validation.js";
+import { validateUuid, dateStr, topicEnum, statusEnum, uuidStr } from '../validation.js';
 ```
 
 Add `status` to `createTaskSchema`:
+
 ```typescript
 status: statusEnum.optional(),
 ```
 
 Add `status` to `patchTaskSchema`:
+
 ```typescript
 status: statusEnum.optional(),
 ```
 
 Add `status` to `TaskRow` interface:
+
 ```typescript
 status: string;
 ```
 
 Add `status` to `fieldMap` in PATCH handler:
+
 ```typescript
 status: "status",
 ```
 
 Add `status` to `rowToTask`:
+
 ```typescript
 status: row.status as Task["status"],
 ```
 
 Add `status` to POST `/tasks` INSERT:
+
 ```sql
 INSERT INTO tasks (id, topic, title, completed, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, status)
 VALUES (..., ${body.status ?? "todo"})
 ```
 
 Add `status` to `/sync` INSERT and ON CONFLICT:
+
 ```sql
 status = EXCLUDED.status
 ```
@@ -140,11 +152,13 @@ status = EXCLUDED.status
 **Step 3: Update src/types.ts**
 
 Add after Topic type:
+
 ```typescript
 export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 ```
 
 Add to Task interface:
+
 ```typescript
 status: TaskStatus;
 ```
@@ -152,24 +166,27 @@ status: TaskStatus;
 **Step 4: Update web/src/types.ts**
 
 Add after Topic type:
+
 ```typescript
 export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 ```
 
 Add to Task interface:
+
 ```typescript
 status: TaskStatus;
 ```
 
 Add constants:
+
 ```typescript
 export const STATUSES: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
-  'todo': 'Todo',
+  todo: 'Todo',
   'in-progress': 'In Progress',
-  'review': 'Review',
-  'done': 'Done',
+  review: 'Review',
+  done: 'Done',
 };
 ```
 
@@ -190,6 +207,7 @@ git commit -m "feat: add status field to task types, validation, and API"
 ### Task 3: Install @dnd-kit Dependencies
 
 **Files:**
+
 - Modify: `web/package.json`
 
 **Step 1: Install packages**
@@ -212,6 +230,7 @@ Note: if there's a root lockfile instead, adjust accordingly.
 ### Task 4: Shared Filter Hook — `useFilteredTasks`
 
 **Files:**
+
 - Create: `web/src/hooks/useFilteredTasks.ts`
 
 This hook centralizes all filtering/sorting logic so both BoardView and TaskList use the same code (DRY).
@@ -257,11 +276,16 @@ function endOfWeekStr(): string {
 function matchesDue(task: Task, due: DueFilter): boolean {
   const today = todayStr();
   switch (due) {
-    case 'all': return true;
-    case 'overdue': return task.nextReview < today && !task.completed;
-    case 'today': return task.nextReview === today;
-    case 'this-week': return task.nextReview >= today && task.nextReview <= endOfWeekStr();
-    case 'no-deadline': return !task.deadline;
+    case 'all':
+      return true;
+    case 'overdue':
+      return task.nextReview < today && !task.completed;
+    case 'today':
+      return task.nextReview === today;
+    case 'this-week':
+      return task.nextReview >= today && task.nextReview <= endOfWeekStr();
+    case 'no-deadline':
+      return !task.deadline;
   }
 }
 
@@ -269,10 +293,18 @@ function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
   const sorted = [...tasks].sort((a, b) => {
     let cmp = 0;
     switch (field) {
-      case 'created': cmp = a.createdAt.localeCompare(b.createdAt); break;
-      case 'next-review': cmp = a.nextReview.localeCompare(b.nextReview); break;
-      case 'deadline': cmp = (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'); break;
-      case 'ease-factor': cmp = a.easeFactor - b.easeFactor; break;
+      case 'created':
+        cmp = a.createdAt.localeCompare(b.createdAt);
+        break;
+      case 'next-review':
+        cmp = a.nextReview.localeCompare(b.nextReview);
+        break;
+      case 'deadline':
+        cmp = (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999');
+        break;
+      case 'ease-factor':
+        cmp = a.easeFactor - b.easeFactor;
+        break;
     }
     return dir === 'asc' ? cmp : -cmp;
   });
@@ -324,6 +356,7 @@ git commit -m "feat: add useFilteredTasks hook for shared filter/sort logic"
 ### Task 5: Shared FilterBar Component
 
 **Files:**
+
 - Create: `web/src/components/FilterBar.tsx`
 
 **Step 1: Create FilterBar**
@@ -472,6 +505,7 @@ git commit -m "feat: add shared FilterBar component"
 ### Task 6: Shared TaskCard Component
 
 **Files:**
+
 - Create: `web/src/components/TaskCard.tsx`
 
 Extract the task card rendering used by both TaskList and BoardView (DRY).
@@ -633,6 +667,7 @@ git commit -m "feat: add shared TaskCard component"
 ### Task 7: Refactor TaskList to Use Shared Components
 
 **Files:**
+
 - Modify: `web/src/components/TaskList.tsx` (rewrite to use FilterBar, useFilteredTasks, TaskCard)
 
 **Step 1: Rewrite TaskList.tsx**
@@ -706,6 +741,7 @@ git commit -m "refactor: TaskList uses shared FilterBar, useFilteredTasks, TaskC
 ### Task 8: Board View Component
 
 **Files:**
+
 - Create: `web/src/components/BoardView.tsx`
 
 **Step 1: Create BoardView**
@@ -895,26 +931,31 @@ git commit -m "feat: add BoardView component with @dnd-kit drag-and-drop"
 ### Task 9: Wire Board View into App.tsx
 
 **Files:**
+
 - Modify: `web/src/App.tsx` (add 'board' view type and nav item, import BoardView)
 
 **Step 1: Update App.tsx**
 
 Add `'board'` to the View type:
+
 ```typescript
 type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress';
 ```
 
 Add to NAV_ITEMS after tasks:
+
 ```typescript
 { view: 'board', label: 'Board' },
 ```
 
 Add import:
+
 ```typescript
 import BoardView from './components/BoardView';
 ```
 
 Add render case after TaskList:
+
 ```typescript
 {view === 'board' && <BoardView tasks={tasks} onRefresh={fetchData} />}
 ```

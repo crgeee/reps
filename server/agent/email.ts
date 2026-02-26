@@ -1,8 +1,12 @@
-import { Resend } from "resend";
-import { getDailyBriefingData } from "./shared.js";
+import { Resend } from 'resend';
+import { getDailyBriefingData } from './shared.js';
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 let resendClient: Resend | null = null;
@@ -18,7 +22,9 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
   const to = userEmail ?? process.env.DIGEST_EMAIL_TO;
 
   if (!client || !to) {
-    console.log("[email] Resend not configured (missing RESEND_API_KEY or email), skipping daily digest");
+    console.log(
+      '[email] Resend not configured (missing RESEND_API_KEY or email), skipping daily digest',
+    );
     return;
   }
 
@@ -26,7 +32,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
   try {
     data = await getDailyBriefingData(undefined, userId);
   } catch (err) {
-    console.error("[email] Failed to fetch briefing data:", err);
+    console.error('[email] Failed to fetch briefing data:', err);
     return;
   }
 
@@ -34,26 +40,26 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
     data.dueToday.length > 0
       ? data.dueToday
           .map((t) => `<li><strong>[${escapeHtml(t.topic)}]</strong> ${escapeHtml(t.title)}</li>`)
-          .join("")
-      : "<li>No reviews due today!</li>";
+          .join('')
+      : '<li>No reviews due today!</li>';
 
   const streakText =
     data.streak.current > 0
       ? `You're on a ${data.streak.current}-day streak!`
-      : "Start a new streak today!";
+      : 'Start a new streak today!';
 
   const weakestText = data.weakestTopic
     ? `Your weakest area is <strong>${escapeHtml(data.weakestTopic.topic)}</strong> (avg ease: ${data.weakestTopic.avgEase}).`
-    : "";
+    : '';
 
-  const dateStr = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
   });
 
   const reviewCount = data.dueToday.length;
-  const subject = `reps: ${reviewCount} review${reviewCount === 1 ? "" : "s"} due today`;
+  const subject = `reps: ${reviewCount} review${reviewCount === 1 ? '' : 's'} due today`;
 
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #18181b; color: #e4e4e7; padding: 32px; border-radius: 12px;">
@@ -74,7 +80,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
           ? `<div style="background: #27272a; padding: 12px 16px; border-radius: 8px; border-left: 3px solid #fbbf24; margin-top: 16px;">
           <p style="color: #fbbf24; margin: 0; font-size: 14px;">${weakestText}</p>
         </div>`
-          : ""
+          : ''
       }
 
       <p style="color: #52525b; font-size: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #27272a;">
@@ -85,13 +91,13 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
 
   try {
     await client.emails.send({
-      from: process.env.RESEND_FROM ?? "reps <noreply@localhost>",
+      from: process.env.RESEND_FROM ?? 'reps <noreply@localhost>',
       to,
       subject,
       html,
     });
-    console.log("[email] Daily digest sent to", to);
+    console.log('[email] Daily digest sent to', to);
   } catch (err) {
-    console.error("[email] Failed to send daily digest:", err);
+    console.error('[email] Failed to send daily digest:', err);
   }
 }

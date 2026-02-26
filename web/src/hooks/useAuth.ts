@@ -31,7 +31,9 @@ export function useAuth() {
           try {
             const updated = await updateProfile({ timezone: detected } as Partial<User>);
             setState({ user: updated, loading: false, error: null });
-          } catch { /* ignore — not critical */ }
+          } catch {
+            /* ignore — not critical */
+          }
         }
       }
     } catch {

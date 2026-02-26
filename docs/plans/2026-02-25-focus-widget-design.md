@@ -28,6 +28,7 @@ Rendered at the App level (outside `<main>`) so it persists across view changes.
 Curated YouTube playlists embedded via iframe. No API key required.
 
 Playlists:
+
 - Lofi Hip Hop (lofi girl 24/7 stream)
 - Classical Focus
 - Ambient/Nature

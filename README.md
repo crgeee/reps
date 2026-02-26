@@ -21,13 +21,13 @@ The name is a double meaning: "getting your reps in" (training) and the `repetit
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
-| API | [Hono](https://hono.dev) + Node.js |
-| DB | PostgreSQL + [postgres.js](https://github.com/porsager/postgres) |
-| Frontend | React + Vite + Tailwind CSS |
-| AI | [Anthropic SDK](https://docs.anthropic.com/en/docs/build-with-claude/claude-code) (Claude) |
-| Notifications | Pushover (push) + Resend (email) |
+| Layer         | Technology                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| API           | [Hono](https://hono.dev) + Node.js                                                         |
+| DB            | PostgreSQL + [postgres.js](https://github.com/porsager/postgres)                           |
+| Frontend      | React + Vite + Tailwind CSS                                                                |
+| AI            | [Anthropic SDK](https://docs.anthropic.com/en/docs/build-with-claude/claude-code) (Claude) |
+| Notifications | Pushover (push) + Resend (email)                                                           |
 
 ## Quick Start
 
@@ -48,16 +48,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full setup instructions.
 
 All configuration is via environment variables. Copy `.env.example` to `.env` and fill in your values:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `APP_URL` | Yes | Public URL (CORS, auth redirects, emails) |
-| `ANTHROPIC_API_KEY` | For AI | Enables coaching, mock interviews, evaluation |
-| `RESEND_API_KEY` | For email | Daily digest emails |
-| `RESEND_FROM` | For email | Sender address |
-| `PUSHOVER_USER_KEY` | For push | Pushover notifications |
-| `PUSHOVER_API_TOKEN` | For push | Pushover notifications |
-| `PORT` | No | Server port (default: 3000) |
+| Variable             | Required  | Description                                   |
+| -------------------- | --------- | --------------------------------------------- |
+| `DATABASE_URL`       | Yes       | PostgreSQL connection string                  |
+| `APP_URL`            | Yes       | Public URL (CORS, auth redirects, emails)     |
+| `ANTHROPIC_API_KEY`  | For AI    | Enables coaching, mock interviews, evaluation |
+| `RESEND_API_KEY`     | For email | Daily digest emails                           |
+| `RESEND_FROM`        | For email | Sender address                                |
+| `PUSHOVER_USER_KEY`  | For push  | Pushover notifications                        |
+| `PUSHOVER_API_TOKEN` | For push  | Pushover notifications                        |
+| `PORT`               | No        | Server port (default: 3000)                   |
 
 ## CLI
 

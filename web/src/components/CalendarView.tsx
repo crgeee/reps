@@ -10,8 +10,18 @@ interface CalendarViewProps {
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function toDateStr(year: number, month: number, day: number): string {
@@ -69,13 +79,17 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
   }, [year, month]);
 
   function prevMonth() {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
+    if (month === 0) {
+      setYear((y) => y - 1);
+      setMonth(11);
+    } else setMonth((m) => m - 1);
   }
 
   function nextMonth() {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
+    if (month === 11) {
+      setYear((y) => y + 1);
+      setMonth(0);
+    } else setMonth((m) => m + 1);
   }
 
   function handleDayClick(day: number) {
@@ -104,7 +118,10 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
-            onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}
+            onClick={() => {
+              setYear(today.getFullYear());
+              setMonth(today.getMonth());
+            }}
             className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors duration-150"
           >
             Today
@@ -121,7 +138,10 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
       {/* Day labels */}
       <div className="grid grid-cols-7 gap-1">
         {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-[10px] text-zinc-600 uppercase tracking-wider py-1">
+          <div
+            key={d}
+            className="text-center text-[10px] text-zinc-600 uppercase tracking-wider py-1"
+          >
             {d}
           </div>
         ))}
@@ -156,11 +176,7 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
             >
               <span
                 className={`text-xs font-medium ${
-                  isToday
-                    ? 'text-zinc-100'
-                    : isOverdue
-                      ? 'text-red-400'
-                      : 'text-zinc-400'
+                  isToday ? 'text-zinc-100' : isOverdue ? 'text-red-400' : 'text-zinc-400'
                 }`}
               >
                 {day}
@@ -195,7 +211,9 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: TOPIC_DOT_COLORS[task.topic] }}
               />
-              <span className={`flex-1 ${task.nextReview < todayStr ? 'text-red-300' : 'text-zinc-300'}`}>
+              <span
+                className={`flex-1 ${task.nextReview < todayStr ? 'text-red-300' : 'text-zinc-300'}`}
+              >
                 {task.title}
               </span>
               <span className="text-xs text-zinc-600">{TOPIC_LABELS[task.topic]}</span>

@@ -18,8 +18,8 @@ export default function PrivacyPolicy() {
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-100">How Data Is Stored</h2>
         <p className="text-zinc-400">
-          Your data is stored in a PostgreSQL database on a Hetzner VPS located in Germany.
-          All connections are encrypted via TLS. We do not sell or share your data with third parties
+          Your data is stored in a PostgreSQL database on a Hetzner VPS located in Germany. All
+          connections are encrypted via TLS. We do not sell or share your data with third parties
           for marketing purposes.
         </p>
       </section>
@@ -27,14 +27,22 @@ export default function PrivacyPolicy() {
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-100">Third-Party Services</h2>
         <ul className="list-disc list-inside space-y-1 text-zinc-400">
-          <li><strong className="text-zinc-300">Anthropic</strong> &mdash; AI-powered interview coaching and question generation</li>
-          <li><strong className="text-zinc-300">Resend</strong> &mdash; transactional email (magic links, daily digests)</li>
-          <li><strong className="text-zinc-300">Pushover</strong> &mdash; optional push notifications</li>
+          <li>
+            <strong className="text-zinc-300">Anthropic</strong> &mdash; AI-powered interview
+            coaching and question generation
+          </li>
+          <li>
+            <strong className="text-zinc-300">Resend</strong> &mdash; transactional email (magic
+            links, daily digests)
+          </li>
+          <li>
+            <strong className="text-zinc-300">Pushover</strong> &mdash; optional push notifications
+          </li>
         </ul>
         <p className="text-zinc-400">
           When you use AI features, your task titles and notes may be sent to Anthropic&rsquo;s API
-          to generate questions, evaluations, and coaching messages. Anthropic does not use API inputs
-          for training.
+          to generate questions, evaluations, and coaching messages. Anthropic does not use API
+          inputs for training.
         </p>
       </section>
 
@@ -51,7 +59,10 @@ export default function PrivacyPolicy() {
         <h2 className="text-sm font-semibold text-zinc-100">Contact</h2>
         <p className="text-zinc-400">
           Questions about this policy? Reach out at{' '}
-          <a href="mailto:privacy@reps-prep.duckdns.org" className="text-amber-500 hover:text-amber-400 transition-colors">
+          <a
+            href="mailto:privacy@reps-prep.duckdns.org"
+            className="text-amber-500 hover:text-amber-400 transition-colors"
+          >
             privacy@reps-prep.duckdns.org
           </a>
         </p>

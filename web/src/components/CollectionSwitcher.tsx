@@ -35,7 +35,13 @@ export default function CollectionSwitcher({
 
   const active = collections.find((c) => c.id === activeId) ?? null;
 
-  useClickOutside(ref, useCallback(() => { setOpen(false); setCreating(false); }, []));
+  useClickOutside(
+    ref,
+    useCallback(() => {
+      setOpen(false);
+      setCreating(false);
+    }, []),
+  );
 
   useEffect(() => {
     if (creating) nameInputRef.current?.focus();
@@ -45,7 +51,11 @@ export default function CollectionSwitcher({
     if (!newName.trim() || submitting) return;
     setSubmitting(true);
     try {
-      const col = await createCollection({ name: newName.trim(), color: newColor, srEnabled: newSrEnabled });
+      const col = await createCollection({
+        name: newName.trim(),
+        color: newColor,
+        srEnabled: newSrEnabled,
+      });
       onCollectionCreated(col);
       onChange(col.id);
       setNewName('');
@@ -87,7 +97,11 @@ export default function CollectionSwitcher({
       {open && (
         <div className="absolute top-full mt-1 right-0 sm:right-auto sm:left-0 z-50 min-w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
           <button
-            onClick={() => { onChange(null); setOpen(false); setCreating(false); }}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+              setCreating(false);
+            }}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
               activeId === null
                 ? 'bg-zinc-800 text-zinc-100'
@@ -100,7 +114,11 @@ export default function CollectionSwitcher({
           {collections.map((col) => (
             <div key={col.id} className="group flex items-center">
               <button
-                onClick={() => { onChange(col.id); setOpen(false); setCreating(false); }}
+                onClick={() => {
+                  onChange(col.id);
+                  setOpen(false);
+                  setCreating(false);
+                }}
                 className={`flex-1 flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
                   activeId === col.id
                     ? 'bg-zinc-800 text-zinc-100'
@@ -115,7 +133,11 @@ export default function CollectionSwitcher({
                 {!col.srEnabled && <span className="ml-auto text-[10px] text-zinc-600">no SR</span>}
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setEditingCollection(col); setOpen(false); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingCollection(col);
+                  setOpen(false);
+                }}
                 aria-label={`Edit ${col.name}`}
                 className="p-1.5 text-zinc-600 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-all"
                 title="Edit collection"
@@ -153,7 +175,9 @@ export default function CollectionSwitcher({
                       aria-label={`Color ${c}`}
                       aria-pressed={newColor === c}
                       className={`w-5 h-5 rounded-full transition-all duration-150 ${
-                        newColor === c ? 'ring-2 ring-zinc-400 ring-offset-1 ring-offset-zinc-900' : ''
+                        newColor === c
+                          ? 'ring-2 ring-zinc-400 ring-offset-1 ring-offset-zinc-900'
+                          : ''
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -177,7 +201,10 @@ export default function CollectionSwitcher({
                     {submitting ? 'Creating...' : 'Create'}
                   </button>
                   <button
-                    onClick={() => { setCreating(false); setNewName(''); }}
+                    onClick={() => {
+                      setCreating(false);
+                      setNewName('');
+                    }}
                     className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                   >
                     Cancel

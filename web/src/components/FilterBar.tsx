@@ -25,10 +25,21 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'ease-factor', label: 'Ease Factor' },
 ];
 
-export default function FilterBar({ filters, setFilter, resetFilters, hideStatus, statusOptions }: FilterBarProps) {
-  const hasActiveFilters = filters.topic !== 'all' || filters.status !== 'all' ||
-    filters.due !== 'all' || filters.search !== '' || filters.sortField !== 'created' ||
-    !filters.hideCompleted || filters.groupBy !== 'none';
+export default function FilterBar({
+  filters,
+  setFilter,
+  resetFilters,
+  hideStatus,
+  statusOptions,
+}: FilterBarProps) {
+  const hasActiveFilters =
+    filters.topic !== 'all' ||
+    filters.status !== 'all' ||
+    filters.due !== 'all' ||
+    filters.search !== '' ||
+    filters.sortField !== 'created' ||
+    !filters.hideCompleted ||
+    filters.groupBy !== 'none';
 
   return (
     <div className="space-y-3">
@@ -46,7 +57,10 @@ export default function FilterBar({ filters, setFilter, resetFilters, hideStatus
         <ChipGroup
           label="Topic"
           value={filters.topic}
-          options={[{ value: 'all' as const, label: 'All' }, ...TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t] }))]}
+          options={[
+            { value: 'all' as const, label: 'All' },
+            ...TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t] })),
+          ]}
           onChange={(v) => setFilter('topic', v as Topic | 'all')}
         />
 
@@ -79,7 +93,9 @@ export default function FilterBar({ filters, setFilter, resetFilters, hideStatus
             className="bg-zinc-900 border border-zinc-800 rounded text-xs text-zinc-400 px-2 py-1.5 focus:outline-none"
           >
             {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
           </select>
           <button

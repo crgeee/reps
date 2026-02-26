@@ -1,6 +1,6 @@
-import sql from "../db/client.js";
-import { hashToken, generateUserCode, generateDeviceCode } from "./crypto.js";
-import { createSession } from "./sessions.js";
+import sql from '../db/client.js';
+import { hashToken, generateUserCode, generateDeviceCode } from './crypto.js';
+import { createSession } from './sessions.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 10;
 
@@ -16,7 +16,7 @@ export async function initiateDeviceAuth(): Promise<DeviceAuthInitiation> {
   const deviceCode = generateDeviceCode();
   const deviceCodeHash = hashToken(deviceCode);
   const expiresAt = new Date(Date.now() + DEVICE_CODE_EXPIRY_MINUTES * 60 * 1000);
-  const appUrl = process.env.APP_URL ?? "https://reps-prep.duckdns.org";
+  const appUrl = process.env.APP_URL ?? 'https://reps-prep.duckdns.org';
 
   await sql`
     INSERT INTO device_auth_codes (user_code, device_code_hash, expires_at)
@@ -32,30 +32,32 @@ export async function initiateDeviceAuth(): Promise<DeviceAuthInitiation> {
 }
 
 export type PollResult =
-  | { status: "pending" }
-  | { status: "approved"; sessionToken: string }
-  | { status: "denied" }
-  | { status: "expired" };
+  | { status: 'pending' }
+  | { status: 'approved'; sessionToken: string }
+  | { status: 'denied' }
+  | { status: 'expired' };
 
 export async function pollDeviceAuth(deviceCode: string): Promise<PollResult> {
   const deviceCodeHash = hashToken(deviceCode);
 
-  const [row] = await sql<{
-    id: string;
-    approved: boolean;
-    denied: boolean;
-    expires_at: string;
-    session_token_hash: string | null;
-  }[]>`
+  const [row] = await sql<
+    {
+      id: string;
+      approved: boolean;
+      denied: boolean;
+      expires_at: string;
+      session_token_hash: string | null;
+    }[]
+  >`
     SELECT id, approved, denied, expires_at, session_token_hash
     FROM device_auth_codes
     WHERE device_code_hash = ${deviceCodeHash}
   `;
 
-  if (!row) return { status: "expired" };
+  if (!row) return { status: 'expired' };
 
-  if (new Date(row.expires_at) <= new Date()) return { status: "expired" };
-  if (row.denied) return { status: "denied" };
+  if (new Date(row.expires_at) <= new Date()) return { status: 'expired' };
+  if (row.denied) return { status: 'denied' };
 
   if (row.approved && row.session_token_hash) {
     // Retrieve the raw session token that was stored alongside the hash
@@ -71,10 +73,10 @@ export async function pollDeviceAuth(deviceCode: string): Promise<PollResult> {
     // Delete the device code after successful retrieval
     await sql`DELETE FROM device_auth_codes WHERE id = ${row.id}`;
 
-    return { status: "approved", sessionToken: tokenRow.session_token_hash! };
+    return { status: 'approved', sessionToken: tokenRow.session_token_hash! };
   }
 
-  return { status: "pending" };
+  return { status: 'pending' };
 }
 
 export async function approveDeviceAuth(
@@ -93,7 +95,7 @@ export async function approveDeviceAuth(
   if (new Date(row.expires_at) <= new Date()) return false;
 
   // Create a session for the CLI
-  const { token } = await createSession(userId, userAgent ?? "CLI", ipAddress);
+  const { token } = await createSession(userId, userAgent ?? 'CLI', ipAddress);
 
   // Store the raw token so the CLI can retrieve it via polling
   // This is intentionally the raw token (not hashed) — it's deleted after one poll

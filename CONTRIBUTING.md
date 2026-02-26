@@ -35,6 +35,7 @@ npm run dev:web      # Vite on :5173
 All configuration is done via `.env` — see `.env.example` for the full list. No secrets should ever be hardcoded in source files.
 
 Key variables:
+
 - `DATABASE_URL` — PostgreSQL connection string
 - `APP_URL` — Your app's public URL (used for CORS, auth redirects, emails)
 - `ANTHROPIC_API_KEY` — Required for AI features (optional for basic task management)

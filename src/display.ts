@@ -15,9 +15,10 @@ export function formatTopic(topic: Topic): string {
 
 export function formatTask(task: Task): string {
   const status = task.completed ? chalk.green('done') : chalk.red('pending');
-  const due = task.nextReview <= new Date().toISOString().split('T')[0]
-    ? chalk.red.bold('DUE')
-    : chalk.dim(task.nextReview);
+  const due =
+    task.nextReview <= new Date().toISOString().split('T')[0]
+      ? chalk.red.bold('DUE')
+      : chalk.dim(task.nextReview);
   return `${chalk.dim(task.id.slice(0, 8))} ${formatTopic(task.topic)} ${task.title} [${status}] ${due}`;
 }
 
@@ -30,7 +31,7 @@ export function formatDashboard(tasks: Task[]): string {
     const done = topicTasks.filter((t) => t.completed).length;
     const total = topicTasks.length;
     const due = topicTasks.filter(
-      (t) => !t.completed && t.nextReview <= new Date().toISOString().split('T')[0]
+      (t) => !t.completed && t.nextReview <= new Date().toISOString().split('T')[0],
     ).length;
 
     if (total > 0) {

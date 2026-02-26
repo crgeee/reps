@@ -1,6 +1,13 @@
-import { Hono } from "hono";
-import sql from "../db/client.js";
-import { validateUuid, buildUpdates, collectionSchema, patchCollectionSchema, collectionStatusSchema, patchCollectionStatusSchema } from "../validation.js";
+import { Hono } from 'hono';
+import sql from '../db/client.js';
+import {
+  validateUuid,
+  buildUpdates,
+  collectionSchema,
+  patchCollectionSchema,
+  collectionStatusSchema,
+  patchCollectionStatusSchema,
+} from '../validation.js';
 
 type AppEnv = { Variables: { userId: string } };
 const collections = new Hono<AppEnv>();
@@ -46,8 +53,8 @@ function rowToCollection(row: CollectionRow) {
 }
 
 // GET /collections
-collections.get("/", async (c) => {
-  const userId = c.get("userId") as string;
+collections.get('/', async (c) => {
+  const userId = c.get('userId') as string;
   const userFilter = userId ? sql`WHERE user_id = ${userId}` : sql``;
   const rows = await sql<CollectionRow[]>`
     SELECT * FROM collections ${userFilter} ORDER BY sort_order ASC, created_at ASC
@@ -61,18 +68,21 @@ collections.get("/", async (c) => {
     list.push(statusRowToStatus(sr));
     statusesByCollection.set(sr.collection_id, list);
   }
-  return c.json(rows.map((row) => ({
-    ...rowToCollection(row),
-    statuses: statusesByCollection.get(row.id) ?? [],
-  })));
+  return c.json(
+    rows.map((row) => ({
+      ...rowToCollection(row),
+      statuses: statusesByCollection.get(row.id) ?? [],
+    })),
+  );
 });
 
 // POST /collections
-collections.post("/", async (c) => {
-  const userId = c.get("userId") as string;
+collections.post('/', async (c) => {
+  const userId = c.get('userId') as string;
   const raw = await c.req.json();
   const parsed = collectionSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const [row] = await sql<CollectionRow[]>`
@@ -84,50 +94,53 @@ collections.post("/", async (c) => {
 });
 
 // PATCH /collections/:id
-collections.patch("/:id", async (c) => {
-  const userId = c.get("userId") as string;
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+collections.patch('/:id', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
   const raw = await c.req.json();
   const parsed = patchCollectionSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const updates = buildUpdates(body as Record<string, unknown>, {
-    name: "name",
-    icon: "icon",
-    color: "color",
-    srEnabled: "sr_enabled",
-    sortOrder: "sort_order",
+    name: 'name',
+    icon: 'icon',
+    color: 'color',
+    srEnabled: 'sr_enabled',
+    sortOrder: 'sort_order',
   });
 
-  if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
+  if (Object.keys(updates).length === 0) return c.json({ error: 'No valid fields' }, 400);
 
   const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
   const [row] = await sql<CollectionRow[]>`
     UPDATE collections SET ${sql(updates)} WHERE id = ${id} ${userWhere} RETURNING *
   `;
-  if (!row) return c.json({ error: "Collection not found" }, 404);
+  if (!row) return c.json({ error: 'Collection not found' }, 404);
   return c.json(rowToCollection(row));
 });
 
 // DELETE /collections/:id
-collections.delete("/:id", async (c) => {
-  const userId = c.get("userId") as string;
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+collections.delete('/:id', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
-  const [row] = await sql<CollectionRow[]>`DELETE FROM collections WHERE id = ${id} ${userWhere} RETURNING *`;
-  if (!row) return c.json({ error: "Collection not found" }, 404);
+  const [row] = await sql<
+    CollectionRow[]
+  >`DELETE FROM collections WHERE id = ${id} ${userWhere} RETURNING *`;
+  if (!row) return c.json({ error: 'Collection not found' }, 404);
 
   return c.json({ deleted: true, id });
 });
 
 // GET /collections/:id/statuses
-collections.get("/:id/statuses", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+collections.get('/:id/statuses', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const rows = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses WHERE collection_id = ${id} ORDER BY sort_order ASC
@@ -136,16 +149,17 @@ collections.get("/:id/statuses", async (c) => {
 });
 
 // POST /collections/:id/statuses
-collections.post("/:id/statuses", async (c) => {
-  const id = c.req.param("id");
-  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+collections.post('/:id/statuses', async (c) => {
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const [collection] = await sql<CollectionRow[]>`SELECT id FROM collections WHERE id = ${id}`;
-  if (!collection) return c.json({ error: "Collection not found" }, 404);
+  if (!collection) return c.json({ error: 'Collection not found' }, 404);
 
   const raw = await c.req.json();
   const parsed = collectionStatusSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const [row] = await sql<CollectionStatusRow[]>`
@@ -157,41 +171,42 @@ collections.post("/:id/statuses", async (c) => {
 });
 
 // PATCH /collections/:id/statuses/:sid
-collections.patch("/:id/statuses/:sid", async (c) => {
-  const id = c.req.param("id");
-  const sid = c.req.param("sid");
-  if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: "Invalid ID format" }, 400);
+collections.patch('/:id/statuses/:sid', async (c) => {
+  const id = c.req.param('id');
+  const sid = c.req.param('sid');
+  if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const raw = await c.req.json();
   const parsed = patchCollectionStatusSchema.safeParse(raw);
-  if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const updates = buildUpdates(body as Record<string, unknown>, {
-    name: "name",
-    color: "color",
-    sortOrder: "sort_order",
+    name: 'name',
+    color: 'color',
+    sortOrder: 'sort_order',
   });
 
-  if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
+  if (Object.keys(updates).length === 0) return c.json({ error: 'No valid fields' }, 400);
 
   const [row] = await sql<CollectionStatusRow[]>`
     UPDATE collection_statuses SET ${sql(updates)} WHERE id = ${sid} AND collection_id = ${id} RETURNING *
   `;
-  if (!row) return c.json({ error: "Status not found" }, 404);
+  if (!row) return c.json({ error: 'Status not found' }, 404);
   return c.json(statusRowToStatus(row));
 });
 
 // DELETE /collections/:id/statuses/:sid
-collections.delete("/:id/statuses/:sid", async (c) => {
-  const id = c.req.param("id");
-  const sid = c.req.param("sid");
-  if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: "Invalid ID format" }, 400);
+collections.delete('/:id/statuses/:sid', async (c) => {
+  const id = c.req.param('id');
+  const sid = c.req.param('sid');
+  if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const [status] = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses WHERE id = ${sid} AND collection_id = ${id}
   `;
-  if (!status) return c.json({ error: "Status not found" }, 404);
+  if (!status) return c.json({ error: 'Status not found' }, 404);
 
   const [fallback] = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses

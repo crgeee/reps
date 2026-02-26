@@ -6,9 +6,8 @@ interface TagBadgeProps {
 }
 
 export default function TagBadge({ tag, size = 'md' }: TagBadgeProps) {
-  const sizeClasses = size === 'sm'
-    ? 'px-1.5 py-0.5 text-[10px] gap-1'
-    : 'px-2 py-1 text-xs gap-1.5';
+  const sizeClasses =
+    size === 'sm' ? 'px-1.5 py-0.5 text-[10px] gap-1' : 'px-2 py-1 text-xs gap-1.5';
 
   return (
     <span
