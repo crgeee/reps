@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import sql from "../db/client.js";
 import { validateUuid, buildUpdates, collectionSchema, patchCollectionSchema, collectionStatusSchema, patchCollectionStatusSchema } from "../validation.js";
 
-const collections = new Hono();
+type AppEnv = { Variables: { userId: string } };
+const collections = new Hono<AppEnv>();
 
 interface CollectionRow {
   id: string;
@@ -46,8 +47,10 @@ function rowToCollection(row: CollectionRow) {
 
 // GET /collections
 collections.get("/", async (c) => {
+  const userId = c.get("userId") as string;
+  const userFilter = userId ? sql`WHERE user_id = ${userId}` : sql``;
   const rows = await sql<CollectionRow[]>`
-    SELECT * FROM collections ORDER BY sort_order ASC, created_at ASC
+    SELECT * FROM collections ${userFilter} ORDER BY sort_order ASC, created_at ASC
   `;
   const statusRows = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses ORDER BY sort_order ASC
@@ -66,14 +69,15 @@ collections.get("/", async (c) => {
 
 // POST /collections
 collections.post("/", async (c) => {
+  const userId = c.get("userId") as string;
   const raw = await c.req.json();
   const parsed = collectionSchema.safeParse(raw);
   if (!parsed.success) return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
   const body = parsed.data;
 
   const [row] = await sql<CollectionRow[]>`
-    INSERT INTO collections (name, icon, color, sr_enabled, sort_order)
-    VALUES (${body.name}, ${body.icon ?? null}, ${body.color ?? null}, ${body.srEnabled ?? true}, ${body.sortOrder ?? 0})
+    INSERT INTO collections (name, icon, color, sr_enabled, sort_order, user_id)
+    VALUES (${body.name}, ${body.icon ?? null}, ${body.color ?? null}, ${body.srEnabled ?? true}, ${body.sortOrder ?? 0}, ${userId ?? null})
     RETURNING *
   `;
   return c.json(rowToCollection(row), 201);
@@ -81,6 +85,7 @@ collections.post("/", async (c) => {
 
 // PATCH /collections/:id
 collections.patch("/:id", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
   const raw = await c.req.json();
@@ -98,8 +103,9 @@ collections.patch("/:id", async (c) => {
 
   if (Object.keys(updates).length === 0) return c.json({ error: "No valid fields" }, 400);
 
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
   const [row] = await sql<CollectionRow[]>`
-    UPDATE collections SET ${sql(updates)} WHERE id = ${id} RETURNING *
+    UPDATE collections SET ${sql(updates)} WHERE id = ${id} ${userWhere} RETURNING *
   `;
   if (!row) return c.json({ error: "Collection not found" }, 404);
   return c.json(rowToCollection(row));
@@ -107,10 +113,12 @@ collections.patch("/:id", async (c) => {
 
 // DELETE /collections/:id
 collections.delete("/:id", async (c) => {
+  const userId = c.get("userId") as string;
   const id = c.req.param("id");
   if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
 
-  const [row] = await sql<CollectionRow[]>`DELETE FROM collections WHERE id = ${id} RETURNING *`;
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [row] = await sql<CollectionRow[]>`DELETE FROM collections WHERE id = ${id} ${userWhere} RETURNING *`;
   if (!row) return c.json({ error: "Collection not found" }, 404);
 
   return c.json({ deleted: true, id });

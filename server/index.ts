@@ -3,25 +3,29 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
 import { authMiddleware } from "./middleware/auth.js";
+import authRoutes from "./routes/auth.js";
 import tasks from "./routes/tasks.js";
 import agent from "./routes/agent.js";
 import collections from "./routes/collections.js";
 import tags from "./routes/tags.js";
 import statsRoutes from "./routes/stats.js";
+import usersRoutes from "./routes/users.js";
 
 // Import and start cron jobs
 import { startCronJobs } from "./cron.js";
 startCronJobs();
 
-const app = new Hono();
+type AppEnv = { Variables: { userId: string } };
+const app = new Hono<AppEnv>();
 
-// CORS — restrict to our domain
+// CORS — restrict to our domain, enable credentials for cookies
 app.use(
   "/*",
   cors({
     origin: ["https://reps-prep.duckdns.org"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Authorization", "Content-Type"],
+    credentials: true,
     maxAge: 86400,
   })
 );
@@ -32,15 +36,19 @@ app.use("/*", bodyLimit({ maxSize: 1024 * 1024 }));
 // Health check (no auth required)
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-// Apply auth middleware to all API routes
+// Auth routes — BEFORE auth middleware (public endpoints)
+app.route("/auth", authRoutes);
+
+// Apply auth middleware to all protected routes
 app.use("/*", authMiddleware);
 
-// Mount routes
+// Mount protected routes
 app.route("/tasks", tasks);
 app.route("/agent", agent);
 app.route("/collections", collections);
 app.route("/tags", tags);
 app.route("/stats", statsRoutes);
+app.route("/users", usersRoutes);
 
 const port = parseInt(process.env.PORT || "3000", 10);
 

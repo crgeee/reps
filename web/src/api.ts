@@ -12,28 +12,19 @@ import type {
   MockScore,
   Topic,
   MockDifficulty,
+  User,
+  SessionInfo,
+  CustomTopic,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-function getApiKey(): string {
-  return localStorage.getItem('reps_api_key') ?? '';
-}
-
-export function setApiKey(key: string): void {
-  localStorage.setItem('reps_api_key', key);
-}
-
-export function getStoredApiKey(): string {
-  return getApiKey();
-}
-
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${getApiKey()}`,
       ...options.headers,
     },
   });
@@ -44,6 +35,79 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   return res.json() as Promise<T>;
+}
+
+// Auth
+
+export async function sendMagicLink(email: string): Promise<void> {
+  await request<unknown>('/auth/magic-link', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function getMe(): Promise<User> {
+  return request<User>('/auth/me');
+}
+
+export async function logout(): Promise<void> {
+  await request<unknown>('/auth/logout', { method: 'POST' });
+}
+
+export async function approveDevice(userCode: string): Promise<void> {
+  await request<unknown>('/auth/device/approve', {
+    method: 'POST',
+    body: JSON.stringify({ userCode }),
+  });
+}
+
+export async function denyDevice(userCode: string): Promise<void> {
+  await request<unknown>('/auth/device/deny', {
+    method: 'POST',
+    body: JSON.stringify({ userCode }),
+  });
+}
+
+// User Profile
+
+export async function updateProfile(updates: Partial<User>): Promise<User> {
+  return request<User>('/users/me', {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function getUserSessions(): Promise<SessionInfo[]> {
+  return request<SessionInfo[]>('/users/me/sessions');
+}
+
+export async function deleteUserSession(sessionId: string): Promise<void> {
+  await request<unknown>(`/users/me/sessions/${sessionId}`, { method: 'DELETE' });
+}
+
+export async function getCustomTopics(): Promise<CustomTopic[]> {
+  return request<CustomTopic[]>('/users/me/topics');
+}
+
+export async function createCustomTopic(input: { name: string; color?: string }): Promise<CustomTopic> {
+  return request<CustomTopic>('/users/me/topics', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteCustomTopic(id: string): Promise<void> {
+  await request<unknown>(`/users/me/topics/${id}`, { method: 'DELETE' });
+}
+
+// Admin
+
+export async function getAdminUsers(): Promise<User[]> {
+  return request<User[]>('/users/admin/users');
+}
+
+export async function getAdminStats(): Promise<{ users: number; tasks: number; activeSessions: number; totalReviews: number }> {
+  return request('/users/admin/stats');
 }
 
 // Tasks

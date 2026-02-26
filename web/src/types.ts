@@ -136,6 +136,37 @@ export const TOPIC_COLORS: Record<Topic, string> = {
   custom: 'bg-slate-500',
 };
 
+export interface User {
+  id: string;
+  email: string;
+  displayName: string | null;
+  emailVerified: boolean;
+  isAdmin: boolean;
+  timezone: string;
+  theme: string;
+  notifyDaily: boolean;
+  notifyWeekly: boolean;
+  dailyReviewGoal: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionInfo {
+  id: string;
+  userId: string;
+  expiresAt: string;
+  createdAt: string;
+  lastUsedAt: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+}
+
+export interface CustomTopic {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export const STATUSES: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
