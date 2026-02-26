@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
 import sql from "../db/client.js";
-import type { Note } from "../../src/types.js";
 
 const anthropic = new Anthropic();
 const MODEL = "claude-sonnet-4-6";
