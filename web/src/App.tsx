@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { Task, Collection, Tag } from './types';
+import type { Task, Collection, Tag, User } from './types';
 import { formatStatusLabel } from './types';
-import { getTasks, getDueTasks, getStoredApiKey, setApiKey, getCollections, getTags } from './api';
+import { getTasks, getDueTasks, getCollections, getTags } from './api';
+import { useAuth } from './hooks/useAuth';
 import { logger } from './logger';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
@@ -14,10 +15,13 @@ import Spinner from './components/Spinner';
 import CalendarView from './components/CalendarView';
 import MockInterview from './components/MockInterview';
 import CollectionSwitcher from './components/CollectionSwitcher';
+import LoginPage from './components/LoginPage';
+import Settings from './components/Settings';
+import DeviceApproval from './components/DeviceApproval';
 
-type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock';
+type View = 'dashboard' | 'tasks' | 'board' | 'review' | 'add' | 'progress' | 'calendar' | 'mock' | 'settings' | 'device-approve';
 
-const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock']);
+const VALID_VIEWS = new Set<string>(['dashboard', 'tasks', 'board', 'review', 'add', 'progress', 'calendar', 'mock', 'settings', 'device-approve']);
 
 function getViewFromHash(): View {
   const hash = window.location.hash.slice(1);
@@ -35,11 +39,13 @@ const MORE_NAV: { view: View; label: string }[] = [
   { view: 'progress', label: 'Progress' },
   { view: 'calendar', label: 'Calendar' },
   { view: 'mock', label: 'Mock Interview' },
+  { view: 'settings', label: 'Settings' },
 ];
 
 const ALL_NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
 export default function App() {
+  const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
   const [view, setViewState] = useState<View>(getViewFromHash);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [dueTasks, setDueTasks] = useState<Task[]>([]);
@@ -50,8 +56,6 @@ export default function App() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [hasApiKey, setHasApiKey] = useState(!!getStoredApiKey());
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -164,18 +168,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (hasApiKey) {
+    if (isAuthenticated) {
       fetchData();
       fetchCollections();
       fetchTags();
     }
-  }, [hasApiKey, fetchData, fetchCollections, fetchTags]);
+  }, [isAuthenticated, fetchData, fetchCollections, fetchTags]);
 
-  function handleSetApiKey() {
-    if (!apiKeyInput.trim()) return;
-    setApiKey(apiKeyInput.trim());
-    setApiKeyInput('');
-    setHasApiKey(true);
+  function handleUserUpdate(_updated: User) {
+    refreshAuth();
   }
 
   function handleTagCreated(tag: Tag) {
@@ -205,34 +206,18 @@ export default function App() {
 
   const isMoreView = MORE_NAV.some((n) => n.view === view);
 
-  if (!hasApiKey) {
+  // Show loading spinner while checking auth
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-        <form
-          className="w-full max-w-sm p-8"
-          onSubmit={(e) => { e.preventDefault(); handleSetApiKey(); }}
-          data-1p-ignore
-        >
-          <h1 className="text-5xl font-extrabold tracking-tight mb-2 wordmark">reps</h1>
-          <p className="text-zinc-500 text-sm mb-8">Enter your API key to connect.</p>
-          <input
-            type="text"
-            value={apiKeyInput}
-            onChange={(e) => setApiKeyInput(e.target.value)}
-            placeholder="API key"
-            autoComplete="off"
-            data-1p-ignore
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-700/50 focus:ring-1 focus:ring-amber-700/30 mb-4 [-webkit-text-security:disc] transition-all duration-200"
-          />
-          <button
-            type="submit"
-            className="w-full py-3 bg-amber-500 text-zinc-950 font-semibold rounded-lg hover:bg-amber-400 transition-colors glow-amber"
-          >
-            Connect
-          </button>
-        </form>
+        <Spinner size="lg" label="Loading..." />
       </div>
     );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />;
   }
 
   return (
@@ -308,7 +293,7 @@ export default function App() {
             </div>
           </nav>
 
-          {/* Desktop add + disconnect */}
+          {/* Desktop add + sign out */}
           <button
             onClick={() => setView('add')}
             className={`hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center text-lg font-light transition-colors ${
@@ -322,13 +307,10 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => {
-              localStorage.removeItem('reps_api_key');
-              setHasApiKey(false);
-            }}
+            onClick={logout}
             className="hidden md:block text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0"
           >
-            Disconnect
+            Sign out
           </button>
 
           {/* Mobile hamburger */}
@@ -375,13 +357,12 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      localStorage.removeItem('reps_api_key');
-                      setHasApiKey(false);
+                      logout();
                       setMobileMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
                   >
-                    Disconnect
+                    Sign out
                   </button>
                 </div>
               </div>
@@ -466,6 +447,10 @@ export default function App() {
               </div>
             )}
             {view === 'mock' && <MockInterview />}
+            {view === 'settings' && user && (
+              <Settings user={user} onUserUpdate={handleUserUpdate} />
+            )}
+            {view === 'device-approve' && <DeviceApproval />}
           </ErrorBoundary>
         )}
       </main>

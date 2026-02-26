@@ -2,11 +2,13 @@ import { Hono } from "hono";
 import sql from "../db/client.js";
 import { validateUuid } from "../validation.js";
 
-const stats = new Hono();
+type AppEnv = { Variables: { userId: string } };
+const stats = new Hono<AppEnv>();
 
 // GET /stats/overview?collection=uuid
 stats.get("/overview", async (c) => {
   try {
+    const userId = c.get("userId") as string;
     const collectionId = c.req.query("collection");
     if (collectionId && !validateUuid(collectionId)) {
       return c.json({ error: "Invalid collection ID" }, 400);
@@ -15,59 +17,36 @@ stats.get("/overview", async (c) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    let totalReviews = 0;
-    let reviewsLast30 = 0;
-    let reviewsByTopic: Record<string, number> = {};
-    let averageEaseByTopic: Record<string, number> = {};
+    const userFilter = userId ? sql`AND re.user_id = ${userId}` : sql``;
+    const taskUserFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+    const collectionFilter = collectionId ? sql`AND re.collection_id = ${collectionId}` : sql``;
+    const taskCollectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
 
-    if (collectionId) {
-      const [counts] = await sql<[{ total: string; last30: string }]>`
-        SELECT
-          COUNT(*)::text AS total,
-          COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgo})::text AS last30
-        FROM review_events WHERE collection_id = ${collectionId}
-      `;
-      totalReviews = parseInt(counts.total, 10);
-      reviewsLast30 = parseInt(counts.last30, 10);
+    const [counts] = await sql<[{ total: string; last30: string }]>`
+      SELECT
+        COUNT(*)::text AS total,
+        COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgo})::text AS last30
+      FROM review_events re WHERE 1=1 ${userFilter} ${collectionFilter}
+    `;
+    const totalReviews = parseInt(counts.total, 10);
+    const reviewsLast30 = parseInt(counts.last30, 10);
 
-      const topicRows = await sql<{ topic: string; cnt: string }[]>`
-        SELECT tk.topic, COUNT(*)::text AS cnt
-        FROM review_events re JOIN tasks tk ON tk.id = re.task_id
-        WHERE re.collection_id = ${collectionId}
-        GROUP BY tk.topic
-      `;
-      for (const r of topicRows) reviewsByTopic[r.topic] = parseInt(r.cnt, 10);
+    const topicRows = await sql<{ topic: string; cnt: string }[]>`
+      SELECT tk.topic, COUNT(*)::text AS cnt
+      FROM review_events re JOIN tasks tk ON tk.id = re.task_id
+      WHERE 1=1 ${userFilter} ${collectionFilter}
+      GROUP BY tk.topic
+    `;
+    const reviewsByTopic: Record<string, number> = {};
+    for (const r of topicRows) reviewsByTopic[r.topic] = parseInt(r.cnt, 10);
 
-      const easeRows = await sql<{ topic: string; avg_ef: string }[]>`
-        SELECT topic, ROUND(AVG(ease_factor)::numeric, 2)::text AS avg_ef
-        FROM tasks WHERE completed = false AND collection_id = ${collectionId}
-        GROUP BY topic
-      `;
-      for (const r of easeRows) averageEaseByTopic[r.topic] = parseFloat(r.avg_ef);
-    } else {
-      const [counts] = await sql<[{ total: string; last30: string }]>`
-        SELECT
-          COUNT(*)::text AS total,
-          COUNT(*) FILTER (WHERE reviewed_at >= ${thirtyDaysAgo})::text AS last30
-        FROM review_events
-      `;
-      totalReviews = parseInt(counts.total, 10);
-      reviewsLast30 = parseInt(counts.last30, 10);
-
-      const topicRows = await sql<{ topic: string; cnt: string }[]>`
-        SELECT tk.topic, COUNT(*)::text AS cnt
-        FROM review_events re JOIN tasks tk ON tk.id = re.task_id
-        GROUP BY tk.topic
-      `;
-      for (const r of topicRows) reviewsByTopic[r.topic] = parseInt(r.cnt, 10);
-
-      const easeRows = await sql<{ topic: string; avg_ef: string }[]>`
-        SELECT topic, ROUND(AVG(ease_factor)::numeric, 2)::text AS avg_ef
-        FROM tasks WHERE completed = false
-        GROUP BY topic
-      `;
-      for (const r of easeRows) averageEaseByTopic[r.topic] = parseFloat(r.avg_ef);
-    }
+    const easeRows = await sql<{ topic: string; avg_ef: string }[]>`
+      SELECT topic, ROUND(AVG(ease_factor)::numeric, 2)::text AS avg_ef
+      FROM tasks WHERE completed = false ${taskUserFilter} ${taskCollectionFilter}
+      GROUP BY topic
+    `;
+    const averageEaseByTopic: Record<string, number> = {};
+    for (const r of easeRows) averageEaseByTopic[r.topic] = parseFloat(r.avg_ef);
 
     return c.json({ totalReviews, reviewsLast30Days: reviewsLast30, reviewsByTopic, averageEaseByTopic });
   } catch (err) {
@@ -79,6 +58,7 @@ stats.get("/overview", async (c) => {
 // GET /stats/heatmap?collection=uuid&days=365
 stats.get("/heatmap", async (c) => {
   try {
+    const userId = c.get("userId") as string;
     const collectionId = c.req.query("collection");
     const days = Math.min(parseInt(c.req.query("days") ?? "365", 10), 365);
     if (collectionId && !validateUuid(collectionId)) {
@@ -88,22 +68,15 @@ stats.get("/heatmap", async (c) => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
 
-    let rows: { date: string; count: string }[];
-    if (collectionId) {
-      rows = await sql<{ date: string; count: string }[]>`
-        SELECT reviewed_at::text AS date, COUNT(*)::text AS count
-        FROM review_events
-        WHERE reviewed_at >= ${cutoff} AND collection_id = ${collectionId}
-        GROUP BY reviewed_at ORDER BY reviewed_at
-      `;
-    } else {
-      rows = await sql<{ date: string; count: string }[]>`
-        SELECT reviewed_at::text AS date, COUNT(*)::text AS count
-        FROM review_events
-        WHERE reviewed_at >= ${cutoff}
-        GROUP BY reviewed_at ORDER BY reviewed_at
-      `;
-    }
+    const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+    const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
+
+    const rows = await sql<{ date: string; count: string }[]>`
+      SELECT reviewed_at::text AS date, COUNT(*)::text AS count
+      FROM review_events
+      WHERE reviewed_at >= ${cutoff} ${userFilter} ${collectionFilter}
+      GROUP BY reviewed_at ORDER BY reviewed_at
+    `;
 
     const heatmap: Record<string, number> = {};
     for (const r of rows) heatmap[r.date] = parseInt(r.count, 10);
@@ -117,25 +90,20 @@ stats.get("/heatmap", async (c) => {
 // GET /stats/streaks?collection=uuid
 stats.get("/streaks", async (c) => {
   try {
+    const userId = c.get("userId") as string;
     const collectionId = c.req.query("collection");
     if (collectionId && !validateUuid(collectionId)) {
       return c.json({ error: "Invalid collection ID" }, 400);
     }
 
-    let rows: { review_date: string }[];
-    if (collectionId) {
-      rows = await sql<{ review_date: string }[]>`
-        SELECT DISTINCT reviewed_at::text AS review_date
-        FROM review_events WHERE collection_id = ${collectionId}
-        ORDER BY review_date DESC
-      `;
-    } else {
-      rows = await sql<{ review_date: string }[]>`
-        SELECT DISTINCT reviewed_at::text AS review_date
-        FROM review_events
-        ORDER BY review_date DESC
-      `;
-    }
+    const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+    const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
+
+    const rows = await sql<{ review_date: string }[]>`
+      SELECT DISTINCT reviewed_at::text AS review_date
+      FROM review_events WHERE 1=1 ${userFilter} ${collectionFilter}
+      ORDER BY review_date DESC
+    `;
 
     if (rows.length === 0) {
       return c.json({ currentStreak: 0, longestStreak: 0, lastReviewDate: null });

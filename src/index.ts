@@ -19,6 +19,8 @@ import {
   getAgentQuestion,
   evaluateAnswer,
   validateApiConnection,
+  apiDeviceInitiate,
+  apiDevicePoll,
 } from './api-client.js';
 import { loadTasks as localLoadTasks } from './store.js';
 import { calculateSM2 } from './spaced-repetition.js';
@@ -372,6 +374,73 @@ program
       console.log(chalk.dim('Staying in local mode. Run `reps config` to switch later.'));
     }
     rl.close();
+  });
+
+program
+  .command('login')
+  .description('Authenticate via device flow (opens browser)')
+  .option('-u, --url <url>', 'API URL', 'https://reps-prep.duckdns.org')
+  .action(async (opts) => {
+    const apiUrl = opts.url;
+    console.log(chalk.dim(`Connecting to ${apiUrl}...`));
+
+    try {
+      const { userCode, deviceCode, verificationUri, expiresIn } = await apiDeviceInitiate(apiUrl);
+
+      console.log();
+      console.log(chalk.bold('  Open this URL in your browser:'));
+      console.log(chalk.cyan(`  ${verificationUri}`));
+      console.log();
+      console.log(chalk.bold('  Enter this code:'));
+      console.log(chalk.yellow.bold(`  ${userCode}`));
+      console.log();
+      console.log(chalk.dim(`  Code expires in ${Math.floor(expiresIn / 60)} minutes.`));
+      console.log(chalk.dim('  Waiting for approval...'));
+
+      const deadline = Date.now() + expiresIn * 1000;
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        try {
+          const result = await apiDevicePoll(apiUrl, deviceCode);
+
+          if (result.status === 'approved' && result.sessionToken) {
+            saveApiConfig({ apiUrl, apiKey: result.sessionToken });
+            // Set restrictive permissions on config file
+            try {
+              const { chmodSync } = await import('node:fs');
+              const { homedir } = await import('node:os');
+              const { join } = await import('node:path');
+              chmodSync(join(homedir(), '.reps', 'config.json'), 0o600);
+            } catch {
+              // Best effort
+            }
+            console.log(chalk.green('\n  Authenticated successfully!'));
+            console.log(chalk.dim('  Session token saved to ~/.reps/config.json'));
+            return;
+          }
+
+          if (result.status === 'denied') {
+            console.log(chalk.red('\n  Device authorization was denied.'));
+            return;
+          }
+
+          if (result.status === 'expired') {
+            console.log(chalk.red('\n  Device code expired. Run `reps login` again.'));
+            return;
+          }
+
+          // status === 'pending' — keep polling
+        } catch {
+          // Poll error — keep trying
+        }
+      }
+
+      console.log(chalk.red('\n  Timed out waiting for approval. Run `reps login` again.'));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(chalk.red(`Login failed: ${message}`));
+    }
   });
 
 program.parse();

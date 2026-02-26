@@ -208,3 +208,43 @@ export async function validateApiConnection(): Promise<boolean> {
     return false;
   }
 }
+
+// Device auth flow (no auth required — uses raw fetch, not apiFetch)
+export interface DeviceAuthInitiation {
+  userCode: string;
+  deviceCode: string;
+  verificationUri: string;
+  expiresIn: number;
+}
+
+export interface DeviceAuthPollResult {
+  status: 'pending' | 'approved' | 'denied' | 'expired';
+  sessionToken?: string;
+}
+
+async function deviceFetch<T>(apiUrl: string, path: string, options: RequestInit = {}): Promise<T> {
+  const url = `${apiUrl.replace(/\/$/, '')}${path}`;
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`API error ${response.status}: ${body}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+export async function apiDeviceInitiate(apiUrl: string): Promise<DeviceAuthInitiation> {
+  return deviceFetch<DeviceAuthInitiation>(apiUrl, '/auth/device/initiate', { method: 'POST' });
+}
+
+export async function apiDevicePoll(apiUrl: string, deviceCode: string): Promise<DeviceAuthPollResult> {
+  return deviceFetch<DeviceAuthPollResult>(apiUrl, '/auth/device/poll', {
+    method: 'POST',
+    body: JSON.stringify({ deviceCode }),
+  });
+}
