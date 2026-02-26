@@ -1,12 +1,19 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import sql from "../db/client.js";
 import { evaluateAnswer } from "../agent/evaluator.js";
 import { generateQuestion } from "../agent/questions.js";
 import { summarizePaper } from "../agent/papers.js";
 import { dailyBriefing } from "../agent/coach.js";
+import { validateUuid, uuidStr } from "../validation.js";
 import type { Task, Note } from "../../src/types.js";
 
 const agent = new Hono();
+
+const evaluateSchema = z.object({
+  taskId: uuidStr,
+  answer: z.string().min(1).max(10000),
+});
 
 // --- helpers ---
 
@@ -52,25 +59,24 @@ function rowToTask(row: TaskRow, notes: Note[]): Task {
 
 agent.post("/evaluate", async (c) => {
   try {
-    const body = await c.req.json();
-    const { taskId, answer } = body;
-
-    if (!taskId || !answer) {
-      return c.json({ error: "taskId and answer are required" }, 400);
+    const raw = await c.req.json();
+    const parsed = evaluateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
     }
 
-    const result = await evaluateAnswer(taskId, answer);
+    const result = await evaluateAnswer(parsed.data.taskId, parsed.data.answer);
     return c.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Evaluation failed";
     console.error("[agent/evaluate]", err);
-    return c.json({ error: message }, 500);
+    return c.json({ error: "Evaluation failed" }, 500);
   }
 });
 
 agent.get("/question/:taskId", async (c) => {
   try {
     const taskId = c.req.param("taskId");
+    if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
 
     const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId}`;
     if (!taskRow) {
@@ -91,21 +97,20 @@ agent.get("/question/:taskId", async (c) => {
 
     return c.json({ question });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Question generation failed";
     console.error("[agent/question]", err);
-    return c.json({ error: message }, 500);
+    return c.json({ error: "Question generation failed" }, 500);
   }
 });
 
 agent.post("/summarize/:taskId", async (c) => {
   try {
     const taskId = c.req.param("taskId");
+    if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
     const summary = await summarizePaper(taskId);
     return c.json(summary);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Summarization failed";
     console.error("[agent/summarize]", err);
-    return c.json({ error: message }, 500);
+    return c.json({ error: "Summarization failed" }, 500);
   }
 });
 
@@ -114,9 +119,8 @@ agent.post("/briefing", async (c) => {
     const message = await dailyBriefing();
     return c.json({ message });
   } catch (err) {
-    const errMessage = err instanceof Error ? err.message : "Briefing failed";
     console.error("[agent/briefing]", err);
-    return c.json({ error: errMessage }, 500);
+    return c.json({ error: "Briefing failed" }, 500);
   }
 });
 

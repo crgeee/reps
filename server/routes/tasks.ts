@@ -1,10 +1,68 @@
 import { Hono } from "hono";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import sql from "../db/client.js";
 import { calculateSM2 } from "../../src/spaced-repetition.js";
+import { validateUuid, dateStr, topicEnum, uuidStr } from "../validation.js";
 import type { Task, Note, Quality } from "../../src/types.js";
 
 const tasks = new Hono();
+
+// --- validation schemas ---
+
+const createTaskSchema = z.object({
+  topic: topicEnum,
+  title: z.string().min(1).max(500),
+  completed: z.boolean().optional(),
+  deadline: dateStr.nullable().optional(),
+  repetitions: z.number().int().min(0).max(1000).optional(),
+  interval: z.number().int().min(1).max(365).optional(),
+  easeFactor: z.number().min(1.3).max(5.0).optional(),
+  nextReview: dateStr.optional(),
+  lastReviewed: dateStr.nullable().optional(),
+  createdAt: dateStr.optional(),
+});
+
+const patchTaskSchema = z.object({
+  topic: topicEnum.optional(),
+  title: z.string().min(1).max(500).optional(),
+  completed: z.boolean().optional(),
+  deadline: dateStr.nullable().optional(),
+  repetitions: z.number().int().min(0).max(1000).optional(),
+  interval: z.number().int().min(1).max(365).optional(),
+  easeFactor: z.number().min(1.3).max(5.0).optional(),
+  nextReview: dateStr.optional(),
+  lastReviewed: dateStr.nullable().optional(),
+});
+
+const addNoteSchema = z.object({
+  text: z.string().min(1).max(10000),
+});
+
+const reviewSchema = z.object({
+  quality: z.number().int().min(0).max(5),
+});
+
+const syncTaskSchema = z.object({
+  id: uuidStr,
+  topic: topicEnum,
+  title: z.string().min(1).max(500),
+  completed: z.boolean(),
+  deadline: z.string().nullable().optional(),
+  repetitions: z.number().int().min(0),
+  interval: z.number().int().min(1),
+  easeFactor: z.number().min(1.3).max(5.0),
+  nextReview: z.string(),
+  lastReviewed: z.string().nullable().optional(),
+  createdAt: z.string(),
+  notes: z.array(z.object({
+    id: z.string(),
+    text: z.string().max(10000),
+    createdAt: z.string(),
+  })).optional(),
+});
+
+const syncSchema = z.array(syncTaskSchema).max(500);
 
 // --- helpers ---
 
@@ -104,7 +162,12 @@ tasks.get("/", async (c) => {
 
 // POST /tasks
 tasks.post("/", async (c) => {
-  const body = await c.req.json();
+  const raw = await c.req.json();
+  const parsed = createTaskSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  }
+  const body = parsed.data;
   const id = uuidv4();
   const now = today();
 
@@ -132,7 +195,13 @@ tasks.post("/", async (c) => {
 // PATCH /tasks/:id
 tasks.patch("/:id", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json();
+  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+  const raw = await c.req.json();
+  const parsed = patchTaskSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  }
+  const body = parsed.data;
 
   // Build dynamic SET clause from provided fields
   const fieldMap: Record<string, string> = {
@@ -150,7 +219,7 @@ tasks.patch("/:id", async (c) => {
   const updates: Record<string, unknown> = {};
   for (const [camel, snake] of Object.entries(fieldMap)) {
     if (camel in body) {
-      updates[snake] = body[camel];
+      updates[snake] = (body as Record<string, unknown>)[camel];
     }
   }
 
@@ -179,6 +248,7 @@ tasks.patch("/:id", async (c) => {
 // DELETE /tasks/:id
 tasks.delete("/:id", async (c) => {
   const id = c.req.param("id");
+  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
 
   const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${id} RETURNING *`;
 
@@ -192,7 +262,12 @@ tasks.delete("/:id", async (c) => {
 // POST /tasks/:id/notes
 tasks.post("/:id/notes", async (c) => {
   const taskId = c.req.param("id");
-  const body = await c.req.json();
+  if (!validateUuid(taskId)) return c.json({ error: "Invalid ID format" }, 400);
+  const raw = await c.req.json();
+  const parsed = addNoteSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
+  }
 
   // Verify task exists
   const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId}`;
@@ -204,7 +279,7 @@ tasks.post("/:id/notes", async (c) => {
 
   const [row] = await sql<NoteRow[]>`
     INSERT INTO notes (task_id, text, created_at)
-    VALUES (${taskId}, ${body.text}, ${now})
+    VALUES (${taskId}, ${parsed.data.text}, ${now})
     RETURNING *
   `;
 
@@ -214,12 +289,13 @@ tasks.post("/:id/notes", async (c) => {
 // POST /tasks/:id/review
 tasks.post("/:id/review", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json();
-  const quality = body.quality as Quality;
-
-  if (quality === undefined || quality < 0 || quality > 5) {
-    return c.json({ error: "quality must be 0-5" }, 400);
+  if (!validateUuid(id)) return c.json({ error: "Invalid ID format" }, 400);
+  const raw = await c.req.json();
+  const parsed = reviewSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "quality must be an integer 0-5" }, 400);
   }
+  const quality = parsed.data.quality as Quality;
 
   // Load current task
   const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${id}`;
@@ -249,12 +325,13 @@ tasks.post("/:id/review", async (c) => {
 
 // POST /sync — bulk upsert from CLI
 tasks.post("/sync", async (c) => {
-  const body = await c.req.json();
-  const incomingTasks: Task[] = Array.isArray(body) ? body : body.tasks;
-
-  if (!incomingTasks || !Array.isArray(incomingTasks)) {
-    return c.json({ error: "Expected an array of tasks" }, 400);
+  const raw = await c.req.json();
+  const arr = Array.isArray(raw) ? raw : raw.tasks;
+  const parsed = syncSchema.safeParse(arr);
+  if (!parsed.success) {
+    return c.json({ error: "Validation failed", details: parsed.error.issues }, 400);
   }
+  const incomingTasks = parsed.data;
 
   let upserted = 0;
 
