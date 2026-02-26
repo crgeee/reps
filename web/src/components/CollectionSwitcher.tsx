@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus, Pencil } from 'lucide-react';
 import type { Collection } from '../types';
 import { createCollection } from '../api';
+import CollectionEditModal from './CollectionEditModal';
 
 interface CollectionSwitcherProps {
   collections: Collection[];
   activeId: string | null;
   onChange: (id: string | null) => void;
   onCollectionCreated: (collection: Collection) => void;
+  onCollectionUpdated?: (collection: Collection) => void;
+  onCollectionDeleted?: (id: string) => void;
 }
 
 const COLOR_SWATCHES = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#71717a'];
@@ -17,8 +20,11 @@ export default function CollectionSwitcher({
   activeId,
   onChange,
   onCollectionCreated,
+  onCollectionUpdated,
+  onCollectionDeleted,
 }: CollectionSwitcherProps) {
   const [open, setOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(COLOR_SWATCHES[0]!);
@@ -98,22 +104,30 @@ export default function CollectionSwitcher({
             All collections
           </button>
           {collections.map((col) => (
-            <button
-              key={col.id}
-              onClick={() => { onChange(col.id); setOpen(false); setCreating(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                activeId === col.id
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-              }`}
-            >
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: col.color ?? '#71717a' }}
-              />
-              <span className="truncate">{col.name}</span>
-              {!col.srEnabled && <span className="ml-auto text-[10px] text-zinc-600">no SR</span>}
-            </button>
+            <div key={col.id} className="group flex items-center">
+              <button
+                onClick={() => { onChange(col.id); setOpen(false); setCreating(false); }}
+                className={`flex-1 flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors duration-150 ${
+                  activeId === col.id
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                }`}
+              >
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: col.color ?? '#71717a' }}
+                />
+                <span className="truncate">{col.name}</span>
+                {!col.srEnabled && <span className="ml-auto text-[10px] text-zinc-600">no SR</span>}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditingCollection(col); setOpen(false); }}
+                className="p-1.5 text-zinc-600 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-all"
+                title="Edit collection"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
           ))}
 
           <div className="border-t border-zinc-800">
@@ -176,6 +190,20 @@ export default function CollectionSwitcher({
             )}
           </div>
         </div>
+      )}
+      {editingCollection && (
+        <CollectionEditModal
+          collection={editingCollection}
+          onSaved={(updated) => {
+            onCollectionUpdated?.(updated);
+            setEditingCollection(null);
+          }}
+          onDeleted={(id) => {
+            onCollectionDeleted?.(id);
+            setEditingCollection(null);
+          }}
+          onClose={() => setEditingCollection(null)}
+        />
       )}
     </div>
   );

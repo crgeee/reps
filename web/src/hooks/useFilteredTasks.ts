@@ -1,17 +1,33 @@
 import { useMemo, useState, useCallback } from 'react';
-import type { Task, Topic, TaskStatus } from '../types';
+import type { Task, Topic } from '../types';
 
 export type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-deadline';
 export type SortField = 'created' | 'next-review' | 'deadline' | 'ease-factor';
 export type SortDir = 'asc' | 'desc';
+export type GroupBy = 'none' | 'status' | 'topic';
 
 export interface FilterState {
   topic: Topic | 'all';
-  status: TaskStatus | 'all';
+  status: string | 'all';
   due: DueFilter;
   search: string;
   sortField: SortField;
   sortDir: SortDir;
+  hideCompleted: boolean;
+  groupBy: GroupBy;
+}
+
+function getInitialFilters(): FilterState {
+  return {
+    topic: 'all',
+    status: 'all',
+    due: 'all',
+    search: '',
+    sortField: 'created',
+    sortDir: 'desc',
+    hideCompleted: localStorage.getItem('reps_hide_completed') !== 'false',
+    groupBy: (localStorage.getItem('reps_group_by') as GroupBy) || 'none',
+  };
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -21,6 +37,8 @@ const DEFAULT_FILTERS: FilterState = {
   search: '',
   sortField: 'created',
   sortDir: 'desc',
+  hideCompleted: true,
+  groupBy: 'none',
 };
 
 function todayStr(): string {
@@ -59,10 +77,16 @@ function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
 }
 
 export function useFilteredTasks(tasks: Task[]) {
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<FilterState>(getInitialFilters);
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    if (key === 'hideCompleted') {
+      localStorage.setItem('reps_hide_completed', String(value));
+    }
+    if (key === 'groupBy') {
+      localStorage.setItem('reps_group_by', String(value));
+    }
   }, []);
 
   const resetFilters = useCallback(() => setFilters(DEFAULT_FILTERS), []);
@@ -70,6 +94,9 @@ export function useFilteredTasks(tasks: Task[]) {
   const filtered = useMemo(() => {
     let result = tasks;
 
+    if (filters.hideCompleted) {
+      result = result.filter((t) => !t.completed);
+    }
     if (filters.topic !== 'all') {
       result = result.filter((t) => t.topic === filters.topic);
     }
@@ -87,5 +114,18 @@ export function useFilteredTasks(tasks: Task[]) {
     return sortTasks(result, filters.sortField, filters.sortDir);
   }, [tasks, filters]);
 
-  return { filters, setFilter, resetFilters, filtered };
+  const grouped = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    if (filters.groupBy === 'none') return map;
+
+    for (const task of filtered) {
+      const key = filters.groupBy === 'status' ? task.status : task.topic;
+      const arr = map.get(key) ?? [];
+      arr.push(task);
+      map.set(key, arr);
+    }
+    return map;
+  }, [filtered, filters.groupBy]);
+
+  return { filters, setFilter, resetFilters, filtered, grouped };
 }

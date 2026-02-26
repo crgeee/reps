@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import sql from "../db/client.js";
 import { calculateSM2 } from "../../src/spaced-repetition.js";
-import { validateUuid, dateStr, topicEnum, uuidStr, statusEnum } from "../validation.js";
+import { validateUuid, dateStr, topicEnum, uuidStr, statusEnum, priorityEnum } from "../validation.js";
 import type { Task, Note, Quality } from "../../src/types.js";
 
 const tasks = new Hono();
@@ -24,6 +24,8 @@ const createTaskSchema = z.object({
   createdAt: dateStr.optional(),
   collectionId: uuidStr.nullable().optional(),
   tagIds: z.array(uuidStr).optional(),
+  description: z.string().max(10000).nullable().optional(),
+  priority: priorityEnum.optional(),
 });
 
 const patchTaskSchema = z.object({
@@ -38,6 +40,9 @@ const patchTaskSchema = z.object({
   nextReview: dateStr.optional(),
   lastReviewed: dateStr.nullable().optional(),
   tagIds: z.array(uuidStr).optional(),
+  collectionId: uuidStr.nullable().optional(),
+  description: z.string().max(10000).nullable().optional(),
+  priority: priorityEnum.optional(),
 });
 
 const addNoteSchema = z.object({
@@ -86,6 +91,8 @@ interface TaskRow {
   last_reviewed: string | null;
   created_at: string;
   collection_id: string | null;
+  description: string | null;
+  priority: string;
 }
 
 interface NoteRow {
@@ -106,7 +113,7 @@ function rowToTask(
   row: TaskRow,
   notes: Note[],
   tags: { id: string; name: string; color: string | null }[] = []
-): Task & { collectionId: string | null; tags: { id: string; name: string; color: string | null }[] } {
+): Task & { collectionId: string | null; description?: string; priority: string; tags: { id: string; name: string; color: string | null }[] } {
   return {
     id: row.id,
     topic: row.topic as Task["topic"],
@@ -121,6 +128,8 @@ function rowToTask(
     lastReviewed: row.last_reviewed ?? undefined,
     createdAt: row.created_at,
     collectionId: row.collection_id,
+    description: row.description ?? undefined,
+    priority: row.priority,
     notes,
     tags,
   };
@@ -254,7 +263,7 @@ tasks.post("/", async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority)
     VALUES (
       ${id},
       ${body.topic},
@@ -268,7 +277,9 @@ tasks.post("/", async (c) => {
       ${body.nextReview ?? now},
       ${body.lastReviewed ?? null},
       ${body.createdAt ?? now},
-      ${body.collectionId ?? null}
+      ${body.collectionId ?? null},
+      ${body.description ?? null},
+      ${body.priority ?? "none"}
     )
     RETURNING *
   `;
@@ -311,6 +322,9 @@ tasks.patch("/:id", async (c) => {
     easeFactor: "ease_factor",
     nextReview: "next_review",
     lastReviewed: "last_reviewed",
+    collectionId: "collection_id",
+    description: "description",
+    priority: "priority",
   };
 
   const updates: Record<string, unknown> = {};

@@ -9,7 +9,8 @@ export function validateUuid(id: string): boolean {
 export const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const topicEnum = z.enum(["coding", "system-design", "behavioral", "papers", "custom"]);
 export const uuidStr = z.string().regex(UUID_RE);
-export const statusEnum = z.enum(["todo", "in-progress", "review", "done"]);
+export const statusEnum = z.string().min(1).max(100);
+export const priorityEnum = z.enum(["none", "low", "medium", "high"]);
 
 export const collectionSchema = z.object({
   name: z.string().min(1).max(200),
@@ -35,6 +36,18 @@ export const tagSchema = z.object({
 export const patchTagSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+});
+
+export const collectionStatusSchema = z.object({
+  name: z.string().min(1).max(100),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+});
+
+export const patchCollectionStatusSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 
 export const difficultyEnum = z.enum(["easy", "medium", "hard"]);
