@@ -51,7 +51,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             className="hover:text-amber-500 transition-colors flex items-center gap-1"
           >
             <Coffee size={12} />
-            Support
+            Buy Me a Coffee
           </a>
         </div>
       </div>
