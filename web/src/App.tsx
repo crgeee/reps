@@ -9,6 +9,7 @@ import AddTask from './components/AddTask';
 import TopicProgress from './components/TopicProgress';
 import BoardView from './components/BoardView';
 import ErrorBoundary from './components/ErrorBoundary';
+import Spinner from './components/Spinner';
 import CalendarView from './components/CalendarView';
 import MockInterview from './components/MockInterview';
 import CollectionSwitcher from './components/CollectionSwitcher';
@@ -225,7 +226,7 @@ export default function App() {
 
         {loading && !error ? (
           <div className="flex items-center justify-center py-24">
-            <div className="text-zinc-500">Loading...</div>
+            <Spinner size="lg" label="Loading..." />
           </div>
         ) : (
           <ErrorBoundary key={view}>

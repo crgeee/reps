@@ -22,6 +22,8 @@ import { logger } from '../logger';
 interface BoardViewProps {
   tasks: Task[];
   onRefresh: () => void;
+  onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
+  onBackgroundRefresh?: () => void;
 }
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
@@ -65,7 +67,7 @@ function findColumnForOver(overId: string | number, overData: Record<string, unk
   return null;
 }
 
-export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
+export default function BoardView({ tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh }: BoardViewProps) {
   const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -100,14 +102,22 @@ export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
     const targetStatus = findColumnForOver(over.id, over.data.current);
     if (!targetStatus || targetStatus === task.status) return;
 
+    // Optimistic: move card in local state immediately (no loading spinner)
+    if (onOptimisticUpdate) {
+      onOptimisticUpdate(taskId, { status: targetStatus });
+    }
+
+    // Sync with server in background
     try {
       await updateTask(taskId, { status: targetStatus });
-      onRefresh();
+      // Quietly refresh to pick up any server-side changes
+      if (onBackgroundRefresh) onBackgroundRefresh();
     } catch (err) {
       logger.error('Failed to update task status', { taskId, targetStatus, error: String(err) });
+      // Revert: full refresh to get correct state
       onRefresh();
     }
-  }, [tasks, onRefresh]);
+  }, [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
