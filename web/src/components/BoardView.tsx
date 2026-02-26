@@ -2,12 +2,13 @@ import { useCallback, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
   type DragStartEvent,
   type DragEndEvent,
+  type DragOverEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -33,7 +34,7 @@ const STATUS_COLORS: Record<TaskStatus, string> = {
 function SortableCard({ task, onRefresh }: { task: Task; onRefresh: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
-    data: { task },
+    data: { type: 'card', task, status: task.status },
   });
 
   const style = {
@@ -57,13 +58,21 @@ function SortableCard({ task, onRefresh }: { task: Task; onRefresh: () => void }
 export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
   const { filters, setFilter, resetFilters, filtered } = useFilteredTasks(tasks);
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Track which column a card is currently hovering over for optimistic column assignment
+  const [overColumn, setOverColumn] = useState<TaskStatus | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  // Group tasks into columns, but move the active card to the hovered column for visual feedback
   const columns = STATUSES.reduce<Record<TaskStatus, Task[]>>((acc, status) => {
-    acc[status] = filtered.filter((t) => t.status === status);
+    acc[status] = filtered.filter((t) => {
+      if (t.id === activeId && overColumn) {
+        return status === overColumn;
+      }
+      return t.status === status;
+    });
     return acc;
   }, {} as Record<TaskStatus, Task[]>);
 
@@ -73,35 +82,55 @@ export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
     setActiveId(event.active.id as string);
   }, []);
 
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { over } = event;
+    if (!over) {
+      setOverColumn(null);
+      return;
+    }
+
+    // Determine which column we're over
+    if (over.data.current?.type === 'column') {
+      setOverColumn(over.id as TaskStatus);
+    } else if (over.data.current?.type === 'card') {
+      setOverColumn(over.data.current.status as TaskStatus);
+    }
+  }, []);
+
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    setActiveId(null);
     const { active, over } = event;
+    setActiveId(null);
+    setOverColumn(null);
+
     if (!over) return;
 
     const taskId = active.id as string;
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    // Determine target status: either dropped on a column or on a card in a column
+    // Determine target status from what we dropped on
     let targetStatus: TaskStatus | undefined;
 
-    if (STATUSES.includes(over.id as TaskStatus)) {
+    if (over.data.current?.type === 'column') {
       targetStatus = over.id as TaskStatus;
-    } else {
-      const overTask = tasks.find((t) => t.id === over.id);
-      if (overTask) targetStatus = overTask.status;
+    } else if (over.data.current?.type === 'card') {
+      targetStatus = over.data.current.status as TaskStatus;
     }
 
     if (!targetStatus || targetStatus === task.status) return;
 
-    // Optimistic update + API call
     try {
       await updateTask(taskId, { status: targetStatus });
       onRefresh();
     } catch {
-      onRefresh(); // revert on failure
+      onRefresh();
     }
   }, [tasks, onRefresh]);
+
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+    setOverColumn(null);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -111,9 +140,10 @@ export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <div className="grid grid-cols-4 gap-4 min-h-[60vh]">
           {STATUSES.map((status) => (
@@ -123,6 +153,7 @@ export default function BoardView({ tasks, onRefresh }: BoardViewProps) {
               tasks={columns[status]}
               onRefresh={onRefresh}
               color={STATUS_COLORS[status]}
+              isOver={overColumn === status}
             />
           ))}
         </div>
@@ -140,16 +171,28 @@ function Column({
   tasks,
   onRefresh,
   color,
+  isOver,
 }: {
   status: TaskStatus;
   tasks: Task[];
   onRefresh: () => void;
   color: string;
+  isOver: boolean;
 }) {
-  const { setNodeRef } = useSortable({ id: status, data: { type: 'column' } });
+  const { setNodeRef, isOver: droppableIsOver } = useDroppable({
+    id: status,
+    data: { type: 'column' },
+  });
+
+  const highlight = isOver || droppableIsOver;
 
   return (
-    <div ref={setNodeRef} className={`border-t-2 ${color} bg-zinc-900/30 rounded-lg p-3 space-y-2`}>
+    <div
+      ref={setNodeRef}
+      className={`border-t-2 ${color} rounded-lg p-3 space-y-2 transition-colors ${
+        highlight ? 'bg-zinc-800/50' : 'bg-zinc-900/30'
+      }`}
+    >
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-zinc-400">{STATUS_LABELS[status]}</h3>
         <span className="text-xs text-zinc-600">{tasks.length}</span>
@@ -162,7 +205,9 @@ function Column({
       </SortableContext>
 
       {tasks.length === 0 && (
-        <p className="text-xs text-zinc-700 text-center py-8">Drop here</p>
+        <p className={`text-xs text-center py-8 ${highlight ? 'text-zinc-500' : 'text-zinc-700'}`}>
+          Drop here
+        </p>
       )}
     </div>
   );
