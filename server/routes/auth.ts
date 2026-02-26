@@ -5,6 +5,7 @@ import { deleteSessionByToken, getUserSessions, deleteSession } from "../auth/se
 import { initiateDeviceAuth, pollDeviceAuth, approveDeviceAuth, denyDeviceAuth } from "../auth/device-flow.js";
 import { getUserById } from "../auth/users.js";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { authMiddleware } from "../middleware/auth.js";
 
 type AppEnv = { Variables: { userId: string } };
 const auth = new Hono<AppEnv>();
@@ -110,15 +111,13 @@ auth.post("/logout", async (c) => {
   return c.json({ message: "Logged out" });
 });
 
-// --- Protected routes (auth required, checked inline) ---
+// --- Protected routes (auth required) ---
+// These routes are mounted before the global auth middleware,
+// so we apply it explicitly here.
 
 // GET /auth/me — current user profile
-auth.get("/me", async (c) => {
-  const userId = c.get("userId") as string | undefined;
-  if (!userId) {
-    return c.json({ error: "Not authenticated" }, 401);
-  }
-
+auth.get("/me", authMiddleware, async (c) => {
+  const userId = c.get("userId");
   const user = await getUserById(userId);
   if (!user) {
     return c.json({ error: "User not found" }, 404);
@@ -128,12 +127,8 @@ auth.get("/me", async (c) => {
 });
 
 // POST /auth/device/approve — user approves CLI device code
-auth.post("/device/approve", async (c) => {
-  const userId = c.get("userId") as string | undefined;
-  if (!userId) {
-    return c.json({ error: "Not authenticated" }, 401);
-  }
-
+auth.post("/device/approve", authMiddleware, async (c) => {
+  const userId = c.get("userId");
   const raw = await c.req.json();
   const parsed = userCodeSchema.safeParse(raw);
   if (!parsed.success) {
@@ -151,12 +146,7 @@ auth.post("/device/approve", async (c) => {
 });
 
 // POST /auth/device/deny — user denies CLI device code
-auth.post("/device/deny", async (c) => {
-  const userId = c.get("userId") as string | undefined;
-  if (!userId) {
-    return c.json({ error: "Not authenticated" }, 401);
-  }
-
+auth.post("/device/deny", authMiddleware, async (c) => {
   const raw = await c.req.json();
   const parsed = userCodeSchema.safeParse(raw);
   if (!parsed.success) {
