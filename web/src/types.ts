@@ -262,39 +262,6 @@ export const COLOR_SWATCHES = [
   '#71717a',
 ] as const;
 
-export interface TemplateStatus {
-  id: string;
-  templateId: string;
-  name: string;
-  color: string | null;
-  sortOrder: number;
-}
-
-export interface TemplateTask {
-  id: string;
-  templateId: string;
-  title: string;
-  description: string | null;
-  statusName: string;
-  topic: string;
-  sortOrder: number;
-}
-
-export interface CollectionTemplate {
-  id: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  color: string | null;
-  srEnabled: boolean;
-  defaultView: 'list' | 'board';
-  isSystem: boolean;
-  userId: string | null;
-  createdAt: string;
-  statuses: TemplateStatus[];
-  tasks: TemplateTask[];
-}
-
 export function formatStatusLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');
 }
