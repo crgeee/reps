@@ -7,6 +7,7 @@ import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
 import { authMiddleware } from './middleware/auth.js';
 import { rateLimiter } from './middleware/rate-limit.js';
+import { etag } from './middleware/etag.js';
 import authRoutes from './routes/auth.js';
 import tasks from './routes/tasks.js';
 import agent from './routes/agent.js';
@@ -56,6 +57,9 @@ app.route('/export', calendarFeed);
 
 // Apply auth middleware to all protected routes
 app.use('/*', authMiddleware);
+
+// ETag caching for GET responses
+app.use('/*', etag);
 
 // Stricter rate limit for agent routes — 10 req/min
 app.use('/agent/*', rateLimiter(10, 60_000));
