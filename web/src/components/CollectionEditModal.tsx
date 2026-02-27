@@ -29,7 +29,8 @@ function SwatchPicker({
   size?: 'sm' | 'md';
 }) {
   const sizeClass = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7';
-  const ringOffset = size === 'sm' ? 'ring-offset-1 ring-offset-zinc-800' : 'ring-offset-2 ring-offset-zinc-900';
+  const ringOffset =
+    size === 'sm' ? 'ring-offset-1 ring-offset-zinc-800' : 'ring-offset-2 ring-offset-zinc-900';
   return (
     <div className="flex flex-wrap gap-1.5">
       {COLOR_SWATCHES.map((c) => (
@@ -37,7 +38,9 @@ function SwatchPicker({
           key={c}
           onClick={() => onSelect(c)}
           className={`${sizeClass} rounded-full transition-all duration-150 ${
-            selected === c ? `ring-2 ring-zinc-400 ${ringOffset}${size === 'md' ? ' scale-110' : ''}` : ''
+            selected === c
+              ? `ring-2 ring-zinc-400 ${ringOffset}${size === 'md' ? ' scale-110' : ''}`
+              : ''
           }`}
           style={{ backgroundColor: c }}
         />
@@ -189,9 +192,7 @@ export default function CollectionEditModal({
                       : 'bg-zinc-800 hover:bg-zinc-750 border border-zinc-700'
                   }`}
                 >
-                  {ic || (
-                    <span className="text-zinc-500 text-xs">-</span>
-                  )}
+                  {ic || <span className="text-zinc-500 text-xs">-</span>}
                 </button>
               ))}
             </div>

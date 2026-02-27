@@ -153,7 +153,9 @@ function ChipGroup<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1 overflow-x-auto flex-shrink-0">
-      <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mr-1 flex-shrink-0">{label}</span>
+      <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mr-1 flex-shrink-0">
+        {label}
+      </span>
       {options.map((o) => (
         <button
           key={o.value}

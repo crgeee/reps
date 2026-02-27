@@ -505,7 +505,10 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main id="main-content" className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-5 pb-20 md:pb-5 w-full">
+      <main
+        id="main-content"
+        className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-5 pb-20 md:pb-5 w-full"
+      >
         {error && (
           <div
             role="alert"
@@ -602,9 +605,7 @@ export default function App() {
               onClick={() => setView(v)}
               aria-current={view === v ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 pt-2.5 transition-colors ${
-                view === v
-                  ? 'text-amber-400'
-                  : 'text-zinc-500 active:text-zinc-300'
+                view === v ? 'text-amber-400' : 'text-zinc-500 active:text-zinc-300'
               }`}
             >
               <Icon className="w-5 h-5" />
