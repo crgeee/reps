@@ -4,6 +4,7 @@ web/dist/
 .env
 *.js.map
 *.d.ts
+!web/src/vite-env.d.ts
 !deploy/ecosystem.config.js
 .worktrees/
 node_modules

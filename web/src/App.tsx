@@ -21,6 +21,7 @@ import DeviceApproval from './components/DeviceApproval';
 import Footer from './components/Footer';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import { Home, ListTodo, Plus, GraduationCap, BarChart3 } from 'lucide-react';
 
 type View =
   | 'dashboard'
@@ -56,6 +57,14 @@ const LEGACY_REDIRECTS: Record<string, View> = {
   board: 'tasks',
   mock: 'review',
 };
+
+const BOTTOM_NAV_ITEMS: { view: View; label: string; Icon: typeof Home }[] = [
+  { view: 'dashboard', label: 'Home', Icon: Home },
+  { view: 'tasks', label: 'Tasks', Icon: ListTodo },
+  { view: 'add', label: 'Add', Icon: Plus },
+  { view: 'review', label: 'Review', Icon: GraduationCap },
+  { view: 'progress', label: 'Progress', Icon: BarChart3 },
+];
 
 function getViewFromHash(): View {
   const hash = window.location.hash.slice(1);
@@ -484,7 +493,7 @@ export default function App() {
                       logout();
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
                   >
                     Sign out
                   </button>
@@ -496,7 +505,10 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main id="main-content" className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-5 w-full">
+      <main
+        id="main-content"
+        className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-5 pb-20 md:pb-5 w-full"
+      >
         {error && (
           <div
             role="alert"
@@ -580,6 +592,28 @@ export default function App() {
       </main>
       <FocusWidget />
       <Footer onNavigate={(v) => setView(v as View)} />
+
+      {/* Mobile bottom nav */}
+      <nav
+        aria-label="Mobile bottom navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-800 z-40 safe-area-bottom"
+      >
+        <div className="flex items-stretch justify-around">
+          {BOTTOM_NAV_ITEMS.map(({ view: v, label, Icon }) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              aria-current={view === v ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 pt-2.5 transition-colors ${
+                view === v ? 'text-amber-400' : 'text-zinc-500 active:text-zinc-300'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

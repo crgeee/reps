@@ -108,19 +108,19 @@ export default memo(function TaskCard({
               <TagBadge key={tag.id} tag={tag} size="sm" />
             ))}
             {task.tags.length > 2 && (
-              <span className="text-[9px] text-zinc-600 font-mono">+{task.tags.length - 2}</span>
+              <span className="text-[9px] text-zinc-500 font-mono">+{task.tags.length - 2}</span>
             )}
           </div>
         )}
 
         {/* Meta — inline monospace stats */}
         {!compact && (
-          <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-mono tabular-nums flex-shrink-0 hidden sm:flex">
+          <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tabular-nums flex-shrink-0 hidden sm:flex">
             <span className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[task.topic]}`} />
             <span>{TOPIC_LABELS[task.topic]}</span>
             <span>EF{task.easeFactor.toFixed(1)}</span>
             <span>×{task.repetitions}</span>
-            {task.deadline && <span className="text-zinc-700">dl {task.deadline}</span>}
+            {task.deadline && <span className="text-zinc-500">dl {task.deadline}</span>}
           </div>
         )}
 
@@ -132,7 +132,7 @@ export default memo(function TaskCard({
         {task.notes.length > 0 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-zinc-700 hover:text-zinc-400 transition-colors flex-shrink-0 text-[10px] font-mono"
+            className="text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0 text-[10px] font-mono"
           >
             {task.notes.length}n
           </button>
@@ -142,7 +142,7 @@ export default memo(function TaskCard({
         <a
           href={getTaskEventUrl(task.id)}
           download
-          className="text-zinc-700 hover:text-amber-400 transition-colors p-0.5 flex-shrink-0"
+          className="text-zinc-500 hover:text-amber-400 transition-colors p-0.5 flex-shrink-0"
           title="Add to calendar"
           onClick={(e) => e.stopPropagation()}
         >
@@ -168,7 +168,7 @@ export default memo(function TaskCard({
             const text = `${task.title}\nTopic: ${task.topic}\nNext Review: ${task.nextReview}\nEF: ${task.easeFactor.toFixed(1)} | Reps: ${task.repetitions}${task.notes.length > 0 ? '\n\nNotes:\n' + task.notes.map((n) => `- ${n.text}`).join('\n') : ''}`;
             await navigator.clipboard.writeText(text);
           }}
-          className="text-zinc-700 hover:text-blue-400 transition-colors p-0.5 flex-shrink-0"
+          className="text-zinc-500 hover:text-blue-400 transition-colors p-0.5 flex-shrink-0"
           title="Copy to clipboard"
         >
           <svg
@@ -190,7 +190,7 @@ export default memo(function TaskCard({
         <button
           onClick={handleDelete}
           disabled={submitting}
-          className="text-zinc-800 hover:text-red-400 transition-colors p-0.5 flex-shrink-0"
+          className="text-zinc-600 hover:text-red-400 transition-colors p-0.5 flex-shrink-0"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
@@ -205,7 +205,7 @@ export default memo(function TaskCard({
 
       {/* Mobile meta row */}
       {!compact && (
-        <div className="flex items-center gap-2 px-3 pb-1.5 text-[10px] text-zinc-700 font-mono tabular-nums sm:hidden">
+        <div className="flex items-center gap-2 px-3 pb-1.5 text-[10px] text-zinc-500 font-mono tabular-nums sm:hidden">
           <span className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[task.topic]}`} />
           <span>{TOPIC_LABELS[task.topic]}</span>
           <span>EF{task.easeFactor.toFixed(1)}</span>

@@ -15,8 +15,10 @@ export default function Footer({ onNavigate }: FooterProps) {
 
   return (
     <footer className="border-t border-zinc-800/50 mt-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
-        <span>&copy; {new Date().getFullYear()} reps</span>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-20 md:pb-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-500">
+        <span>
+          &copy; {new Date().getFullYear()} reps v{__APP_VERSION__}
+        </span>
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleLink('privacy')}
@@ -25,7 +27,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <Shield size={12} />
             Privacy
           </button>
-          <span className="text-zinc-800">|</span>
+          <span className="text-zinc-700">|</span>
           <button
             onClick={() => handleLink('terms')}
             className="hover:text-zinc-400 transition-colors flex items-center gap-1"
@@ -33,7 +35,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <FileText size={12} />
             Terms
           </button>
-          <span className="text-zinc-800">|</span>
+          <span className="text-zinc-700">|</span>
           <a
             href="https://github.com/crgeee/reps"
             target="_blank"
@@ -43,7 +45,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           >
             <Github size={14} />
           </a>
-          <span className="text-zinc-800">|</span>
+          <span className="text-zinc-700">|</span>
           <a
             href="https://buymeacoffee.com/crgeee"
             target="_blank"

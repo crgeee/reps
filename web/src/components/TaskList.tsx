@@ -105,7 +105,7 @@ export default function TaskList({
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold tracking-tight">Tasks</h1>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-zinc-600 font-mono tabular-nums">
+          <span className="text-[10px] text-zinc-500 font-mono tabular-nums">
             {tagFiltered.length} items
           </span>
           <LayoutToggle layout={layout} onChange={handleLayoutChange} />
@@ -123,7 +123,9 @@ export default function TaskList({
       {/* Tag filter */}
       {usedTags.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] text-zinc-600 uppercase tracking-wider">Tags</span>
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium">
+            Tags
+          </span>
           <button
             onClick={() => setTagFilter(null)}
             className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
@@ -159,7 +161,7 @@ export default function TaskList({
       ) : filters.groupBy !== 'none' ? (
         <>
           {grouped.size === 0 && tagFiltered.length === 0 && (
-            <p className="text-zinc-600 py-8 text-center text-xs">No tasks found.</p>
+            <p className="text-zinc-500 py-8 text-center text-xs">No tasks found.</p>
           )}
           {Array.from(grouped.entries()).map(([groupKey, groupTasks]) => {
             const filteredGroup = tagFilter
@@ -198,16 +200,16 @@ export default function TaskList({
       ) : (
         <>
           {Object.entries(topicGroups).length === 0 && (
-            <p className="text-zinc-600 py-8 text-center text-xs">No tasks found.</p>
+            <p className="text-zinc-500 py-8 text-center text-xs">No tasks found.</p>
           )}
           {Object.entries(topicGroups).map(([topic, topicTasks]) => (
             <div key={topic}>
               <div className="flex items-center gap-2 mb-1.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[topic as Topic]}`} />
-                <h2 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+                <h2 className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">
                   {TOPIC_LABELS[topic as Topic]}
                 </h2>
-                <span className="text-[10px] text-zinc-700 font-mono">{topicTasks.length}</span>
+                <span className="text-[10px] text-zinc-500 font-mono">{topicTasks.length}</span>
               </div>
               <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/40">
                 {topicTasks.map((task) => (
@@ -262,7 +264,7 @@ function GroupSection({
         className="flex items-center gap-2 mb-1.5 group"
       >
         <svg
-          className={`w-2.5 h-2.5 text-zinc-600 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          className={`w-2.5 h-2.5 text-zinc-500 transition-transform ${collapsed ? '' : 'rotate-90'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -270,8 +272,8 @@ function GroupSection({
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        <h2 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</h2>
-        <span className="text-[10px] text-zinc-700 font-mono">{count}</span>
+        <h2 className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">{label}</h2>
+        <span className="text-[10px] text-zinc-500 font-mono">{count}</span>
       </button>
       {!collapsed && <div className="anim-expand-down ml-4">{children}</div>}
     </div>
@@ -293,7 +295,7 @@ function LayoutToggle({
         onClick={() => onChange('list')}
         aria-label="List view"
         aria-pressed={layout === 'list'}
-        className={`p-1.5 rounded-md transition-colors ${
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
           layout === 'list' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
         }`}
       >
@@ -306,12 +308,13 @@ function LayoutToggle({
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
+        <span className="hidden sm:inline">List</span>
       </button>
       <button
         onClick={() => onChange('board')}
         aria-label="Board view"
         aria-pressed={layout === 'board'}
-        className={`p-1.5 rounded-md transition-colors ${
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
           layout === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
         }`}
       >
@@ -328,6 +331,7 @@ function LayoutToggle({
             d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4a1 1 0 001-1V5a1 1 0 00-1-1zM19 4h-4a1 1 0 00-1 1v14a1 1 0 001 1h4a1 1 0 001-1V5a1 1 0 00-1-1z"
           />
         </svg>
+        <span className="hidden sm:inline">Board</span>
       </button>
     </div>
   );
@@ -405,8 +409,8 @@ const BoardColumn = memo(function BoardColumn({
       style={{ borderTopColor: borderColor ?? '#3f3f46' }}
     >
       <div className="flex items-center justify-between mb-1.5 px-1">
-        <h3 className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</h3>
-        <span className="text-[10px] text-zinc-700 font-mono tabular-nums">{tasks.length}</span>
+        <h3 className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">{label}</h3>
+        <span className="text-[10px] text-zinc-500 font-mono tabular-nums">{tasks.length}</span>
       </div>
 
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
@@ -416,7 +420,7 @@ const BoardColumn = memo(function BoardColumn({
       </SortableContext>
 
       {tasks.length === 0 && (
-        <p className={`text-xs text-center py-8 ${isOver ? 'text-zinc-500' : 'text-zinc-700'}`}>
+        <p className={`text-xs text-center py-8 ${isOver ? 'text-zinc-400' : 'text-zinc-600'}`}>
           Drop here
         </p>
       )}

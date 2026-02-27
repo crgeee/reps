@@ -52,7 +52,7 @@ export default function FilterBar({
         className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {/* Topic chips */}
         <ChipGroup
           label="Topic"
@@ -108,7 +108,7 @@ export default function FilterBar({
         </div>
 
         {/* Hide completed */}
-        <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 text-xs text-zinc-400 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={filters.hideCompleted}
@@ -152,16 +152,18 @@ function ChipGroup<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-[10px] text-zinc-600 uppercase tracking-wider mr-1">{label}</span>
+    <div className="flex items-center gap-1 overflow-x-auto flex-shrink-0">
+      <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mr-1 flex-shrink-0">
+        {label}
+      </span>
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          className={`px-2 py-1 text-xs rounded-md transition-colors ${
+          className={`px-2.5 py-1 text-xs rounded-md transition-colors whitespace-nowrap ${
             value === o.value
-              ? 'bg-zinc-800 text-zinc-100'
-              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
+              ? 'bg-zinc-700 text-zinc-100 font-medium'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
           }`}
         >
           {o.label}

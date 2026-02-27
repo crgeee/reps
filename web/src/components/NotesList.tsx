@@ -29,11 +29,11 @@ export default memo(function NotesList({ notes, onAddNote, disabled }: NotesList
         notes.map((note) => (
           <div key={note.id} className="bg-zinc-800/50 rounded p-2">
             <p className="text-xs text-zinc-400 whitespace-pre-wrap">{note.text}</p>
-            <p className="text-[10px] text-zinc-600 mt-1">{note.createdAt}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">{note.createdAt}</p>
           </div>
         ))
       ) : (
-        <p className="text-xs text-zinc-600">No notes yet.</p>
+        <p className="text-xs text-zinc-500">No notes yet.</p>
       )}
       <div className="flex gap-2">
         <input
