@@ -34,19 +34,30 @@ export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionPro
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Mode toggle */}
-      <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 w-fit">
+      <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-full sm:w-fit">
         <button
           onClick={() => setMode('review')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            mode === 'review' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+          className={`flex-1 sm:flex-initial px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            mode === 'review'
+              ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
           }`}
         >
-          Review ({dueTasks.length} due)
+          Review
+          {dueTasks.length > 0 && (
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+              mode === 'review' ? 'bg-amber-500/20 text-amber-300' : 'bg-zinc-800 text-zinc-500'
+            }`}>
+              {dueTasks.length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setMode('practice')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
-            mode === 'practice' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+          className={`flex-1 sm:flex-initial px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+            mode === 'practice'
+              ? 'bg-zinc-700 text-zinc-100 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
           }`}
         >
           <Brain className="w-3.5 h-3.5" />
@@ -193,7 +204,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
       {/* Task card */}
       <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-6">
         <h2 className="text-xl font-bold mb-1">{task.title}</h2>
-        <p className="text-sm text-zinc-600 mb-6 font-mono">
+        <p className="text-sm text-zinc-400 mb-6 font-mono">
           Reps: {task.repetitions} | EF: {task.easeFactor.toFixed(2)} | Interval: {task.interval}d
         </p>
 
@@ -227,7 +238,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
             )}
 
             {questionLoaded && (
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setStep('answer')}
                   className="flex-1 py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
@@ -236,7 +247,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
                 </button>
                 <button
                   onClick={skipEvaluation}
-                  className="px-6 py-3 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-zinc-200 transition-colors"
+                  className="sm:w-auto py-3 px-6 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
                 >
                   Skip to Rating
                 </button>
@@ -272,7 +283,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
               rows={8}
               className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 resize-y transition-all duration-200"
             />
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleEvaluate}
                 disabled={loading || !answer.trim()}
@@ -282,7 +293,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
               </button>
               <button
                 onClick={skipEvaluation}
-                className="px-6 py-3 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-zinc-200 transition-colors"
+                className="sm:w-auto py-3 px-6 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
               >
                 Skip
               </button>
@@ -476,13 +487,13 @@ function PracticeMode() {
                   }`}
                 >
                   <p className="text-sm font-medium text-zinc-200">{d.label}</p>
-                  <p className="text-[11px] text-zinc-600 mt-0.5">{d.desc}</p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">{d.desc}</p>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleStart}
               disabled={loading}
@@ -492,7 +503,7 @@ function PracticeMode() {
             </button>
             <button
               onClick={surpriseMe}
-              className="px-5 py-3 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-600 hover:text-zinc-100 transition-all duration-200"
+              className="sm:w-auto px-5 py-3 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-600 hover:text-zinc-100 transition-all duration-200"
             >
               Surprise me
             </button>
@@ -507,7 +518,7 @@ function PracticeMode() {
             <div className="flex items-center gap-2 mb-3">
               <Brain className="w-4 h-4 text-purple-400" />
               <span className="text-xs text-zinc-500 uppercase tracking-wider">Interviewer</span>
-              <span className="ml-auto text-xs text-zinc-600">
+              <span className="ml-auto text-xs text-zinc-400">
                 {TOPIC_LABELS[topic]} · {difficulty}
               </span>
             </div>
@@ -545,7 +556,7 @@ function PracticeMode() {
             className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 resize-y transition-all duration-200"
           />
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleSubmitAnswer}
               disabled={loading || !answer.trim()}
@@ -555,7 +566,7 @@ function PracticeMode() {
             </button>
             <button
               onClick={() => setState('questioning')}
-              className="px-5 py-3 bg-zinc-900 border border-zinc-700 text-zinc-400 rounded-lg hover:border-zinc-600 hover:text-zinc-200 transition-all duration-200"
+              className="sm:w-auto px-5 py-3 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg hover:border-zinc-600 hover:text-zinc-100 transition-all duration-200"
             >
               Back
             </button>

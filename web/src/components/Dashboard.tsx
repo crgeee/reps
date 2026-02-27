@@ -78,7 +78,7 @@ export default function Dashboard({
     <div className="space-y-5">
       <h1 className="sr-only">Dashboard</h1>
       {/* ── Stat strip ── */}
-      <div className="flex items-stretch border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-x divide-zinc-800">
+      <div className="grid grid-cols-2 sm:grid-cols-4 border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/60 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800">
         <StatCell label="Due" value={dueTasks.length} accent={dueTasks.length > 0} />
         <StatCell
           label="Overdue"
@@ -88,30 +88,30 @@ export default function Dashboard({
         />
         <StatCell label="Active" value={activeTasks.length} />
         <StatCell label="Done" value={completedTasks.length} />
-        {streaks && (
-          <div className="flex items-center gap-1.5 px-4 py-2.5 flex-1 min-w-0">
-            <Flame
-              className={`w-3.5 h-3.5 flex-shrink-0 ${streakActive ? 'text-amber-400' : 'text-zinc-600'}`}
-            />
-            <span
-              className={`text-lg font-bold font-mono tabular-nums leading-none ${streakActive ? 'text-amber-400' : 'text-zinc-500'}`}
-            >
-              {streaks.currentStreak}
-            </span>
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wider">streak</span>
-            <span className="text-[10px] text-zinc-700 font-mono ml-auto hidden sm:inline">
-              best {streaks.longestStreak}
-            </span>
-          </div>
-        )}
       </div>
+      {streaks && (
+        <div className="flex items-center gap-2 px-4 py-2.5 border border-zinc-800 rounded-lg bg-zinc-900/60">
+          <Flame
+            className={`w-3.5 h-3.5 flex-shrink-0 ${streakActive ? 'text-amber-400' : 'text-zinc-500'}`}
+          />
+          <span
+            className={`text-lg font-bold font-mono tabular-nums leading-none ${streakActive ? 'text-amber-400' : 'text-zinc-300'}`}
+          >
+            {streaks.currentStreak}
+          </span>
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider">streak</span>
+          <span className="text-[10px] text-zinc-500 font-mono ml-auto">
+            best {streaks.longestStreak}
+          </span>
+        </div>
+      )}
 
       {/* ── Overdue banner ── */}
       {overdueTasks.length > 0 && (
         <div className="flex items-center gap-3 px-3 py-2 bg-red-950/40 border border-red-900/40 rounded-lg text-sm">
           <span className="text-red-400 font-mono font-bold">{overdueTasks.length}</span>
-          <span className="text-red-400/80">overdue —</span>
-          <span className="text-red-400/60 truncate flex-1 font-mono text-xs">
+          <span className="text-red-300/80">overdue —</span>
+          <span className="text-red-300/60 truncate flex-1 font-mono text-xs">
             {overdueTasks.map((t) => t.title).join(' · ')}
           </span>
           <button
@@ -143,12 +143,12 @@ export default function Dashboard({
       {/* ── Topic breakdown ── */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+          <h2 className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium">
             Topics
           </h2>
           <button
             onClick={() => onNavigate('progress')}
-            className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors uppercase tracking-wider"
+            className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-wider"
           >
             Details →
           </button>
@@ -169,10 +169,10 @@ export default function Dashboard({
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-zinc-500 font-mono tabular-nums w-12 text-right">
+              <span className="text-zinc-400 font-mono tabular-nums w-12 text-right">
                 {done}/{total}
               </span>
-              <span className="text-zinc-600 font-mono tabular-nums w-10 text-right hidden sm:inline">
+              <span className="text-zinc-500 font-mono tabular-nums w-10 text-right hidden sm:inline">
                 {pct}%
               </span>
               {due > 0 && (
@@ -181,7 +181,7 @@ export default function Dashboard({
                 </span>
               )}
               <span
-                className="text-zinc-700 font-mono tabular-nums w-12 text-right hidden md:inline"
+                className="text-zinc-500 font-mono tabular-nums w-12 text-right hidden md:inline"
                 title="Avg ease factor"
               >
                 EF {avgEF.toFixed(1)}
@@ -189,11 +189,11 @@ export default function Dashboard({
             </div>
           ))}
           {topicStats.length === 0 && (
-            <div className="px-3 py-4 text-center text-zinc-600 text-xs">
+            <div className="px-3 py-4 text-center text-zinc-500 text-xs">
               No tasks.{' '}
               <button
                 onClick={() => onNavigate('add')}
-                className="text-zinc-400 underline hover:no-underline"
+                className="text-zinc-300 underline hover:no-underline"
               >
                 Add one
               </button>
@@ -205,9 +205,9 @@ export default function Dashboard({
       {/* ── Due for review table ── */}
       {dueTasks.length > 0 && (
         <div>
-          <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium mb-2">
+          <h2 className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium mb-2">
             Due for Review
-            <span className="text-zinc-700 font-mono ml-2">{dueTasks.length}</span>
+            <span className="text-zinc-500 font-mono ml-2">{dueTasks.length}</span>
           </h2>
           <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
             {dueTasks.slice(0, 8).map((task) => {
@@ -222,19 +222,19 @@ export default function Dashboard({
                     className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`}
                   />
                   <span className="text-zinc-300 flex-1 truncate">{task.title}</span>
-                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">
+                  <span className="text-zinc-500 font-mono tabular-nums hidden sm:inline">
                     EF {task.easeFactor.toFixed(1)}
                   </span>
-                  <span className="text-zinc-600 font-mono tabular-nums hidden sm:inline">
+                  <span className="text-zinc-500 font-mono tabular-nums hidden sm:inline">
                     ×{task.repetitions}
                   </span>
                   {task.deadline && (
-                    <span className="text-zinc-600 font-mono tabular-nums hidden md:inline text-[10px]">
+                    <span className="text-zinc-500 font-mono tabular-nums hidden md:inline text-[10px]">
                       dl {task.deadline}
                     </span>
                   )}
                   <span
-                    className={`font-mono tabular-nums w-16 text-right ${overdue ? 'text-red-400' : 'text-zinc-500'}`}
+                    className={`font-mono tabular-nums w-16 text-right ${overdue ? 'text-red-400' : 'text-zinc-400'}`}
                   >
                     {overdue ? `${Math.abs(days)}d late` : days === 0 ? 'today' : `in ${days}d`}
                   </span>
@@ -243,7 +243,7 @@ export default function Dashboard({
             })}
           </div>
           {dueTasks.length > 8 && (
-            <p className="text-[10px] text-zinc-600 text-center mt-1.5 font-mono">
+            <p className="text-[10px] text-zinc-500 text-center mt-1.5 font-mono">
               +{dueTasks.length - 8} more
             </p>
           )}
@@ -271,7 +271,7 @@ function StatCell({
       <span className={`text-lg font-bold font-mono tabular-nums leading-none ${color}`}>
         {value}
       </span>
-      <span className="text-[10px] text-zinc-600 uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] text-zinc-400 uppercase tracking-wider">{label}</span>
     </div>
   );
 }
