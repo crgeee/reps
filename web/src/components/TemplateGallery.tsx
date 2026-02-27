@@ -27,9 +27,7 @@ export default function TemplateGallery({
       .finally(() => setLoading(false));
   }, []);
 
-  const myTemplates = templates.filter(
-    (t) => !t.isSystem && t.userId === user.id,
-  );
+  const myTemplates = templates.filter((t) => !t.isSystem && t.userId === user.id);
   const systemTemplates = templates.filter((t) => t.isSystem);
 
   function handleCreated(collection: Collection) {

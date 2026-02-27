@@ -29,9 +29,7 @@ export default function TemplateCard({ template, onClick }: TemplateCardProps) {
               key={status.id}
               className="text-xs px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: status.color
-                  ? `${status.color}33`
-                  : 'rgba(113, 113, 122, 0.2)',
+                backgroundColor: status.color ? `${status.color}33` : 'rgba(113, 113, 122, 0.2)',
                 color: status.color ?? '#a1a1aa',
               }}
             >

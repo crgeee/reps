@@ -95,7 +95,13 @@ export interface CreateTemplateInput {
   srEnabled?: boolean;
   defaultView?: 'list' | 'board';
   statuses: { name: string; color?: string | null; sortOrder?: number }[];
-  tasks?: { title: string; description?: string; statusName: string; topic?: string; sortOrder?: number }[];
+  tasks?: {
+    title: string;
+    description?: string;
+    statusName: string;
+    topic?: string;
+    sortOrder?: number;
+  }[];
 }
 
 export interface CreateFromTemplateInput {

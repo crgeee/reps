@@ -295,9 +295,7 @@ templates.delete('/:id', async (c) => {
   if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
   const user = await getUserById(userId);
-  const userWhere = user?.isAdmin
-    ? sql``
-    : sql`AND user_id = ${userId} AND is_system = false`;
+  const userWhere = user?.isAdmin ? sql`` : sql`AND user_id = ${userId} AND is_system = false`;
 
   const [row] = await sql<TemplateRow[]>`
     DELETE FROM collection_templates WHERE id = ${id} ${userWhere} RETURNING *
@@ -336,7 +334,7 @@ templates.post('/:id/tasks', async (c) => {
 
   const [row] = await sql<TemplateTaskRow[]>`
     INSERT INTO collection_template_tasks (template_id, title, description, status_name, topic, sort_order)
-    VALUES (${id}, ${body.title}, ${body.description ?? null}, ${body.statusName}, ${body.topic}, ${body.sortOrder ?? 0})
+    VALUES (${id}, ${body.title}, ${body.description ?? null}, ${body.statusName}, ${body.topic ?? 'custom'}, ${body.sortOrder ?? 0})
     RETURNING *
   `;
   return c.json(taskRowToTask(row), 201);

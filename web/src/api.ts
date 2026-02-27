@@ -378,7 +378,10 @@ export async function createTemplate(input: CreateTemplateInput): Promise<Collec
   });
 }
 
-export async function updateTemplate(id: string, updates: Partial<CreateTemplateInput>): Promise<CollectionTemplate> {
+export async function updateTemplate(
+  id: string,
+  updates: Partial<CreateTemplateInput>,
+): Promise<CollectionTemplate> {
   return request<CollectionTemplate>(`/templates/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
@@ -391,7 +394,13 @@ export async function deleteTemplate(id: string): Promise<void> {
 
 export async function createTemplateTask(
   templateId: string,
-  input: { title: string; description?: string; statusName: string; topic?: string; sortOrder?: number },
+  input: {
+    title: string;
+    description?: string;
+    statusName: string;
+    topic?: string;
+    sortOrder?: number;
+  },
 ): Promise<TemplateTask> {
   return request<TemplateTask>(`/templates/${templateId}/tasks`, {
     method: 'POST',
@@ -402,7 +411,13 @@ export async function createTemplateTask(
 export async function updateTemplateTask(
   templateId: string,
   taskId: string,
-  updates: Partial<{ title: string; description: string | null; statusName: string; topic: string; sortOrder: number }>,
+  updates: Partial<{
+    title: string;
+    description: string | null;
+    statusName: string;
+    topic: string;
+    sortOrder: number;
+  }>,
 ): Promise<TemplateTask> {
   return request<TemplateTask>(`/templates/${templateId}/tasks/${taskId}`, {
     method: 'PATCH',
@@ -414,7 +429,9 @@ export async function deleteTemplateTask(templateId: string, taskId: string): Pr
   await request<unknown>(`/templates/${templateId}/tasks/${taskId}`, { method: 'DELETE' });
 }
 
-export async function createCollectionFromTemplate(input: CreateFromTemplateInput): Promise<Collection> {
+export async function createCollectionFromTemplate(
+  input: CreateFromTemplateInput,
+): Promise<Collection> {
   return request<Collection>('/collections/from-template', {
     method: 'POST',
     body: JSON.stringify(input),

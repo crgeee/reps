@@ -106,10 +106,16 @@ collections.post('/from-template', async (c) => {
   const body = parsed.data;
 
   // Load template (must be system or owned by user)
-  const [template] = await sql<{
-    id: string; name: string; icon: string | null; color: string | null;
-    sr_enabled: boolean; default_view: string;
-  }[]>`
+  const [template] = await sql<
+    {
+      id: string;
+      name: string;
+      icon: string | null;
+      color: string | null;
+      sr_enabled: boolean;
+      default_view: string;
+    }[]
+  >`
     SELECT * FROM collection_templates WHERE id = ${body.templateId}
     AND (is_system = true OR user_id = ${userId})
   `;
@@ -118,10 +124,13 @@ collections.post('/from-template', async (c) => {
   const templateStatuses = await sql<{ name: string; color: string | null; sort_order: number }[]>`
     SELECT name, color, sort_order FROM template_statuses WHERE template_id = ${template.id} ORDER BY sort_order ASC
   `;
-  const templateTasks = await sql<{ title: string; description: string | null; status_name: string; topic: string }[]>`
+  const templateTasks = await sql<
+    { title: string; description: string | null; status_name: string; topic: string }[]
+  >`
     SELECT title, description, status_name, topic FROM template_tasks WHERE template_id = ${template.id} ORDER BY sort_order ASC
   `;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await sql.begin(async (tx: any) => {
     const collName = body.name ?? template.name;
     const collColor = body.color ?? template.color;

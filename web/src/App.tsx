@@ -217,7 +217,10 @@ export default function App() {
 
   // Derive due tasks client-side instead of a separate API call
   const today = new Date().toISOString().split('T')[0]!;
-  const dueTasks = useMemo(() => tasks.filter(t => !t.completed && t.nextReview <= today), [tasks, today]);
+  const dueTasks = useMemo(
+    () => tasks.filter((t) => !t.completed && t.nextReview <= today),
+    [tasks, today],
+  );
 
   // Filter tasks by active collection if set
   const filteredTasks = useMemo(
@@ -553,7 +556,13 @@ export default function App() {
                 />
               )}
               {view === 'review' && (
-                <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" /></div>}>
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
                   <ReviewSession
                     dueTasks={filteredDueTasks}
                     onComplete={() => {
@@ -578,7 +587,13 @@ export default function App() {
                 <TopicProgress tasks={filteredTasks} activeCollectionId={activeCollectionId} />
               )}
               {view === 'calendar' && (
-                <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" /></div>}>
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
                   <div className="space-y-4">
                     <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
                     <CalendarView tasks={filteredTasks} />
@@ -586,12 +601,24 @@ export default function App() {
                 </Suspense>
               )}
               {view === 'export' && (
-                <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" /></div>}>
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
                   <ExportView />
                 </Suspense>
               )}
               {view === 'templates' && user && (
-                <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" /></div>}>
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
                   <TemplateGallery
                     onCollectionCreated={(col) => {
                       setCollections((prev) => [...prev, col]);

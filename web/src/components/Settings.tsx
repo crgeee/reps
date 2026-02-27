@@ -559,17 +559,12 @@ export default function Settings({ user, onUserUpdate }: Props) {
             <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
               <h3 className="text-sm font-semibold text-zinc-400 mb-3">Templates</h3>
               {adminTemplates.map((t) => (
-                <div
-                  key={t.id}
-                  className="px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg"
-                >
+                <div key={t.id} className="px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         {t.icon && <span className="text-sm">{t.icon}</span>}
-                        <span className="text-zinc-200 text-sm font-medium truncate">
-                          {t.name}
-                        </span>
+                        <span className="text-zinc-200 text-sm font-medium truncate">{t.name}</span>
                         {t.isSystem && (
                           <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
                             SYSTEM

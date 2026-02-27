@@ -340,7 +340,9 @@ export default function CollectionEditModal({
             {templateSaving ? 'Saving...' : 'Save as Template'}
           </button>
           {templateMessage && (
-            <span className={`text-xs ${templateMessage.startsWith('Failed') ? 'text-red-400' : 'text-green-400'}`}>
+            <span
+              className={`text-xs ${templateMessage.startsWith('Failed') ? 'text-red-400' : 'text-green-400'}`}
+            >
               {templateMessage}
             </span>
           )}
