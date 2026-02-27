@@ -23,6 +23,7 @@ import { Home, ListTodo, Plus, GraduationCap, BarChart3 } from 'lucide-react';
 const ReviewSession = lazy(() => import('./components/ReviewSession'));
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const ExportView = lazy(() => import('./components/ExportView'));
+const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
 
 type View =
   | 'dashboard'
@@ -33,6 +34,7 @@ type View =
   | 'calendar'
   | 'export'
   | 'settings'
+  | 'templates'
   | 'device-approve'
   | 'privacy'
   | 'terms';
@@ -46,6 +48,7 @@ const VALID_VIEWS = new Set<string>([
   'calendar',
   'export',
   'settings',
+  'templates',
   'device-approve',
   'privacy',
   'terms',
@@ -309,6 +312,7 @@ export default function App() {
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
             onCollectionUpdated={handleCollectionUpdated}
             onCollectionDeleted={handleCollectionDeleted}
+            onBrowseTemplates={() => setView('templates')}
           />
 
           {/* Desktop nav */}
@@ -584,6 +588,18 @@ export default function App() {
               {view === 'export' && (
                 <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" /></div>}>
                   <ExportView />
+                </Suspense>
+              )}
+              {view === 'templates' && user && (
+                <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" /></div>}>
+                  <TemplateGallery
+                    onCollectionCreated={(col) => {
+                      setCollections((prev) => [...prev, col]);
+                      handleCollectionChange(col.id);
+                    }}
+                    onNavigate={(v) => setView(v as View)}
+                    user={user}
+                  />
                 </Suspense>
               )}
               {view === 'settings' && user && (
