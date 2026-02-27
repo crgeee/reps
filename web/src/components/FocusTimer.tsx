@@ -114,7 +114,7 @@ export default function FocusTimer({ onComplete, soundEnabled = true }: FocusTim
 
   return (
     <div
-      data-focus-timer-running={running || undefined}
+      data-focus-timer-active={running || remaining < selectedDuration || done || undefined}
       className="flex items-center gap-4 p-3 bg-zinc-900 border border-zinc-800 rounded-lg transition-all duration-200"
     >
       <div className="relative flex-shrink-0">
