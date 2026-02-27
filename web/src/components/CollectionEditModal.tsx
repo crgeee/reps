@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, LayoutTemplate } from 'lucide-react';
 import type { Collection, CollectionStatus } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import {
@@ -8,6 +8,7 @@ import {
   createCollectionStatus,
   updateCollectionStatus,
   deleteCollectionStatus,
+  createTemplate,
 } from '../api';
 
 interface CollectionEditModalProps {
@@ -62,6 +63,8 @@ export default function CollectionEditModal({
   const [statuses, setStatuses] = useState<CollectionStatus[]>(collection.statuses ?? []);
   const [saving, setSaving] = useState(false);
   const [statusColorPicker, setStatusColorPicker] = useState<string | null>(null);
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [templateMessage, setTemplateMessage] = useState<string | null>(null);
 
   async function handleSave() {
     if (!name.trim() || saving) return;
@@ -130,6 +133,31 @@ export default function CollectionEditModal({
       setStatusColorPicker(null);
     } catch {
       // silently fail
+    }
+  }
+
+  async function handleSaveAsTemplate() {
+    if (templateSaving) return;
+    setTemplateSaving(true);
+    setTemplateMessage(null);
+    try {
+      await createTemplate({
+        name: `${name.trim()} Template`,
+        color: color,
+        srEnabled,
+        statuses: statuses.map((s, i) => ({
+          name: s.name,
+          color: s.color,
+          sortOrder: i,
+        })),
+      });
+      setTemplateMessage('Template saved!');
+      setTimeout(() => setTemplateMessage(null), 3000);
+    } catch {
+      setTemplateMessage('Failed to save template');
+      setTimeout(() => setTemplateMessage(null), 3000);
+    } finally {
+      setTemplateSaving(false);
     }
   }
 
@@ -299,6 +327,23 @@ export default function CollectionEditModal({
               {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
+        </div>
+
+        {/* Save as Template */}
+        <div className="border-t border-zinc-800 pt-4 mt-4 flex items-center gap-2">
+          <button
+            onClick={handleSaveAsTemplate}
+            disabled={templateSaving}
+            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-50"
+          >
+            <LayoutTemplate className="w-3.5 h-3.5" />
+            {templateSaving ? 'Saving...' : 'Save as Template'}
+          </button>
+          {templateMessage && (
+            <span className={`text-xs ${templateMessage.startsWith('Failed') ? 'text-red-400' : 'text-green-400'}`}>
+              {templateMessage}
+            </span>
+          )}
         </div>
       </div>
     </div>
