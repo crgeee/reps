@@ -40,6 +40,7 @@ export interface Collection {
   icon?: string;
   color?: string;
   srEnabled: boolean;
+  defaultView?: 'list' | 'board';
   sortOrder: number;
   createdAt: string;
   statuses: CollectionStatus[];
@@ -51,6 +52,56 @@ export interface CollectionStatus {
   name: string;
   color: string | null;
   sortOrder: number;
+}
+
+export interface TemplateStatus {
+  id: string;
+  templateId: string;
+  name: string;
+  color: string | null;
+  sortOrder: number;
+}
+
+export interface TemplateTask {
+  id: string;
+  templateId: string;
+  title: string;
+  description: string | null;
+  statusName: string;
+  topic: string;
+  sortOrder: number;
+}
+
+export interface CollectionTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  srEnabled: boolean;
+  defaultView: 'list' | 'board';
+  isSystem: boolean;
+  userId: string | null;
+  createdAt: string;
+  statuses: TemplateStatus[];
+  tasks: TemplateTask[];
+}
+
+export interface CreateTemplateInput {
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  srEnabled?: boolean;
+  defaultView?: 'list' | 'board';
+  statuses: { name: string; color?: string | null; sortOrder?: number }[];
+  tasks?: { title: string; description?: string; statusName: string; topic?: string; sortOrder?: number }[];
+}
+
+export interface CreateFromTemplateInput {
+  templateId: string;
+  name?: string;
+  color?: string;
 }
 
 export interface EvaluationResult {

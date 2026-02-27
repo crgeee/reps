@@ -5,6 +5,10 @@ import type {
   EvaluationResult,
   Collection,
   CollectionStatus,
+  CollectionTemplate,
+  CreateTemplateInput,
+  CreateFromTemplateInput,
+  TemplateTask,
   Tag,
   StatsOverview,
   Streaks,
@@ -359,4 +363,68 @@ export async function downloadMarkdownExport(): Promise<void> {
 
 export function getTaskEventUrl(taskId: string): string {
   return `${BASE_URL}/export/tasks/${taskId}/event.ics`;
+}
+
+// Templates
+
+export async function getTemplates(): Promise<CollectionTemplate[]> {
+  return request<CollectionTemplate[]>('/templates');
+}
+
+export async function createTemplate(input: CreateTemplateInput): Promise<CollectionTemplate> {
+  return request<CollectionTemplate>('/templates', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateTemplate(id: string, updates: Partial<CreateTemplateInput>): Promise<CollectionTemplate> {
+  return request<CollectionTemplate>(`/templates/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  await request<unknown>(`/templates/${id}`, { method: 'DELETE' });
+}
+
+export async function createTemplateTask(
+  templateId: string,
+  input: { title: string; description?: string; statusName: string; topic?: string; sortOrder?: number },
+): Promise<TemplateTask> {
+  return request<TemplateTask>(`/templates/${templateId}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateTemplateTask(
+  templateId: string,
+  taskId: string,
+  updates: Partial<{ title: string; description: string | null; statusName: string; topic: string; sortOrder: number }>,
+): Promise<TemplateTask> {
+  return request<TemplateTask>(`/templates/${templateId}/tasks/${taskId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteTemplateTask(templateId: string, taskId: string): Promise<void> {
+  await request<unknown>(`/templates/${templateId}/tasks/${taskId}`, { method: 'DELETE' });
+}
+
+export async function createCollectionFromTemplate(input: CreateFromTemplateInput): Promise<Collection> {
+  return request<Collection>('/collections/from-template', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getAdminTemplates(): Promise<CollectionTemplate[]> {
+  return request<CollectionTemplate[]>('/templates/admin/all');
+}
+
+export async function adminDeleteTemplate(id: string): Promise<void> {
+  await request<unknown>(`/templates/${id}`, { method: 'DELETE' });
 }
