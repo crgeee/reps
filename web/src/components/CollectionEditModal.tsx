@@ -19,6 +19,33 @@ interface CollectionEditModalProps {
 
 const ICON_OPTIONS = ['', '📚', '💻', '🎯', '🧠', '📝', '🔬', '🎨', '⚡', '🏆', '📊', '🔧'];
 
+function SwatchPicker({
+  selected,
+  onSelect,
+  size = 'md',
+}: {
+  selected: string | null;
+  onSelect: (color: string) => void;
+  size?: 'sm' | 'md';
+}) {
+  const sizeClass = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7';
+  const ringOffset = size === 'sm' ? 'ring-offset-1 ring-offset-zinc-800' : 'ring-offset-2 ring-offset-zinc-900';
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {COLOR_SWATCHES.map((c) => (
+        <button
+          key={c}
+          onClick={() => onSelect(c)}
+          className={`${sizeClass} rounded-full transition-all duration-150 ${
+            selected === c ? `ring-2 ring-zinc-400 ${ringOffset}${size === 'md' ? ' scale-110' : ''}` : ''
+          }`}
+          style={{ backgroundColor: c }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function CollectionEditModal({
   collection,
   onSaved,
@@ -174,18 +201,7 @@ export default function CollectionEditModal({
         {/* Color swatches */}
         <div>
           <label className="block text-xs text-zinc-400 mb-1.5 font-medium">Color</label>
-          <div className="flex flex-wrap gap-2">
-            {COLOR_SWATCHES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full transition-all duration-150 ${
-                  color === c ? 'ring-2 ring-zinc-400 ring-offset-2 ring-offset-zinc-900 scale-110' : ''
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
+          <SwatchPicker selected={color} onSelect={setColor} />
         </div>
 
         {/* SR toggle */}
@@ -217,19 +233,12 @@ export default function CollectionEditModal({
                     style={{ backgroundColor: status.color ?? '#71717a' }}
                   />
                   {statusColorPicker === status.id && (
-                    <div className="absolute top-7 left-0 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-2 flex flex-wrap gap-1.5 w-48">
-                      {COLOR_SWATCHES.map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => handleUpdateStatusColor(status.id, c)}
-                          className={`w-6 h-6 rounded-full transition-all ${
-                            status.color === c
-                              ? 'ring-2 ring-zinc-400 ring-offset-1 ring-offset-zinc-800'
-                              : ''
-                          }`}
-                          style={{ backgroundColor: c }}
-                        />
-                      ))}
+                    <div className="absolute top-7 left-0 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-2 w-48">
+                      <SwatchPicker
+                        selected={status.color}
+                        onSelect={(c) => handleUpdateStatusColor(status.id, c)}
+                        size="sm"
+                      />
                     </div>
                   )}
                 </div>

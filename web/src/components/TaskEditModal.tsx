@@ -225,7 +225,7 @@ export default function TaskEditModal({
 
         {/* Tags */}
         <div>
-          <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
             Tags
           </label>
           <TagPicker
@@ -238,7 +238,7 @@ export default function TaskEditModal({
 
         {/* Description */}
         <div>
-          <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
             Description
           </label>
           <textarea
@@ -252,7 +252,7 @@ export default function TaskEditModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
             Notes
           </label>
           <NotesList notes={notes} onAddNote={handleAddNote} />
