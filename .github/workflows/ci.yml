@@ -32,12 +32,108 @@ jobs:
       - name: Format check
         run: npm run format:check
 
-      - name: Commitlint
-        if: github.event_name == 'pull_request'
-        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
-
       - name: Build server
         run: npm run build:server
 
       - name: Build web
         run: npm run build:web
+
+  commitlint:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run commitlint
+        id: commitlint
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set +e
+          output=$(npx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose 2>&1)
+          exit_code=$?
+          echo "$output"
+          {
+            echo "output<<COMMITLINT_EOF"
+            echo "$output"
+            echo "COMMITLINT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit $exit_code
+
+      - name: Comment on PR if commitlint fails
+        if: steps.commitlint.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          COMMITLINT_OUTPUT: ${{ steps.commitlint.outputs.output }}
+        with:
+          script: |
+            const output = process.env.COMMITLINT_OUTPUT;
+            const body = [
+              '### Commitlint failed',
+              '',
+              'One or more commit messages don\'t follow [Conventional Commits](https://www.conventionalcommits.org/). This won\'t block merging, but please fix if possible.',
+              '',
+              '```',
+              output,
+              '```',
+              '',
+              '**Common fixes:**',
+              '- Subject must be lowercase after the type prefix (e.g. `fix: add feature` not `fix: Add feature`)',
+              '- Use a valid type: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`, `perf`, `ci`',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = '### Commitlint failed';
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Remove comment if commitlint passes
+        if: steps.commitlint.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = '### Commitlint failed';
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+              });
+            }
