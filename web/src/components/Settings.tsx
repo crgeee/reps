@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { User, AdminUser, SessionInfo, CustomTopic } from '../types';
+import type { User, AdminUser, SessionInfo, CustomTopic, CollectionTemplate } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import {
   updateProfile,
@@ -11,6 +11,8 @@ import {
   getAdminUsers,
   getAdminStats,
   adminUpdateUser,
+  getAdminTemplates,
+  adminDeleteTemplate,
 } from '../api';
 import { buildTimezoneOptions } from '../utils/timezone';
 import { parseUserAgent, formatRelative } from '../utils/format';
@@ -50,6 +52,7 @@ export default function Settings({ user, onUserUpdate }: Props) {
   const [topicError, setTopicError] = useState<string | null>(null);
 
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminTemplates, setAdminTemplates] = useState<CollectionTemplate[]>([]);
   const [adminStats, setAdminStats] = useState<{
     users: number;
     tasks: number;
@@ -88,6 +91,9 @@ export default function Settings({ user, onUserUpdate }: Props) {
         .catch(() => {});
       getAdminStats()
         .then(setAdminStats)
+        .catch(() => {});
+      getAdminTemplates()
+        .then(setAdminTemplates)
         .catch(() => {});
     }
   }, [fetchSessions, fetchTopics, user.isAdmin]);
@@ -546,6 +552,79 @@ export default function Settings({ user, onUserUpdate }: Props) {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {adminTemplates.length > 0 && (
+            <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
+              <h3 className="text-sm font-semibold text-zinc-400 mb-3">Templates</h3>
+              {adminTemplates.map((t) => (
+                <div
+                  key={t.id}
+                  className="px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {t.icon && <span className="text-sm">{t.icon}</span>}
+                        <span className="text-zinc-200 text-sm font-medium truncate">
+                          {t.name}
+                        </span>
+                        {t.isSystem && (
+                          <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                            SYSTEM
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+                        {!t.isSystem && t.userId && (
+                          <span className="truncate max-w-[140px]" title={t.userId}>
+                            user: {t.userId.slice(0, 8)}...
+                          </span>
+                        )}
+                        <span>
+                          {t.statuses.length} status{t.statuses.length !== 1 ? 'es' : ''}
+                        </span>
+                        <span>
+                          {t.tasks.length} task{t.tasks.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    {!t.isSystem && (
+                      <button
+                        title="Delete template"
+                        onClick={async () => {
+                          if (!confirm(`Delete template "${t.name}"?`)) return;
+                          setAdminTemplates((prev) => prev.filter((at) => at.id !== t.id));
+                          try {
+                            await adminDeleteTemplate(t.id);
+                          } catch {
+                            // Re-fetch on failure to restore state
+                            getAdminTemplates()
+                              .then(setAdminTemplates)
+                              .catch(() => {});
+                          }
+                        }}
+                        className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
