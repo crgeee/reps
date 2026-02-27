@@ -20,6 +20,7 @@ import type {
   AdminUser,
   SessionInfo,
   CustomTopic,
+  CollectionTemplate,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
@@ -242,6 +243,23 @@ export async function deleteCollectionStatus(
   statusId: string,
 ): Promise<void> {
   await request<unknown>(`/collections/${collectionId}/statuses/${statusId}`, { method: 'DELETE' });
+}
+
+// Templates
+
+export async function getTemplates(): Promise<CollectionTemplate[]> {
+  return request<CollectionTemplate[]>('/templates');
+}
+
+export async function createCollectionFromTemplate(input: {
+  templateId: string;
+  name?: string;
+  color?: string;
+}): Promise<Collection> {
+  return request<Collection>('/templates/create-collection', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 // Tags
