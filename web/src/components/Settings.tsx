@@ -590,14 +590,12 @@ export default function Settings({ user, onUserUpdate }: Props) {
                         title="Delete template"
                         onClick={async () => {
                           if (!confirm(`Delete template "${t.name}"?`)) return;
-                          setAdminTemplates((prev) => prev.filter((at) => at.id !== t.id));
+                          const prev = adminTemplates;
+                          setAdminTemplates((cur) => cur.filter((at) => at.id !== t.id));
                           try {
                             await adminDeleteTemplate(t.id);
                           } catch {
-                            // Re-fetch on failure to restore state
-                            getAdminTemplates()
-                              .then(setAdminTemplates)
-                              .catch(() => {});
+                            setAdminTemplates(prev);
                           }
                         }}
                         className="p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"

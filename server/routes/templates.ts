@@ -92,7 +92,7 @@ templates.get('/', async (c) => {
   `;
 
   if (rows.length === 0) {
-    c.header('Cache-Control', 'public, max-age=300');
+    c.header('Cache-Control', 'private, max-age=300');
     return c.json([]);
   }
 
@@ -100,12 +100,12 @@ templates.get('/', async (c) => {
 
   const [statusRows, taskRows] = await Promise.all([
     sql<TemplateStatusRow[]>`
-      SELECT * FROM collection_template_statuses
+      SELECT * FROM template_statuses
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
     sql<TemplateTaskRow[]>`
-      SELECT * FROM collection_template_tasks
+      SELECT * FROM template_tasks
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
@@ -125,7 +125,7 @@ templates.get('/', async (c) => {
     tasksByTemplate.set(tr.template_id, list);
   }
 
-  c.header('Cache-Control', 'public, max-age=300');
+  c.header('Cache-Control', 'private, max-age=300');
   return c.json(
     rows.map((row) => ({
       ...rowToTemplate(row),
@@ -151,12 +151,12 @@ templates.get('/admin/all', async (c) => {
 
   const [statusRows, taskRows] = await Promise.all([
     sql<TemplateStatusRow[]>`
-      SELECT * FROM collection_template_statuses
+      SELECT * FROM template_statuses
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
     sql<TemplateTaskRow[]>`
-      SELECT * FROM collection_template_tasks
+      SELECT * FROM template_tasks
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
@@ -228,7 +228,7 @@ templates.post('/', async (c) => {
       for (let i = 0; i < body.statuses.length; i++) {
         const s = body.statuses[i];
         const [sr] = await tx<TemplateStatusRow[]>`
-          INSERT INTO collection_template_statuses (template_id, name, color, sort_order)
+          INSERT INTO template_statuses (template_id, name, color, sort_order)
           VALUES (${row.id}, ${s.name}, ${s.color ?? null}, ${s.sortOrder ?? i})
           RETURNING *
         `;
@@ -241,7 +241,7 @@ templates.post('/', async (c) => {
       for (let i = 0; i < body.tasks.length; i++) {
         const t = body.tasks[i];
         const [tr] = await tx<TemplateTaskRow[]>`
-          INSERT INTO collection_template_tasks (template_id, title, description, status_name, topic, sort_order)
+          INSERT INTO template_tasks (template_id, title, description, status_name, topic, sort_order)
           VALUES (${row.id}, ${t.title}, ${t.description ?? null}, ${t.statusName}, ${t.topic}, ${t.sortOrder ?? i})
           RETURNING *
         `;
@@ -304,13 +304,13 @@ templates.delete('/:id', async (c) => {
   return c.json({ deleted: true, id });
 });
 
-// Helper: verify template ownership
-async function verifyTemplateAccess(
+// Helper: verify template write access (non-admins can only modify their own templates)
+async function verifyTemplateWriteAccess(
   templateId: string,
   userId: string,
 ): Promise<TemplateRow | null> {
   const user = await getUserById(userId);
-  const userWhere = user?.isAdmin ? sql`` : sql`AND (user_id = ${userId} OR is_system = true)`;
+  const userWhere = user?.isAdmin ? sql`` : sql`AND user_id = ${userId} AND is_system = false`;
   const [row] = await sql<TemplateRow[]>`
     SELECT * FROM collection_templates WHERE id = ${templateId} ${userWhere}
   `;
@@ -323,7 +323,7 @@ templates.post('/:id/tasks', async (c) => {
   const id = c.req.param('id');
   if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
-  const template = await verifyTemplateAccess(id, userId);
+  const template = await verifyTemplateWriteAccess(id, userId);
   if (!template) return c.json({ error: 'Template not found' }, 404);
 
   const raw = await c.req.json();
@@ -332,8 +332,20 @@ templates.post('/:id/tasks', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
+  // Validate statusName references a defined template status
+  const statusRows = await sql<TemplateStatusRow[]>`
+    SELECT * FROM template_statuses WHERE template_id = ${id}
+  `;
+  const validNames = new Set(statusRows.map((s) => s.name));
+  if (!validNames.has(body.statusName)) {
+    return c.json(
+      { error: `statusName "${body.statusName}" does not match any template status` },
+      400,
+    );
+  }
+
   const [row] = await sql<TemplateTaskRow[]>`
-    INSERT INTO collection_template_tasks (template_id, title, description, status_name, topic, sort_order)
+    INSERT INTO template_tasks (template_id, title, description, status_name, topic, sort_order)
     VALUES (${id}, ${body.title}, ${body.description ?? null}, ${body.statusName}, ${body.topic ?? 'custom'}, ${body.sortOrder ?? 0})
     RETURNING *
   `;
@@ -348,7 +360,7 @@ templates.patch('/:id/tasks/:taskId', async (c) => {
   if (!validateUuid(id) || !validateUuid(taskId))
     return c.json({ error: 'Invalid ID format' }, 400);
 
-  const template = await verifyTemplateAccess(id, userId);
+  const template = await verifyTemplateWriteAccess(id, userId);
   if (!template) return c.json({ error: 'Template not found' }, 404);
 
   const raw = await c.req.json();
@@ -368,7 +380,7 @@ templates.patch('/:id/tasks/:taskId', async (c) => {
   if (Object.keys(updates).length === 0) return c.json({ error: 'No valid fields' }, 400);
 
   const [row] = await sql<TemplateTaskRow[]>`
-    UPDATE collection_template_tasks SET ${sql(updates)}
+    UPDATE template_tasks SET ${sql(updates)}
     WHERE id = ${taskId} AND template_id = ${id}
     RETURNING *
   `;
@@ -384,11 +396,11 @@ templates.delete('/:id/tasks/:taskId', async (c) => {
   if (!validateUuid(id) || !validateUuid(taskId))
     return c.json({ error: 'Invalid ID format' }, 400);
 
-  const template = await verifyTemplateAccess(id, userId);
+  const template = await verifyTemplateWriteAccess(id, userId);
   if (!template) return c.json({ error: 'Template not found' }, 404);
 
   const [row] = await sql<TemplateTaskRow[]>`
-    DELETE FROM collection_template_tasks
+    DELETE FROM template_tasks
     WHERE id = ${taskId} AND template_id = ${id}
     RETURNING *
   `;

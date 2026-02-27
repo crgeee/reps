@@ -153,9 +153,9 @@ export default function CollectionEditModal({
       });
       setTemplateMessage('Template saved!');
       setTimeout(() => setTemplateMessage(null), 3000);
-    } catch {
-      setTemplateMessage('Failed to save template');
-      setTimeout(() => setTemplateMessage(null), 3000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save template';
+      setTemplateMessage(`Failed: ${msg}`);
     } finally {
       setTemplateSaving(false);
     }

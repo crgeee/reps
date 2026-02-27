@@ -18,12 +18,13 @@ export default function TemplateGallery({
 }: TemplateGalleryProps) {
   const [templates, setTemplates] = useState<CollectionTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<CollectionTemplate | null>(null);
 
   useEffect(() => {
     getTemplates()
       .then(setTemplates)
-      .catch(() => setTemplates([]))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load templates'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -63,6 +64,32 @@ export default function TemplateGallery({
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-100">Start a new collection</h1>
+          <p className="text-red-400 mt-1">{error}</p>
+        </div>
+        <button
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            getTemplates()
+              .then(setTemplates)
+              .catch((err) =>
+                setError(err instanceof Error ? err.message : 'Failed to load templates'),
+              )
+              .finally(() => setLoading(false));
+          }}
+          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }

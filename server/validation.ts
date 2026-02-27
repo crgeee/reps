@@ -99,23 +99,32 @@ export const templateTaskInput = z.object({
   title: z.string().min(1).max(500),
   description: z.string().max(2000).nullable().optional(),
   statusName: z.string().min(1).max(100),
-  topic: z.string().max(100).optional(),
+  topic: topicEnum.optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 
-export const templateSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(500).nullable().optional(),
-  icon: z.string().max(10).optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9a-f]{6}$/i)
-    .optional(),
-  srEnabled: z.boolean().optional(),
-  defaultView: z.enum(['list', 'board']).optional(),
-  statuses: z.array(templateStatusInput).min(1).max(20),
-  tasks: z.array(templateTaskInput).max(10).optional(),
-});
+export const templateSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    description: z.string().max(500).nullable().optional(),
+    icon: z.string().max(10).optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9a-f]{6}$/i)
+      .optional(),
+    srEnabled: z.boolean().optional(),
+    defaultView: z.enum(['list', 'board']).optional(),
+    statuses: z.array(templateStatusInput).min(1).max(20),
+    tasks: z.array(templateTaskInput).max(10).optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.tasks || data.tasks.length === 0) return true;
+      const statusNames = new Set(data.statuses.map((s) => s.name));
+      return data.tasks.every((t) => statusNames.has(t.statusName));
+    },
+    { message: 'Task statusName must reference a defined status name' },
+  );
 
 export const patchTemplateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -134,7 +143,7 @@ export const patchTemplateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(2000).nullable().optional(),
   statusName: z.string().min(1).max(100).optional(),
-  topic: z.string().max(100).optional(),
+  topic: topicEnum.optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 

@@ -68,7 +68,7 @@ export interface TemplateTask {
   title: string;
   description: string | null;
   statusName: string;
-  topic: string;
+  topic: Topic;
   sortOrder: number;
 }
 
