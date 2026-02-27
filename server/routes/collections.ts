@@ -62,8 +62,10 @@ collections.get('/', async (c) => {
   const rows = await sql<CollectionRow[]>`
     SELECT * FROM collections ${userFilter} ORDER BY sort_order ASC, created_at ASC
   `;
+  const collectionIds = rows.map((r) => r.id);
+  if (collectionIds.length === 0) return c.json([]);
   const statusRows = await sql<CollectionStatusRow[]>`
-    SELECT * FROM collection_statuses ORDER BY sort_order ASC
+    SELECT * FROM collection_statuses WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
   `;
   const statusesByCollection = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
   for (const sr of statusRows) {
@@ -209,10 +211,22 @@ collections.delete('/:id', async (c) => {
   return c.json({ deleted: true, id });
 });
 
+// Helper: verify collection ownership
+async function verifyCollectionOwnership(collectionId: string, userId: string): Promise<boolean> {
+  const [row] = await sql<{ id: string }[]>`
+    SELECT id FROM collections WHERE id = ${collectionId} AND user_id = ${userId}
+  `;
+  return !!row;
+}
+
 // GET /collections/:id/statuses
 collections.get('/:id/statuses', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const rows = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses WHERE collection_id = ${id} ORDER BY sort_order ASC
@@ -222,11 +236,12 @@ collections.get('/:id/statuses', async (c) => {
 
 // POST /collections/:id/statuses
 collections.post('/:id/statuses', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
-  const [collection] = await sql<CollectionRow[]>`SELECT id FROM collections WHERE id = ${id}`;
-  if (!collection) return c.json({ error: 'Collection not found' }, 404);
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const raw = await c.req.json();
   const parsed = collectionStatusSchema.safeParse(raw);
@@ -244,9 +259,13 @@ collections.post('/:id/statuses', async (c) => {
 
 // PATCH /collections/:id/statuses/:sid
 collections.patch('/:id/statuses/:sid', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   const sid = c.req.param('sid');
   if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const raw = await c.req.json();
   const parsed = patchCollectionStatusSchema.safeParse(raw);
@@ -271,9 +290,13 @@ collections.patch('/:id/statuses/:sid', async (c) => {
 
 // DELETE /collections/:id/statuses/:sid
 collections.delete('/:id/statuses/:sid', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   const sid = c.req.param('sid');
   if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const [status] = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses WHERE id = ${sid} AND collection_id = ${id}
