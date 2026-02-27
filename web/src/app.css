@@ -232,3 +232,8 @@ body::before {
 .anim-stagger > *:nth-child(8) {
   animation-delay: 210ms;
 }
+
+/* ── Mobile safe area for bottom nav ── */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

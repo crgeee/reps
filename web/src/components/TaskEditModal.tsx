@@ -105,7 +105,7 @@ export default function TaskEditModal({
 
   return (
     <div
-      className="anim-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="anim-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -114,7 +114,7 @@ export default function TaskEditModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Edit task: ${task.title}`}
-        className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5"
+        className="anim-modal-enter bg-zinc-900 border border-zinc-700 rounded-t-xl sm:rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-5"
       >
         {/* Header */}
         <div className="flex items-start gap-3">
@@ -155,7 +155,7 @@ export default function TaskEditModal({
         <div className="grid grid-cols-2 gap-3">
           {/* Status */}
           <div>
-            <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
               Status
             </label>
             <select
@@ -173,7 +173,7 @@ export default function TaskEditModal({
 
           {/* Priority */}
           <div>
-            <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
               Priority
             </label>
             <select
@@ -191,7 +191,7 @@ export default function TaskEditModal({
 
           {/* Deadline */}
           <div>
-            <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
               Deadline
             </label>
             <input
@@ -204,7 +204,7 @@ export default function TaskEditModal({
 
           {/* Collection */}
           <div>
-            <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
               Collection
             </label>
             <select
@@ -225,7 +225,7 @@ export default function TaskEditModal({
 
         {/* Tags */}
         <div>
-          <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
             Tags
           </label>
           <TagPicker
@@ -238,7 +238,7 @@ export default function TaskEditModal({
 
         {/* Description */}
         <div>
-          <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
             Description
           </label>
           <textarea
@@ -252,14 +252,14 @@ export default function TaskEditModal({
 
         {/* Notes */}
         <div>
-          <label className="block text-[10px] text-zinc-600 uppercase tracking-wider mb-1">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
             Notes
           </label>
           <NotesList notes={notes} onAddNote={handleAddNote} />
         </div>
 
         {/* SM-2 info */}
-        <div className="flex flex-wrap gap-4 text-[10px] text-zinc-600">
+        <div className="flex flex-wrap gap-4 text-[10px] text-zinc-500">
           <span>EF: {task.easeFactor.toFixed(2)}</span>
           <span>Reps: {task.repetitions}</span>
           <span>Interval: {task.interval}d</span>

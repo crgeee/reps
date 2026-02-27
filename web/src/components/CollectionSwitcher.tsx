@@ -130,7 +130,7 @@ export default function CollectionSwitcher({
                   style={{ backgroundColor: col.color ?? '#71717a' }}
                 />
                 <span className="truncate">{col.name}</span>
-                {!col.srEnabled && <span className="ml-auto text-[10px] text-zinc-600">no SR</span>}
+                {!col.srEnabled && <span className="ml-auto text-[10px] text-zinc-500">no SR</span>}
               </button>
               <button
                 onClick={(e) => {
@@ -139,10 +139,10 @@ export default function CollectionSwitcher({
                   setOpen(false);
                 }}
                 aria-label={`Edit ${col.name}`}
-                className="p-1.5 text-zinc-600 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-all"
+                className="p-2 text-zinc-500 hover:text-zinc-200 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                 title="Edit collection"
               >
-                <Pencil className="w-3 h-3" />
+                <Pencil className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
