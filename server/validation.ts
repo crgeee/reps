@@ -85,6 +85,68 @@ export const mockRespondSchema = z.object({
   answer: z.string().min(1).max(10000),
 });
 
+export const templateStatusInput = z.object({
+  name: z.string().min(1).max(100),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable()
+    .optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+});
+
+export const templateTaskInput = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(2000).nullable().optional(),
+  statusName: z.string().min(1).max(100),
+  topic: z.string().max(100).optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+});
+
+export const templateSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(500).nullable().optional(),
+  icon: z.string().max(10).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
+  srEnabled: z.boolean().optional(),
+  defaultView: z.enum(['list', 'board']).optional(),
+  statuses: z.array(templateStatusInput).min(1).max(20),
+  tasks: z.array(templateTaskInput).max(10).optional(),
+});
+
+export const patchTemplateSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(500).nullable().optional(),
+  icon: z.string().max(10).nullable().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable()
+    .optional(),
+  srEnabled: z.boolean().optional(),
+  defaultView: z.enum(['list', 'board']).optional(),
+});
+
+export const patchTemplateTaskSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  statusName: z.string().min(1).max(100).optional(),
+  topic: z.string().max(100).optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+});
+
+export const fromTemplateSchema = z.object({
+  templateId: z.string().regex(UUID_RE),
+  name: z.string().min(1).max(200).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
+});
+
 export function buildUpdates(
   body: Record<string, unknown>,
   fieldMap: Record<string, string>,
