@@ -7,6 +7,7 @@ import {
   patchCollectionSchema,
   collectionStatusSchema,
   patchCollectionStatusSchema,
+  fromTemplateSchema,
 } from '../validation.js';
 
 type AppEnv = { Variables: { userId: string } };
@@ -18,6 +19,7 @@ interface CollectionRow {
   icon: string | null;
   color: string | null;
   sr_enabled: boolean;
+  default_view: string | null;
   sort_order: number;
   created_at: string;
 }
@@ -47,6 +49,7 @@ function rowToCollection(row: CollectionRow) {
     icon: row.icon,
     color: row.color,
     srEnabled: row.sr_enabled,
+    defaultView: row.default_view ?? 'list',
     sortOrder: row.sort_order,
     createdAt: row.created_at,
   };
@@ -93,6 +96,65 @@ collections.post('/', async (c) => {
   return c.json(rowToCollection(row), 201);
 });
 
+// POST /collections/from-template
+collections.post('/from-template', async (c) => {
+  const userId = c.get('userId') as string;
+  const raw = await c.req.json();
+  const parsed = fromTemplateSchema.safeParse(raw);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  const body = parsed.data;
+
+  // Load template (must be system or owned by user)
+  const [template] = await sql<{
+    id: string; name: string; icon: string | null; color: string | null;
+    sr_enabled: boolean; default_view: string;
+  }[]>`
+    SELECT * FROM collection_templates WHERE id = ${body.templateId}
+    AND (is_system = true OR user_id = ${userId})
+  `;
+  if (!template) return c.json({ error: 'Template not found' }, 404);
+
+  const templateStatuses = await sql<{ name: string; color: string | null; sort_order: number }[]>`
+    SELECT name, color, sort_order FROM template_statuses WHERE template_id = ${template.id} ORDER BY sort_order ASC
+  `;
+  const templateTasks = await sql<{ title: string; description: string | null; status_name: string; topic: string }[]>`
+    SELECT title, description, status_name, topic FROM template_tasks WHERE template_id = ${template.id} ORDER BY sort_order ASC
+  `;
+
+  const result = await sql.begin(async (tx: any) => {
+    const collName = body.name ?? template.name;
+    const collColor = body.color ?? template.color;
+    const [col] = await tx<CollectionRow[]>`
+      INSERT INTO collections (name, icon, color, sr_enabled, default_view, sort_order, user_id)
+      VALUES (${collName}, ${template.icon}, ${collColor}, ${template.sr_enabled}, ${template.default_view}, 0, ${userId ?? null})
+      RETURNING *
+    `;
+
+    const createdStatuses = [];
+    for (const s of templateStatuses) {
+      const [statusRow] = await tx<CollectionStatusRow[]>`
+        INSERT INTO collection_statuses (collection_id, name, color, sort_order)
+        VALUES (${col.id}, ${s.name}, ${s.color}, ${s.sort_order})
+        RETURNING *
+      `;
+      createdStatuses.push(statusRowToStatus(statusRow));
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    for (const t of templateTasks) {
+      await tx`
+        INSERT INTO tasks (id, topic, title, description, status, collection_id, next_review, created_at, user_id)
+        VALUES (gen_random_uuid(), ${t.topic}, ${t.title}, ${t.description}, ${t.status_name}, ${col.id}, ${today}, ${today}, ${userId ?? null})
+      `;
+    }
+
+    return { ...rowToCollection(col), statuses: createdStatuses };
+  });
+
+  return c.json(result, 201);
+});
+
 // PATCH /collections/:id
 collections.patch('/:id', async (c) => {
   const userId = c.get('userId') as string;
@@ -109,6 +171,7 @@ collections.patch('/:id', async (c) => {
     icon: 'icon',
     color: 'color',
     srEnabled: 'sr_enabled',
+    defaultView: 'default_view',
     sortOrder: 'sort_order',
   });
 
