@@ -1,18 +1,15 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import type { Task, Collection, Tag, User } from './types';
 import { formatStatusLabel } from './types';
-import { getTasks, getDueTasks, getCollections, getTags } from './api';
+import { getTasks, getCollections, getTags } from './api';
 import { useAuth } from './hooks/useAuth';
 import { logger } from './logger';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
-import ReviewSession from './components/ReviewSession';
 import AddTask from './components/AddTask';
 import TopicProgress from './components/TopicProgress';
 import ErrorBoundary from './components/ErrorBoundary';
 import Spinner from './components/Spinner';
-import CalendarView from './components/CalendarView';
-import ExportView from './components/ExportView';
 import CollectionSwitcher from './components/CollectionSwitcher';
 import FocusWidget from './components/FocusWidget';
 import LoginPage from './components/LoginPage';
@@ -23,6 +20,11 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import { Home, ListTodo, Plus, GraduationCap, BarChart3 } from 'lucide-react';
 
+const ReviewSession = lazy(() => import('./components/ReviewSession'));
+const CalendarView = lazy(() => import('./components/CalendarView'));
+const ExportView = lazy(() => import('./components/ExportView'));
+const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
+
 type View =
   | 'dashboard'
   | 'tasks'
@@ -32,6 +34,7 @@ type View =
   | 'calendar'
   | 'export'
   | 'settings'
+  | 'templates'
   | 'device-approve'
   | 'privacy'
   | 'terms';
@@ -45,6 +48,7 @@ const VALID_VIEWS = new Set<string>([
   'calendar',
   'export',
   'settings',
+  'templates',
   'device-approve',
   'privacy',
   'terms',
@@ -85,7 +89,6 @@ export default function App() {
   const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
   const [view, setViewState] = useState<View>(getViewFromHash);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [dueTasks, setDueTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [activeCollectionId, setActiveCollectionId] = useState<string | null>(() =>
     localStorage.getItem('reps_active_collection'),
@@ -144,39 +147,33 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [mobileMenuOpen]);
 
-  const applyTaskData = useCallback((allTasks: Task[], due: Task[]) => {
-    setTasks(allTasks);
-    setDueTasks(due);
-  }, []);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
-      applyTaskData(allTasks, due);
+      const allTasks = await getTasks();
+      setTasks(allTasks);
     } catch (err) {
       logger.error('Failed to fetch data', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }, [applyTaskData]);
+  }, []);
 
   // Background refresh: re-fetches without loading spinner
   const refreshQuietly = useCallback(async () => {
     try {
-      const [allTasks, due] = await Promise.all([getTasks(), getDueTasks()]);
-      applyTaskData(allTasks, due);
+      const allTasks = await getTasks();
+      setTasks(allTasks);
     } catch (err) {
       logger.error('Background refresh failed', { error: String(err) });
     }
-  }, [applyTaskData]);
+  }, []);
 
   // Optimistic task update: patches local state immediately, syncs with server in background
   const optimisticUpdateTask = useCallback((taskId: string, updates: Partial<Task>) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
-    setDueTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
   }, []);
 
   const fetchCollections = useCallback(async () => {
@@ -217,6 +214,13 @@ export default function App() {
   function handleTagCreated(tag: Tag) {
     setTags((prev) => [...prev, tag]);
   }
+
+  // Derive due tasks client-side instead of a separate API call
+  const today = new Date().toISOString().split('T')[0]!;
+  const dueTasks = useMemo(
+    () => tasks.filter((t) => !t.completed && t.nextReview <= today),
+    [tasks, today],
+  );
 
   // Filter tasks by active collection if set
   const filteredTasks = useMemo(
@@ -311,6 +315,7 @@ export default function App() {
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
             onCollectionUpdated={handleCollectionUpdated}
             onCollectionDeleted={handleCollectionDeleted}
+            onBrowseTemplates={() => setView('templates')}
           />
 
           {/* Desktop nav */}
@@ -551,13 +556,21 @@ export default function App() {
                 />
               )}
               {view === 'review' && (
-                <ReviewSession
-                  dueTasks={filteredDueTasks}
-                  onComplete={() => {
-                    fetchData();
-                    setView('dashboard');
-                  }}
-                />
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
+                  <ReviewSession
+                    dueTasks={filteredDueTasks}
+                    onComplete={() => {
+                      fetchData();
+                      setView('dashboard');
+                    }}
+                  />
+                </Suspense>
               )}
               {view === 'add' && (
                 <AddTask
@@ -574,12 +587,48 @@ export default function App() {
                 <TopicProgress tasks={filteredTasks} activeCollectionId={activeCollectionId} />
               )}
               {view === 'calendar' && (
-                <div className="space-y-4">
-                  <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
-                  <CalendarView tasks={filteredTasks} />
-                </div>
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
+                  <div className="space-y-4">
+                    <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
+                    <CalendarView tasks={filteredTasks} />
+                  </div>
+                </Suspense>
               )}
-              {view === 'export' && <ExportView />}
+              {view === 'export' && (
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
+                  <ExportView />
+                </Suspense>
+              )}
+              {view === 'templates' && user && (
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
+                  <TemplateGallery
+                    onCollectionCreated={(col) => {
+                      setCollections((prev) => [...prev, col]);
+                      handleCollectionChange(col.id);
+                    }}
+                    onNavigate={(v) => setView(v as View)}
+                    user={user}
+                  />
+                </Suspense>
+              )}
               {view === 'settings' && user && (
                 <Settings user={user} onUserUpdate={handleUserUpdate} />
               )}

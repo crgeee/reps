@@ -8,3 +8,4 @@ web/dist/
 !deploy/ecosystem.config.js
 .worktrees/
 node_modules
+.claude/worktrees/

@@ -7,10 +7,12 @@ import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
 import { authMiddleware } from './middleware/auth.js';
 import { rateLimiter } from './middleware/rate-limit.js';
+import { etag } from './middleware/etag.js';
 import authRoutes from './routes/auth.js';
 import tasks from './routes/tasks.js';
 import agent from './routes/agent.js';
 import collections from './routes/collections.js';
+import templates from './routes/templates.js';
 import tags from './routes/tags.js';
 import statsRoutes from './routes/stats.js';
 import usersRoutes from './routes/users.js';
@@ -57,6 +59,9 @@ app.route('/export', calendarFeed);
 // Apply auth middleware to all protected routes
 app.use('/*', authMiddleware);
 
+// ETag caching for GET responses
+app.use('/*', etag);
+
 // Stricter rate limit for agent routes — 10 req/min
 app.use('/agent/*', rateLimiter(10, 60_000));
 
@@ -64,6 +69,7 @@ app.use('/agent/*', rateLimiter(10, 60_000));
 app.route('/tasks', tasks);
 app.route('/agent', agent);
 app.route('/collections', collections);
+app.route('/templates', templates);
 app.route('/tags', tags);
 app.route('/stats', statsRoutes);
 app.route('/users', usersRoutes);

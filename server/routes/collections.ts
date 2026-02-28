@@ -7,6 +7,7 @@ import {
   patchCollectionSchema,
   collectionStatusSchema,
   patchCollectionStatusSchema,
+  fromTemplateSchema,
 } from '../validation.js';
 
 type AppEnv = { Variables: { userId: string } };
@@ -18,6 +19,7 @@ interface CollectionRow {
   icon: string | null;
   color: string | null;
   sr_enabled: boolean;
+  default_view: string | null;
   sort_order: number;
   created_at: string;
 }
@@ -47,6 +49,7 @@ function rowToCollection(row: CollectionRow) {
     icon: row.icon,
     color: row.color,
     srEnabled: row.sr_enabled,
+    defaultView: row.default_view ?? 'list',
     sortOrder: row.sort_order,
     createdAt: row.created_at,
   };
@@ -59,8 +62,10 @@ collections.get('/', async (c) => {
   const rows = await sql<CollectionRow[]>`
     SELECT * FROM collections ${userFilter} ORDER BY sort_order ASC, created_at ASC
   `;
+  const collectionIds = rows.map((r) => r.id);
+  if (collectionIds.length === 0) return c.json([]);
   const statusRows = await sql<CollectionStatusRow[]>`
-    SELECT * FROM collection_statuses ORDER BY sort_order ASC
+    SELECT * FROM collection_statuses WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
   `;
   const statusesByCollection = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
   for (const sr of statusRows) {
@@ -93,6 +98,74 @@ collections.post('/', async (c) => {
   return c.json(rowToCollection(row), 201);
 });
 
+// POST /collections/from-template
+collections.post('/from-template', async (c) => {
+  const userId = c.get('userId') as string;
+  const raw = await c.req.json();
+  const parsed = fromTemplateSchema.safeParse(raw);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  const body = parsed.data;
+
+  // Load template (must be system or owned by user)
+  const [template] = await sql<
+    {
+      id: string;
+      name: string;
+      icon: string | null;
+      color: string | null;
+      sr_enabled: boolean;
+      default_view: string;
+    }[]
+  >`
+    SELECT * FROM collection_templates WHERE id = ${body.templateId}
+    AND (is_system = true OR user_id = ${userId})
+  `;
+  if (!template) return c.json({ error: 'Template not found' }, 404);
+
+  const templateStatuses = await sql<{ name: string; color: string | null; sort_order: number }[]>`
+    SELECT name, color, sort_order FROM template_statuses WHERE template_id = ${template.id} ORDER BY sort_order ASC
+  `;
+  const templateTasks = await sql<
+    { title: string; description: string | null; status_name: string; topic: string }[]
+  >`
+    SELECT title, description, status_name, topic FROM template_tasks WHERE template_id = ${template.id} ORDER BY sort_order ASC
+  `;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await sql.begin(async (tx: any) => {
+    const collName = body.name ?? template.name;
+    const collColor = body.color ?? template.color;
+    const [col] = await tx<CollectionRow[]>`
+      INSERT INTO collections (name, icon, color, sr_enabled, default_view, sort_order, user_id)
+      VALUES (${collName}, ${template.icon}, ${collColor}, ${template.sr_enabled}, ${template.default_view}, 0, ${userId ?? null})
+      RETURNING *
+    `;
+
+    const createdStatuses = [];
+    for (const s of templateStatuses) {
+      const [statusRow] = await tx<CollectionStatusRow[]>`
+        INSERT INTO collection_statuses (collection_id, name, color, sort_order)
+        VALUES (${col.id}, ${s.name}, ${s.color}, ${s.sort_order})
+        RETURNING *
+      `;
+      createdStatuses.push(statusRowToStatus(statusRow));
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    for (const t of templateTasks) {
+      await tx`
+        INSERT INTO tasks (id, topic, title, description, status, collection_id, next_review, created_at, user_id)
+        VALUES (gen_random_uuid(), ${t.topic}, ${t.title}, ${t.description}, ${t.status_name}, ${col.id}, ${today}, ${today}, ${userId ?? null})
+      `;
+    }
+
+    return { ...rowToCollection(col), statuses: createdStatuses };
+  });
+
+  return c.json(result, 201);
+});
+
 // PATCH /collections/:id
 collections.patch('/:id', async (c) => {
   const userId = c.get('userId') as string;
@@ -109,6 +182,7 @@ collections.patch('/:id', async (c) => {
     icon: 'icon',
     color: 'color',
     srEnabled: 'sr_enabled',
+    defaultView: 'default_view',
     sortOrder: 'sort_order',
   });
 
@@ -137,10 +211,22 @@ collections.delete('/:id', async (c) => {
   return c.json({ deleted: true, id });
 });
 
+// Helper: verify collection ownership
+async function verifyCollectionOwnership(collectionId: string, userId: string): Promise<boolean> {
+  const [row] = await sql<{ id: string }[]>`
+    SELECT id FROM collections WHERE id = ${collectionId} AND user_id = ${userId}
+  `;
+  return !!row;
+}
+
 // GET /collections/:id/statuses
 collections.get('/:id/statuses', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const rows = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses WHERE collection_id = ${id} ORDER BY sort_order ASC
@@ -150,11 +236,12 @@ collections.get('/:id/statuses', async (c) => {
 
 // POST /collections/:id/statuses
 collections.post('/:id/statuses', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
 
-  const [collection] = await sql<CollectionRow[]>`SELECT id FROM collections WHERE id = ${id}`;
-  if (!collection) return c.json({ error: 'Collection not found' }, 404);
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const raw = await c.req.json();
   const parsed = collectionStatusSchema.safeParse(raw);
@@ -172,9 +259,13 @@ collections.post('/:id/statuses', async (c) => {
 
 // PATCH /collections/:id/statuses/:sid
 collections.patch('/:id/statuses/:sid', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   const sid = c.req.param('sid');
   if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const raw = await c.req.json();
   const parsed = patchCollectionStatusSchema.safeParse(raw);
@@ -199,9 +290,13 @@ collections.patch('/:id/statuses/:sid', async (c) => {
 
 // DELETE /collections/:id/statuses/:sid
 collections.delete('/:id/statuses/:sid', async (c) => {
+  const userId = c.get('userId') as string;
   const id = c.req.param('id');
   const sid = c.req.param('sid');
   if (!validateUuid(id) || !validateUuid(sid)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
 
   const [status] = await sql<CollectionStatusRow[]>`
     SELECT * FROM collection_statuses WHERE id = ${sid} AND collection_id = ${id}
