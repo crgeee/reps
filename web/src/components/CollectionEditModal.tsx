@@ -15,18 +15,14 @@ import {
   createTemplate,
 } from '../api';
 
+import { errorMessage, ICON_OPTIONS } from '../utils/ui';
+
 interface CollectionEditModalProps {
   collection: Collection;
   onSaved: (updated: Collection) => void;
   onDeleted: (id: string) => void;
   onClose: () => void;
 }
-
-function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof Error ? err.message : fallback;
-}
-
-const ICON_OPTIONS = ['', '📚', '💻', '🎯', '🧠', '📝', '🔬', '🎨', '⚡', '🏆', '📊', '🔧'];
 
 function SwatchPicker({
   selected,
@@ -168,6 +164,7 @@ export default function CollectionEditModal({
     if (templateSaving) return;
     setTemplateSaving(true);
     setTemplateMessage(null);
+    setError(null);
     try {
       await createTemplate({
         name: `${name.trim()} Template`,
@@ -191,8 +188,7 @@ export default function CollectionEditModal({
         collectionId: collection.id,
         error: String(err),
       });
-      const msg = err instanceof Error ? err.message : 'Failed to save template';
-      setTemplateMessage(`Failed: ${msg}`);
+      setTemplateMessage(`Failed: ${errorMessage(err, 'Failed to save template')}`);
     } finally {
       setTemplateSaving(false);
     }

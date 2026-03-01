@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCalendarToken, generateCalendarToken, downloadMarkdownExport } from '../api';
+import { logger } from '../logger';
 
 export default function ExportView() {
   const [token, setToken] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export default function ExportView() {
         if ('url' in res) setUrl((res as { url: string }).url);
       })
       .catch((e) => {
-        console.error('Failed to load calendar token:', e);
+        logger.error('Failed to load calendar token', { error: String(e) });
       })
       .finally(() => setLoading(false));
   }, []);

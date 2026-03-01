@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Task, StatsOverview } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
+import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
@@ -47,12 +48,12 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
     getStatsOverview(activeCollectionId ?? undefined)
       .then(setStats)
       .catch((e) => {
-        console.error('Failed to load stats:', e);
+        logger.error('Failed to load stats', { error: String(e) });
       });
     getHeatmap(activeCollectionId ?? undefined)
       .then(setHeatmapData)
       .catch((e) => {
-        console.error('Failed to load heatmap:', e);
+        logger.error('Failed to load heatmap', { error: String(e) });
       });
   }, [activeCollectionId]);
 

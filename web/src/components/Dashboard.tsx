@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Task, Streaks } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
+import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import { Flame, Info } from 'lucide-react';
 
@@ -48,7 +49,7 @@ export default function Dashboard({
     getStreaks(activeCollectionId ?? undefined)
       .then(setStreaks)
       .catch((e) => {
-        console.error('Failed to load streaks:', e);
+        logger.error('Failed to load streaks', { error: String(e) });
       });
   }, [activeCollectionId]);
 

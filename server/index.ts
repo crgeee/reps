@@ -46,7 +46,13 @@ app.onError((err, c) => {
   if (err instanceof SyntaxError && err.message.includes('JSON')) {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
-  console.error('Unhandled error:', err);
+  console.error('Unhandled error:', {
+    method: c.req.method,
+    path: c.req.path,
+    userId: c.get('userId') ?? 'anonymous',
+    error: err.message,
+    stack: err.stack,
+  });
   return c.json({ error: 'Internal server error' }, 500);
 });
 
