@@ -34,8 +34,19 @@ export default function AddTask({
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [customTopic, setCustomTopic] = useState('');
+  const [showCustomTopic, setShowCustomTopic] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const TITLE_PLACEHOLDERS: Record<string, string> = {
+    coding: 'e.g. LRU Cache implementation',
+    'system-design': 'e.g. Design a URL shortener',
+    behavioral: 'e.g. Tell me about a time you led a project',
+    papers: 'e.g. Attention Is All You Need',
+    custom: 'e.g. Mock interview practice',
+  };
+  const titlePlaceholder = TITLE_PLACEHOLDERS[topic] ?? `e.g. ${topic} task`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,9 +100,9 @@ export default function AddTask({
               <button
                 key={t.value}
                 type="button"
-                onClick={() => setTopic(t.value)}
+                onClick={() => { setTopic(t.value); setShowCustomTopic(false); }}
                 className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
-                  topic === t.value
+                  topic === t.value && !showCustomTopic
                     ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
                     : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
                 }`}
@@ -99,7 +110,28 @@ export default function AddTask({
                 {t.label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setShowCustomTopic(true)}
+              className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
+                showCustomTopic
+                  ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
+                  : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+              }`}
+            >
+              + Custom
+            </button>
           </div>
+          {showCustomTopic && (
+            <input
+              type="text"
+              value={customTopic}
+              onChange={(e) => { setCustomTopic(e.target.value); setTopic(e.target.value); }}
+              placeholder="Enter custom topic name"
+              autoFocus
+              className="mt-2 w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all duration-200"
+            />
+          )}
         </div>
 
         {/* Title */}
@@ -112,7 +144,7 @@ export default function AddTask({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. LRU Cache implementation"
+            placeholder={titlePlaceholder}
             required
             className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all duration-200"
           />

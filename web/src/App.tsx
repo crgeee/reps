@@ -97,6 +97,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [initialTopicFilter, setInitialTopicFilter] = useState<string | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const handleCollectionChange = useCallback((id: string | null) => {
@@ -125,6 +126,7 @@ export default function App() {
   const setView = useCallback((v: View) => {
     window.location.hash = v === 'dashboard' ? '' : v;
     setViewState(v);
+    if (v !== 'tasks') setInitialTopicFilter(null);
   }, []);
 
   useEffect(() => {
@@ -563,6 +565,10 @@ export default function App() {
                   dueTasks={filteredDueTasks}
                   onStartReview={() => setView('review')}
                   onNavigate={setView}
+                  onTopicClick={(topic) => {
+                    setInitialTopicFilter(topic);
+                    setView('tasks');
+                  }}
                   activeCollectionId={activeCollectionId}
                 />
               )}
@@ -577,6 +583,7 @@ export default function App() {
                   onOptimisticUpdate={optimisticUpdateTask}
                   onBackgroundRefresh={refreshQuietly}
                   collectionStatuses={activeStatuses}
+                  initialTopicFilter={initialTopicFilter}
                 />
               )}
               {view === 'review' && (

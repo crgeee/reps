@@ -19,6 +19,7 @@ interface DashboardProps {
   dueTasks: Task[];
   onStartReview: () => void;
   onNavigate: (view: View) => void;
+  onTopicClick?: (topic: string) => void;
   activeCollectionId?: string | null;
 }
 
@@ -37,6 +38,7 @@ export default function Dashboard({
   dueTasks,
   onStartReview,
   onNavigate,
+  onTopicClick,
   activeCollectionId,
 }: DashboardProps) {
   const [streaks, setStreaks] = useState<Streaks | null>(null);
@@ -155,7 +157,10 @@ export default function Dashboard({
         </div>
         <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
           {topicStats.map(({ topic, done, due, total, pct, avgEF }) => (
-            <div key={topic} className="flex items-center gap-3 px-3 py-2 text-xs">
+            <button
+              key={topic}
+              onClick={() => onTopicClick?.(topic)}
+              className="flex items-center gap-3 px-3 py-2 text-xs w-full text-left hover:bg-zinc-800/40 transition-colors cursor-pointer">
               <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[topic]}`} />
               <span className="text-zinc-300 w-24 truncate">{TOPIC_LABELS[topic]}</span>
               <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
@@ -186,7 +191,7 @@ export default function Dashboard({
               >
                 EF {avgEF.toFixed(1)}
               </span>
-            </div>
+            </button>
           ))}
           {topicStats.length === 0 && (
             <div className="px-3 py-4 text-center text-zinc-500 text-xs">
