@@ -232,25 +232,27 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
               />
             </div>
 
-            {/* Icon picker */}
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1.5 font-medium">Icon</label>
-              <div className="flex flex-wrap gap-1.5">
-                {ICON_OPTIONS.map((ic) => (
-                  <button
-                    key={ic}
-                    onClick={() => setIcon(ic)}
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all ${
-                      icon === ic
-                        ? 'bg-zinc-700 ring-2 ring-zinc-500 ring-offset-1 ring-offset-zinc-900'
-                        : 'bg-zinc-800 hover:bg-zinc-750 border border-zinc-700'
-                    }`}
-                  >
-                    {ic || <span className="text-zinc-500 text-xs">-</span>}
-                  </button>
-                ))}
+            {/* Icon picker (only for blank collections — templates define their own icon) */}
+            {!selectedTemplate && (
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1.5 font-medium">Icon</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {ICON_OPTIONS.map((ic) => (
+                    <button
+                      key={ic}
+                      onClick={() => setIcon(ic)}
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all ${
+                        icon === ic
+                          ? 'bg-zinc-700 ring-2 ring-zinc-500 ring-offset-1 ring-offset-zinc-900'
+                          : 'bg-zinc-800 hover:bg-zinc-750 border border-zinc-700'
+                      }`}
+                    >
+                      {ic || <span className="text-zinc-500 text-xs">-</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Color swatches */}
             <div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Tag, Collection } from '../types';
 import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask, createTag } from '../api';
@@ -26,6 +26,10 @@ export default function AddTask({
 
   const defaultTopic = activeCollection?.topics?.[0]?.name ?? 'coding';
   const [topic, setTopic] = useState<string>(defaultTopic);
+
+  useEffect(() => {
+    setTopic(activeCollection?.topics?.[0]?.name ?? 'coding');
+  }, [activeCollection?.id]);
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
