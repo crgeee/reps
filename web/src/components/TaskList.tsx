@@ -1,11 +1,13 @@
 import { useState, useMemo, memo, useCallback } from 'react';
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
   closestCorners,
+  type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -364,24 +366,25 @@ const SortableCard = memo(function SortableCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-    position: isDragging ? ('relative' as const) : undefined,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={isDragging ? 'shadow-lg shadow-black/40 rounded' : ''}
+      className={isDragging ? 'rounded border border-dashed border-zinc-600 bg-zinc-800/30' : ''}
     >
-      <TaskCard
-        task={task}
-        onRefresh={onRefresh}
-        compact
-        dragHandleProps={{ ...attributes, ...listeners }}
-        onEdit={onEdit}
-      />
+      {!isDragging && (
+        <TaskCard
+          task={task}
+          onRefresh={onRefresh}
+          compact
+          dragHandleProps={{ ...attributes, ...listeners }}
+          onEdit={onEdit}
+        />
+      )}
+      {isDragging && <div className="h-8" />}
     </div>
   );
 });
@@ -454,6 +457,7 @@ function BoardLayout({
   collectionStatuses?: CollectionStatus[];
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const { statusList, statusLabels, statusColors } = useMemo(() => {
     if (collectionStatuses && collectionStatuses.length > 0) {
@@ -492,8 +496,16 @@ function BoardLayout({
     [statusList],
   );
 
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      setActiveTask(tasks.find((t) => t.id === event.active.id) ?? null);
+    },
+    [tasks],
+  );
+
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
+      setActiveTask(null);
       const { active, over } = event;
       if (!over) return;
 
@@ -519,6 +531,8 @@ function BoardLayout({
     [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, findColumnForOver],
   );
 
+  const handleDragCancel = useCallback(() => setActiveTask(null), []);
+
   const gridColsClass = useMemo(() => {
     const count = statusList.length;
     if (count <= 2) return 'grid-cols-1 sm:grid-cols-2';
@@ -529,7 +543,13 @@ function BoardLayout({
   }, [statusList.length]);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
       <div className={`grid ${gridColsClass} gap-4 min-h-[60vh]`}>
         {statusList.map((status) => (
           <BoardColumn
@@ -543,6 +563,9 @@ function BoardLayout({
           />
         ))}
       </div>
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+        {activeTask && <TaskCard task={activeTask} onRefresh={onRefresh} compact />}
+      </DragOverlay>
     </DndContext>
   );
 }
