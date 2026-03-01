@@ -1,6 +1,6 @@
 {
   "name": "reps",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "AI-powered interview prep tracker with spaced repetition",
   "type": "module",
   "scripts": {
