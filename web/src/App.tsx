@@ -315,7 +315,6 @@ export default function App() {
             onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
             onCollectionUpdated={handleCollectionUpdated}
             onCollectionDeleted={handleCollectionDeleted}
-            onBrowseTemplates={() => setView('templates')}
           />
 
           {/* Desktop nav */}
@@ -580,7 +579,7 @@ export default function App() {
                   }}
                   availableTags={tags}
                   onTagCreated={handleTagCreated}
-                  activeCollectionId={activeCollectionId}
+                  activeCollection={collections.find((c) => c.id === activeCollectionId) ?? null}
                 />
               )}
               {view === 'progress' && (
