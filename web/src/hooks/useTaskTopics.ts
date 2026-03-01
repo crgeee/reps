@@ -11,3 +11,16 @@ export function useTaskTopics(tasks: Task[]): string[] {
     return Array.from(seen).sort();
   }, [tasks]);
 }
+
+/** Groups tasks by topic, returning a Map of topic → Task[]. */
+export function useGroupedTasksByTopic(tasks: Task[]): Map<string, Task[]> {
+  return useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const t of tasks) {
+      const list = map.get(t.topic) ?? [];
+      list.push(t);
+      map.set(t.topic, list);
+    }
+    return map;
+  }, [tasks]);
+}

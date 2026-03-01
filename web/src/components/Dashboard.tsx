@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Task, Streaks } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
+import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import { Flame, Info } from 'lucide-react';
 
 type View =
@@ -46,20 +47,14 @@ export default function Dashboard({
   useEffect(() => {
     getStreaks(activeCollectionId ?? undefined)
       .then(setStreaks)
-      .catch(() => null);
+      .catch((e) => { console.error('Failed to load streaks:', e); });
   }, [activeCollectionId]);
 
   const overdueTasks = dueTasks.filter(isOverdue);
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
-  // Derive topics from actual tasks, not hardcoded list
-  const topicMap = new Map<string, Task[]>();
-  for (const t of tasks) {
-    const list = topicMap.get(t.topic) ?? [];
-    list.push(t);
-    topicMap.set(t.topic, list);
-  }
+  const topicMap = useGroupedTasksByTopic(tasks);
   const topicStats = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
     const done = topicTasks.filter((t) => t.completed).length;
     const due = topicTasks.filter(

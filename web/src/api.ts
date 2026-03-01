@@ -40,6 +40,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(`API error ${res.status}: ${body}`);
   }
 
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
+
   const contentType = res.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
     throw new Error(

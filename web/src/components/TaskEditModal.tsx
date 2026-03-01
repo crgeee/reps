@@ -53,6 +53,11 @@ export default function TaskEditModal({
           .map((s: CollectionStatus) => s.name)
       : DEFAULT_STATUSES;
 
+  // Derive topic options from collection, with current topic always included
+  const collectionTopics = activeCollection?.topics?.map((t) => t.name) ?? [];
+  const topicList = collectionTopics.length > 0 ? collectionTopics : TOPICS;
+  const topicOptions = topicList.includes(topic) ? topicList : [topic, ...topicList];
+
   async function handleSave() {
     if (!title.trim()) return;
     setSaving(true);
@@ -136,25 +141,19 @@ export default function TaskEditModal({
 
         {/* Topic pills */}
         <div className="flex flex-wrap gap-1.5">
-          {(() => {
-            const collectionTopics = activeCollection?.topics?.map((t) => t.name) ?? [];
-            const topicList = collectionTopics.length > 0 ? collectionTopics : TOPICS;
-            // Ensure current topic is always shown
-            const all = topicList.includes(topic) ? topicList : [topic, ...topicList];
-            return all.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTopic(t)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                  topic === t
-                    ? 'bg-zinc-700 text-zinc-100'
-                    : 'text-zinc-500 hover:text-zinc-300 bg-zinc-800/50'
-                }`}
-              >
-                {getTopicLabel(t)}
-              </button>
-            ));
-          })()}
+          {topicOptions.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTopic(t)}
+              className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                topic === t
+                  ? 'bg-zinc-700 text-zinc-100'
+                  : 'text-zinc-500 hover:text-zinc-300 bg-zinc-800/50'
+              }`}
+            >
+              {getTopicLabel(t)}
+            </button>
+          ))}
         </div>
 
         {/* Metadata grid */}

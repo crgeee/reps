@@ -448,32 +448,42 @@ collections.delete('/:id/topics/:tid', async (c) => {
   if (!(await verifyCollectionOwnership(id, userId)))
     return c.json({ error: 'Collection not found' }, 404);
 
-  const [topic] = await sql<CollectionTopicRow[]>`
-    SELECT * FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}
-  `;
-  if (!topic) return c.json({ error: 'Topic not found' }, 404);
-
-  const [fallback] = await sql<CollectionTopicRow[]>`
-    SELECT * FROM collection_topics
-    WHERE collection_id = ${id} AND id != ${tid}
-    ORDER BY sort_order ASC
-    LIMIT 1
-  `;
-
-  if (fallback) {
-    await sql`
-      UPDATE tasks SET topic = ${fallback.name}
-      WHERE collection_id = ${id} AND topic = ${topic.name}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await sql.begin(async (tx: any) => {
+    const [topic] = await tx<CollectionTopicRow[]>`
+      SELECT * FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}
     `;
-  } else {
-    await sql`
-      UPDATE tasks SET topic = NULL
-      WHERE collection_id = ${id} AND topic = ${topic.name}
-    `;
-  }
+    if (!topic) return { error: 'Topic not found' as const, status: 404 as const };
 
-  await sql`DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}`;
-  return c.json({ deleted: true, id: tid });
+    const [fallback] = await tx<CollectionTopicRow[]>`
+      SELECT * FROM collection_topics
+      WHERE collection_id = ${id} AND id != ${tid}
+      ORDER BY sort_order ASC
+      LIMIT 1
+    `;
+
+    if (fallback) {
+      await tx`
+        UPDATE tasks SET topic = ${fallback.name}
+        WHERE collection_id = ${id} AND topic = ${topic.name}
+      `;
+    } else {
+      // No fallback topic — check if tasks exist on this topic
+      const [{ count }] = await tx<[{ count: number }]>`
+        SELECT count(*)::int AS count FROM tasks
+        WHERE collection_id = ${id} AND topic = ${topic.name}
+      `;
+      if (count > 0) {
+        return { error: 'Cannot delete the last topic while tasks use it' as const, status: 409 as const };
+      }
+    }
+
+    await tx`DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}`;
+    return { deleted: true, id: tid };
+  });
+
+  if ('error' in result) return c.json({ error: result.error }, result.status);
+  return c.json(result);
 });
 
 export default collections;

@@ -88,13 +88,13 @@ export default function Settings({ user, onUserUpdate }: Props) {
     if (user.isAdmin) {
       getAdminUsers()
         .then(setAdminUsers)
-        .catch(() => {});
+        .catch((e) => { console.error('Failed to load admin users:', e); });
       getAdminStats()
         .then(setAdminStats)
-        .catch(() => {});
+        .catch((e) => { console.error('Failed to load admin stats:', e); });
       getAdminTemplates()
         .then(setAdminTemplates)
-        .catch(() => {});
+        .catch((e) => { console.error('Failed to load admin templates:', e); });
     }
   }, [fetchSessions, fetchTopics, user.isAdmin]);
 
