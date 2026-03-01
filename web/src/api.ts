@@ -5,6 +5,7 @@ import type {
   EvaluationResult,
   Collection,
   CollectionStatus,
+  CollectionTopic,
   CollectionTemplate,
   CreateTemplateInput,
   CreateFromTemplateInput,
@@ -249,6 +250,33 @@ export async function deleteCollectionStatus(
   statusId: string,
 ): Promise<void> {
   await request<unknown>(`/collections/${collectionId}/statuses/${statusId}`, { method: 'DELETE' });
+}
+
+// Collection Topics
+
+export async function createCollectionTopic(
+  collectionId: string,
+  input: { name: string; color?: string | null; sortOrder?: number },
+): Promise<CollectionTopic> {
+  return request<CollectionTopic>(`/collections/${collectionId}/topics`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCollectionTopic(
+  collectionId: string,
+  topicId: string,
+  updates: Partial<{ name: string; color: string | null; sortOrder: number }>,
+): Promise<CollectionTopic> {
+  return request<CollectionTopic>(`/collections/${collectionId}/topics/${topicId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteCollectionTopic(collectionId: string, topicId: string): Promise<void> {
+  await request<unknown>(`/collections/${collectionId}/topics/${topicId}`, { method: 'DELETE' });
 }
 
 // Tags

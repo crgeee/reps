@@ -44,6 +44,7 @@ export interface Collection {
   sortOrder: number;
   createdAt: string;
   statuses: CollectionStatus[];
+  topics: CollectionTopic[];
 }
 
 export interface CollectionStatus {
@@ -54,7 +55,23 @@ export interface CollectionStatus {
   sortOrder: number;
 }
 
+export interface CollectionTopic {
+  id: string;
+  collectionId: string;
+  name: string;
+  color: string | null;
+  sortOrder: number;
+}
+
 export interface TemplateStatus {
+  id: string;
+  templateId: string;
+  name: string;
+  color: string | null;
+  sortOrder: number;
+}
+
+export interface TemplateTopic {
   id: string;
   templateId: string;
   name: string;
@@ -85,6 +102,7 @@ export interface CollectionTemplate {
   createdAt: string;
   statuses: TemplateStatus[];
   tasks: TemplateTask[];
+  topics: TemplateTopic[];
 }
 
 export interface CreateTemplateInput {
@@ -102,6 +120,7 @@ export interface CreateTemplateInput {
     topic?: string;
     sortOrder?: number;
   }[];
+  topics?: { name: string; color?: string | null; sortOrder?: number }[];
 }
 
 export interface CreateFromTemplateInput {
@@ -119,7 +138,7 @@ export interface EvaluationResult {
 }
 
 export interface CreateTaskInput {
-  topic: Topic;
+  topic: string;
   title: string;
   deadline?: string;
   note?: string;
