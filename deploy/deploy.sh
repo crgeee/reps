@@ -28,10 +28,12 @@ cp package.json dist/package.json
 echo "→ Building web..."
 npm run build:web
 
-echo "→ Updating nginx config..."
-sudo cp deploy/nginx.conf /etc/nginx/sites-available/reps
-sudo ln -sf /etc/nginx/sites-available/reps /etc/nginx/sites-enabled/reps
-sudo nginx -t && sudo systemctl reload nginx
+echo "→ Checking nginx config..."
+if ! sudo nginx -t 2>/dev/null; then
+  echo "✗ nginx config test failed"
+  exit 1
+fi
+sudo systemctl reload nginx
 
 echo "→ Restarting reps with pm2..."
 pm2 restart reps --update-env
