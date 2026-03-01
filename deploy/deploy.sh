@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Ensure node/npm are available (nvm may not be loaded in non-login shells)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
 echo "→ Switching to main and pulling latest..."
 git checkout main
 git pull origin main
