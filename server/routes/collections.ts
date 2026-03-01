@@ -15,6 +15,15 @@ import {
 type AppEnv = { Variables: { userId: string } };
 const collections = new Hono<AppEnv>();
 
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    err != null &&
+    typeof err === 'object' &&
+    'code' in err &&
+    (err as { code: string }).code === '23505'
+  );
+}
+
 interface CollectionRow {
   id: string;
   name: string;
@@ -306,7 +315,7 @@ collections.post('/:id/statuses', async (c) => {
     `;
     return c.json(statusRowToStatus(row), 201);
   } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+    if (isUniqueViolation(err)) {
       return c.json({ error: `A status named "${body.name}" already exists` }, 409);
     }
     throw err;
@@ -359,21 +368,25 @@ collections.delete('/:id/statuses/:sid', async (c) => {
   `;
   if (!status) return c.json({ error: 'Status not found' }, 404);
 
-  const [fallback] = await sql<CollectionStatusRow[]>`
-    SELECT * FROM collection_statuses
-    WHERE collection_id = ${id} AND id != ${sid}
-    ORDER BY sort_order ASC
-    LIMIT 1
-  `;
-
-  if (fallback) {
-    await sql`
-      UPDATE tasks SET status = ${fallback.name}
-      WHERE collection_id = ${id} AND status = ${status.name}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await sql.begin(async (tx: any) => {
+    const [fallback] = await tx<CollectionStatusRow[]>`
+      SELECT * FROM collection_statuses
+      WHERE collection_id = ${id} AND id != ${sid}
+      ORDER BY sort_order ASC
+      LIMIT 1
     `;
-  }
 
-  await sql`DELETE FROM collection_statuses WHERE id = ${sid} AND collection_id = ${id}`;
+    if (fallback) {
+      await tx`
+        UPDATE tasks SET status = ${fallback.name}
+        WHERE collection_id = ${id} AND status = ${status.name}
+      `;
+    }
+
+    await tx`DELETE FROM collection_statuses WHERE id = ${sid} AND collection_id = ${id}`;
+  });
+
   return c.json({ deleted: true, id: sid });
 });
 
@@ -400,7 +413,7 @@ collections.post('/:id/topics', async (c) => {
     `;
     return c.json(topicRowToTopic(row), 201);
   } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+    if (isUniqueViolation(err)) {
       return c.json({ error: `A topic named "${body.name}" already exists` }, 409);
     }
     throw err;
@@ -453,26 +466,23 @@ collections.delete('/:id/topics/:tid', async (c) => {
   `;
   if (!topic) return c.json({ error: 'Topic not found' }, 404);
 
-  const [fallback] = await sql<CollectionTopicRow[]>`
-    SELECT * FROM collection_topics
-    WHERE collection_id = ${id} AND id != ${tid}
-    ORDER BY sort_order ASC
-    LIMIT 1
-  `;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await sql.begin(async (tx: any) => {
+    const [fallback] = await tx<CollectionTopicRow[]>`
+      SELECT * FROM collection_topics
+      WHERE collection_id = ${id} AND id != ${tid}
+      ORDER BY sort_order ASC
+      LIMIT 1
+    `;
 
-  if (fallback) {
-    await sql`
-      UPDATE tasks SET topic = ${fallback.name}
+    await tx`
+      UPDATE tasks SET topic = ${fallback?.name ?? null}
       WHERE collection_id = ${id} AND topic = ${topic.name}
     `;
-  } else {
-    await sql`
-      UPDATE tasks SET topic = NULL
-      WHERE collection_id = ${id} AND topic = ${topic.name}
-    `;
-  }
 
-  await sql`DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}`;
+    await tx`DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}`;
+  });
+
   return c.json({ deleted: true, id: tid });
 });
 
