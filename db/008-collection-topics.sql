@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS template_topics (
 );
 
 CREATE INDEX IF NOT EXISTS idx_template_topics_template ON template_topics(template_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_template_topics_unique_name ON template_topics(template_id, name);
 
 -- Collection topics (instantiated from template topics or user-created)
 CREATE TABLE IF NOT EXISTS collection_topics (
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS collection_topics (
 );
 
 CREATE INDEX IF NOT EXISTS idx_collection_topics_collection ON collection_topics(collection_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_collection_topics_unique_name ON collection_topics(collection_id, name);
 
 -- Relax tasks.topic CHECK constraint to allow arbitrary topic strings
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_topic_check;

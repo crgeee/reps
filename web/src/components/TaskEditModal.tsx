@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { Task, Collection, Tag, Topic, Priority, CollectionStatus } from '../types';
+import type { Task, Collection, Tag, Priority, CollectionStatus } from '../types';
 import {
   TOPICS,
   TOPIC_LABELS,
@@ -33,7 +33,7 @@ export default function TaskEditModal({
   onTagCreated,
 }: TaskEditModalProps) {
   const [title, setTitle] = useState(task.title);
-  const [topic, setTopic] = useState<Topic>(task.topic);
+  const [topic, setTopic] = useState<string>(task.topic);
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState<Priority>(task.priority);
   const [deadline, setDeadline] = useState(task.deadline ?? '');

@@ -16,7 +16,7 @@ export interface Tag {
 
 export interface Task {
   id: string;
-  topic: Topic;
+  topic: string;
   title: string;
   notes: Note[];
   completed: boolean;
@@ -85,7 +85,7 @@ export interface TemplateTask {
   title: string;
   description: string | null;
   statusName: string;
-  topic: Topic;
+  topic: string;
   sortOrder: number;
 }
 
@@ -184,8 +184,8 @@ export interface MockSession {
 export interface StatsOverview {
   totalReviews: number;
   reviewsLast30Days: number;
-  reviewsByTopic: Record<Topic, number>;
-  averageEaseByTopic: Record<Topic, number>;
+  reviewsByTopic: Record<string, number>;
+  averageEaseByTopic: Record<string, number>;
 }
 
 export interface Streaks {
@@ -286,6 +286,17 @@ export const COLOR_SWATCHES = [
   '#06b6d4',
   '#71717a',
 ] as const;
+
+export function getTopicLabel(topic: string): string {
+  return (
+    (TOPIC_LABELS as Record<string, string>)[topic] ??
+    topic.charAt(0).toUpperCase() + topic.slice(1).replace(/-/g, ' ')
+  );
+}
+
+export function getTopicColor(topic: string): string {
+  return (TOPIC_COLORS as Record<string, string>)[topic] ?? 'bg-slate-500';
+}
 
 export function formatStatusLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');

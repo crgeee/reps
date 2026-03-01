@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, LayoutTemplate } from 'lucide-react';
+import { logger } from '../logger';
 import type { Collection, CollectionStatus, CollectionTopic } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import {
@@ -91,8 +92,11 @@ export default function CollectionEditModal({
         topics,
       };
       onSaved(updated);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to save collection', {
+        collectionId: collection.id,
+        error: String(err),
+      });
     } finally {
       setSaving(false);
     }
@@ -104,8 +108,11 @@ export default function CollectionEditModal({
       await deleteCollection(collection.id);
       onDeleted(collection.id);
       onClose();
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to delete collection', {
+        collectionId: collection.id,
+        error: String(err),
+      });
     }
   }
 
@@ -116,8 +123,8 @@ export default function CollectionEditModal({
         sortOrder: statuses.length,
       });
       setStatuses((prev) => [...prev, created]);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to add status', { collectionId: collection.id, error: String(err) });
     }
   }
 
@@ -127,8 +134,8 @@ export default function CollectionEditModal({
     try {
       const updated = await updateCollectionStatus(collection.id, statusId, { name: trimmed });
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to update status name', { statusId, error: String(err) });
     }
   }
 
@@ -137,8 +144,8 @@ export default function CollectionEditModal({
       const updated = await updateCollectionStatus(collection.id, statusId, { color: newColor });
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
       setStatusColorPicker(null);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to update status color', { statusId, error: String(err) });
     }
   }
 
@@ -171,8 +178,8 @@ export default function CollectionEditModal({
     try {
       await deleteCollectionStatus(collection.id, statusId);
       setStatuses((prev) => prev.filter((s) => s.id !== statusId));
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to delete status', { statusId, error: String(err) });
     }
   }
 
@@ -183,8 +190,8 @@ export default function CollectionEditModal({
         sortOrder: topics.length,
       });
       setTopics((prev) => [...prev, created]);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to add topic', { collectionId: collection.id, error: String(err) });
     }
   }
 
@@ -194,8 +201,8 @@ export default function CollectionEditModal({
     try {
       const updated = await updateCollectionTopic(collection.id, topicId, { name: trimmed });
       setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to update topic name', { topicId, error: String(err) });
     }
   }
 
@@ -204,8 +211,8 @@ export default function CollectionEditModal({
       const updated = await updateCollectionTopic(collection.id, topicId, { color: newColor });
       setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
       setTopicColorPicker(null);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to update topic color', { topicId, error: String(err) });
     }
   }
 
@@ -213,8 +220,8 @@ export default function CollectionEditModal({
     try {
       await deleteCollectionTopic(collection.id, topicId);
       setTopics((prev) => prev.filter((t) => t.id !== topicId));
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to delete topic', { topicId, error: String(err) });
     }
   }
 

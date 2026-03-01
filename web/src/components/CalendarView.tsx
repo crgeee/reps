@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import type { Task, Topic } from '../types';
-import { TOPIC_LABELS } from '../types';
+import type { Task } from '../types';
+import { getTopicLabel } from '../types';
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -29,13 +29,17 @@ function toDateStr(year: number, month: number, day: number): string {
 }
 
 // Map bg- color to inline hex so we can use small dots
-const TOPIC_DOT_COLORS: Record<Topic, string> = {
+const TOPIC_DOT_COLORS: Record<string, string> = {
   coding: '#3b82f6',
   'system-design': '#a855f7',
   behavioral: '#22c55e',
   papers: '#f59e0b',
   custom: '#64748b',
 };
+
+function getTopicDotColor(topic: string): string {
+  return TOPIC_DOT_COLORS[topic] ?? '#64748b';
+}
 
 export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps) {
   const today = new Date();
@@ -187,8 +191,8 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
                     <span
                       key={`${task.id}-${di}`}
                       className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: TOPIC_DOT_COLORS[task.topic] }}
-                      title={`${TOPIC_LABELS[task.topic]}: ${task.title}`}
+                      style={{ backgroundColor: getTopicDotColor(task.topic) }}
+                      title={`${getTopicLabel(task.topic)}: ${task.title}`}
                     />
                   ))}
                   {dayTasks.length > 3 && (
@@ -209,14 +213,14 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
             <div key={task.id} className="flex items-center gap-2 text-sm">
               <span
                 className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: TOPIC_DOT_COLORS[task.topic] }}
+                style={{ backgroundColor: getTopicDotColor(task.topic) }}
               />
               <span
                 className={`flex-1 ${task.nextReview < todayStr ? 'text-red-300' : 'text-zinc-300'}`}
               >
                 {task.title}
               </span>
-              <span className="text-xs text-zinc-600">{TOPIC_LABELS[task.topic]}</span>
+              <span className="text-xs text-zinc-600">{getTopicLabel(task.topic)}</span>
             </div>
           ))}
         </div>
@@ -232,7 +236,7 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
         {Object.entries(TOPIC_DOT_COLORS).map(([topic, color]) => (
           <div key={topic} className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-[10px] text-zinc-600">{TOPIC_LABELS[topic as Topic]}</span>
+            <span className="text-[10px] text-zinc-600">{getTopicLabel(topic)}</span>
           </div>
         ))}
       </div>

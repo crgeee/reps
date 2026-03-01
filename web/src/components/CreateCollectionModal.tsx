@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, ArrowLeft, Plus } from 'lucide-react';
+import { logger } from '../logger';
 import type { CollectionTemplate, Collection } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import { getTemplates, createCollection, createCollectionFromTemplate } from '../api';
@@ -32,7 +33,8 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
       .then((data) => {
         if (!cancelled) setTemplates(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        logger.error('Failed to fetch templates', { error: String(err) });
         if (!cancelled) setTemplates([]);
       });
     return () => {
@@ -100,6 +102,7 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
       }
       onCreated(collection);
     } catch (err) {
+      logger.error('Failed to create collection', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to create collection');
     } finally {
       setSubmitting(false);
