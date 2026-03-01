@@ -71,6 +71,12 @@ export default function TaskList({
     localStorage.setItem('reps_task_layout', mode);
   }
 
+  const srByCollection = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const c of collections) map.set(c.id, c.srEnabled);
+    return map;
+  }, [collections]);
+
   const tagFiltered = useMemo(() => {
     if (!tagFilter) return filtered;
     return filtered.filter((t) => t.tags?.some((tag) => tag.id === tagFilter));
@@ -190,6 +196,7 @@ export default function TaskList({
                       task={task}
                       onRefresh={onRefresh}
                       onEdit={setEditingTask}
+                      srEnabled={srByCollection.get(task.collectionId ?? '') ?? false}
                     />
                   ))}
                 </div>
@@ -218,6 +225,7 @@ export default function TaskList({
                     task={task}
                     onRefresh={onRefresh}
                     onEdit={setEditingTask}
+                    srEnabled={srByCollection.get(task.collectionId ?? '') ?? false}
                   />
                 ))}
               </div>

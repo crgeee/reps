@@ -131,7 +131,7 @@ collections.post('/', async (c) => {
     VALUES (${body.name}, ${body.icon ?? null}, ${body.color ?? null}, ${body.srEnabled ?? true}, ${body.sortOrder ?? 0}, ${userId ?? null})
     RETURNING *
   `;
-  return c.json(rowToCollection(row), 201);
+  return c.json({ ...rowToCollection(row), statuses: [], topics: [] }, 201);
 });
 
 // POST /collections/from-template
@@ -298,12 +298,19 @@ collections.post('/:id/statuses', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
-  const [row] = await sql<CollectionStatusRow[]>`
-    INSERT INTO collection_statuses (collection_id, name, color, sort_order)
-    VALUES (${id}, ${body.name}, ${body.color ?? null}, ${body.sortOrder ?? 0})
-    RETURNING *
-  `;
-  return c.json(statusRowToStatus(row), 201);
+  try {
+    const [row] = await sql<CollectionStatusRow[]>`
+      INSERT INTO collection_statuses (collection_id, name, color, sort_order)
+      VALUES (${id}, ${body.name}, ${body.color ?? null}, ${body.sortOrder ?? 0})
+      RETURNING *
+    `;
+    return c.json(statusRowToStatus(row), 201);
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+      return c.json({ error: `A status named "${body.name}" already exists` }, 409);
+    }
+    throw err;
+  }
 });
 
 // PATCH /collections/:id/statuses/:sid
@@ -385,12 +392,19 @@ collections.post('/:id/topics', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   const body = parsed.data;
 
-  const [row] = await sql<CollectionTopicRow[]>`
-    INSERT INTO collection_topics (collection_id, name, color, sort_order)
-    VALUES (${id}, ${body.name}, ${body.color ?? null}, ${body.sortOrder ?? 0})
-    RETURNING *
-  `;
-  return c.json(topicRowToTopic(row), 201);
+  try {
+    const [row] = await sql<CollectionTopicRow[]>`
+      INSERT INTO collection_topics (collection_id, name, color, sort_order)
+      VALUES (${id}, ${body.name}, ${body.color ?? null}, ${body.sortOrder ?? 0})
+      RETURNING *
+    `;
+    return c.json(topicRowToTopic(row), 201);
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+      return c.json({ error: `A topic named "${body.name}" already exists` }, 409);
+    }
+    throw err;
+  }
 });
 
 // PATCH /collections/:id/topics/:tid
@@ -434,10 +448,31 @@ collections.delete('/:id/topics/:tid', async (c) => {
   if (!(await verifyCollectionOwnership(id, userId)))
     return c.json({ error: 'Collection not found' }, 404);
 
-  const [row] = await sql<CollectionTopicRow[]>`
-    DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id} RETURNING *
+  const [topic] = await sql<CollectionTopicRow[]>`
+    SELECT * FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}
   `;
-  if (!row) return c.json({ error: 'Topic not found' }, 404);
+  if (!topic) return c.json({ error: 'Topic not found' }, 404);
+
+  const [fallback] = await sql<CollectionTopicRow[]>`
+    SELECT * FROM collection_topics
+    WHERE collection_id = ${id} AND id != ${tid}
+    ORDER BY sort_order ASC
+    LIMIT 1
+  `;
+
+  if (fallback) {
+    await sql`
+      UPDATE tasks SET topic = ${fallback.name}
+      WHERE collection_id = ${id} AND topic = ${topic.name}
+    `;
+  } else {
+    await sql`
+      UPDATE tasks SET topic = NULL
+      WHERE collection_id = ${id} AND topic = ${topic.name}
+    `;
+  }
+
+  await sql`DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id}`;
   return c.json({ deleted: true, id: tid });
 });
 

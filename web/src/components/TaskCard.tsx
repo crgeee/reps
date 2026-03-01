@@ -24,6 +24,7 @@ interface TaskCardProps {
   compact?: boolean;
   dragHandleProps?: Record<string, unknown>;
   onEdit?: (task: Task) => void;
+  srEnabled?: boolean;
 }
 
 export default memo(function TaskCard({
@@ -32,6 +33,7 @@ export default memo(function TaskCard({
   compact,
   dragHandleProps,
   onEdit,
+  srEnabled = true,
 }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -122,8 +124,12 @@ export default memo(function TaskCard({
           <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tabular-nums flex-shrink-0 hidden sm:flex">
             <span className={`w-1.5 h-1.5 rounded-full ${getTopicColor(task.topic)}`} />
             <span>{getTopicLabel(task.topic)}</span>
-            <span>EF{task.easeFactor.toFixed(1)}</span>
-            <span>×{task.repetitions}</span>
+            {srEnabled && (
+              <>
+                <span>EF{task.easeFactor.toFixed(1)}</span>
+                <span>×{task.repetitions}</span>
+              </>
+            )}
             {task.deadline && <span className="text-zinc-500">dl {task.deadline}</span>}
           </div>
         )}
@@ -212,8 +218,12 @@ export default memo(function TaskCard({
         <div className="flex items-center gap-2 px-3 pb-1.5 text-[10px] text-zinc-500 font-mono tabular-nums sm:hidden">
           <span className={`w-1.5 h-1.5 rounded-full ${getTopicColor(task.topic)}`} />
           <span>{getTopicLabel(task.topic)}</span>
-          <span>EF{task.easeFactor.toFixed(1)}</span>
-          <span>×{task.repetitions}</span>
+          {srEnabled && (
+            <>
+              <span>EF{task.easeFactor.toFixed(1)}</span>
+              <span>×{task.repetitions}</span>
+            </>
+          )}
         </div>
       )}
 

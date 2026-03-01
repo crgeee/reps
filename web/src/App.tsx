@@ -215,11 +215,22 @@ export default function App() {
     setTags((prev) => [...prev, tag]);
   }
 
-  // Derive due tasks client-side instead of a separate API call
+  // Derive due tasks client-side — only from SR-enabled collections
   const today = new Date().toISOString().split('T')[0]!;
+  const srCollectionIds = useMemo(
+    () => new Set(collections.filter((c) => c.srEnabled).map((c) => c.id)),
+    [collections],
+  );
   const dueTasks = useMemo(
-    () => tasks.filter((t) => !t.completed && t.nextReview <= today),
-    [tasks, today],
+    () =>
+      tasks.filter(
+        (t) =>
+          !t.completed &&
+          t.nextReview <= today &&
+          !!t.collectionId &&
+          srCollectionIds.has(t.collectionId),
+      ),
+    [tasks, today, srCollectionIds],
   );
 
   // Filter tasks by active collection if set
