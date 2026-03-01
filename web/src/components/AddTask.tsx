@@ -93,7 +93,10 @@ export default function AddTask({
               <button
                 key={t.value}
                 type="button"
-                onClick={() => { setTopic(t.value); setShowCustomTopic(false); }}
+                onClick={() => {
+                  setTopic(t.value);
+                  setShowCustomTopic(false);
+                }}
                 className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
                   topic === t.value && !showCustomTopic
                     ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
@@ -119,7 +122,10 @@ export default function AddTask({
             <input
               type="text"
               value={customTopic}
-              onChange={(e) => { setCustomTopic(e.target.value); setTopic(e.target.value); }}
+              onChange={(e) => {
+                setCustomTopic(e.target.value);
+                setTopic(e.target.value);
+              }}
               placeholder="Enter custom topic name"
               autoFocus
               className="mt-2 w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all duration-200"

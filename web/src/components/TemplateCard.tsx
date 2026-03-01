@@ -1,4 +1,5 @@
 import type { CollectionTemplate } from '../types';
+import { pillStyle } from '../utils/ui';
 
 interface TemplateCardProps {
   template: CollectionTemplate;
@@ -28,10 +29,7 @@ export default function TemplateCard({ template, onClick }: TemplateCardProps) {
             <span
               key={status.id}
               className="text-[10px] px-1.5 py-0.5 rounded-full"
-              style={{
-                backgroundColor: status.color ? `${status.color}33` : 'rgba(113, 113, 122, 0.2)',
-                color: status.color ?? '#a1a1aa',
-              }}
+              style={pillStyle(status.color)}
             >
               {status.name}
             </span>

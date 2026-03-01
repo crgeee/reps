@@ -1,17 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ArrowLeft, Plus, RefreshCw } from 'lucide-react';
 import { logger } from '../logger';
 import type { CollectionTemplate, Collection } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import { getTemplates, createCollection, createCollectionFromTemplate } from '../api';
 import TemplateCard from './TemplateCard';
+import { errorMessage, pillStyle, ICON_OPTIONS } from '../utils/ui';
 
 interface CreateCollectionModalProps {
   onCreated: (collection: Collection) => void;
   onClose: () => void;
 }
-
-const ICON_OPTIONS = ['', '📚', '💻', '🎯', '🧠', '📝', '🔬', '🎨', '⚡', '🏆', '📊', '🔧'];
 
 export default function CreateCollectionModal({ onCreated, onClose }: CreateCollectionModalProps) {
   const [step, setStep] = useState<'pick' | 'customize'>('pick');
@@ -28,7 +27,10 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
   const [error, setError] = useState<string | null>(null);
 
   // Fetch templates
+  const cancelRef = useRef<(() => void) | null>(null);
+
   const fetchTemplates = useCallback(() => {
+    cancelRef.current?.();
     setTemplates(null);
     setFetchError(null);
     let cancelled = false;
@@ -40,13 +42,16 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
         logger.error('Failed to fetch templates', { error: String(err) });
         if (!cancelled) setFetchError('Failed to load templates');
       });
-    return () => {
+    cancelRef.current = () => {
       cancelled = true;
     };
   }, []);
 
   useEffect(() => {
-    return fetchTemplates();
+    fetchTemplates();
+    return () => {
+      cancelRef.current?.();
+    };
   }, [fetchTemplates]);
 
   // Escape key handler
@@ -110,7 +115,7 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
       onCreated(collection);
     } catch (err) {
       logger.error('Failed to create collection', { error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to create collection');
+      setError(errorMessage(err, 'Failed to create collection'));
     } finally {
       setSubmitting(false);
     }
@@ -328,12 +333,7 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
                     <span
                       key={status.id}
                       className="text-[10px] px-1.5 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: status.color
-                          ? `${status.color}33`
-                          : 'rgba(113, 113, 122, 0.2)',
-                        color: status.color ?? '#a1a1aa',
-                      }}
+                      style={pillStyle(status.color)}
                     >
                       {status.name}
                     </span>
@@ -353,12 +353,7 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
                     <span
                       key={topic.id}
                       className="text-[10px] px-1.5 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: topic.color
-                          ? `${topic.color}33`
-                          : 'rgba(113, 113, 122, 0.2)',
-                        color: topic.color ?? '#a1a1aa',
-                      }}
+                      style={pillStyle(topic.color)}
                     >
                       {topic.name}
                     </span>
