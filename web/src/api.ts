@@ -39,6 +39,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(`API error ${res.status}: ${body}`);
   }
 
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Expected JSON response but got ${contentType || 'unknown content type'} (${res.status})`);
+  }
+
   return res.json() as Promise<T>;
 }
 
