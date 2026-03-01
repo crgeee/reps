@@ -487,6 +487,20 @@ export default function App() {
                   >
                     + Add Task
                   </button>
+                  <button
+                    onClick={() => {
+                      setView('settings');
+                      setMobileMenuOpen(false);
+                    }}
+                    aria-current={view === 'settings' ? 'page' : undefined}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      view === 'settings'
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                    }`}
+                  >
+                    Settings
+                  </button>
                   <a
                     href="https://github.com/crgeee/reps"
                     target="_blank"
