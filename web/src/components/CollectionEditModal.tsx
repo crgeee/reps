@@ -69,6 +69,7 @@ export default function CollectionEditModal({
   const [topicColorPicker, setTopicColorPicker] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusColorPicker, setStatusColorPicker] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [templateSaving, setTemplateSaving] = useState(false);
   const [templateMessage, setTemplateMessage] = useState<string | null>(null);
 
@@ -97,6 +98,7 @@ export default function CollectionEditModal({
         collectionId: collection.id,
         error: String(err),
       });
+      setError(err instanceof Error ? err.message : 'Failed to save collection');
     } finally {
       setSaving(false);
     }
@@ -113,6 +115,7 @@ export default function CollectionEditModal({
         collectionId: collection.id,
         error: String(err),
       });
+      setError(err instanceof Error ? err.message : 'Failed to delete collection');
     }
   }
 
@@ -125,6 +128,7 @@ export default function CollectionEditModal({
       setStatuses((prev) => [...prev, created]);
     } catch (err) {
       logger.error('Failed to add status', { collectionId: collection.id, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to add status');
     }
   }
 
@@ -136,6 +140,7 @@ export default function CollectionEditModal({
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
     } catch (err) {
       logger.error('Failed to update status name', { statusId, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to update status');
     }
   }
 
@@ -146,6 +151,7 @@ export default function CollectionEditModal({
       setStatusColorPicker(null);
     } catch (err) {
       logger.error('Failed to update status color', { statusId, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to update status color');
     }
   }
 
@@ -161,6 +167,11 @@ export default function CollectionEditModal({
         statuses: statuses.map((s, i) => ({
           name: s.name,
           color: s.color,
+          sortOrder: i,
+        })),
+        topics: topics.map((t, i) => ({
+          name: t.name,
+          color: t.color,
           sortOrder: i,
         })),
       });
@@ -180,6 +191,7 @@ export default function CollectionEditModal({
       setStatuses((prev) => prev.filter((s) => s.id !== statusId));
     } catch (err) {
       logger.error('Failed to delete status', { statusId, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to delete status');
     }
   }
 
@@ -192,6 +204,7 @@ export default function CollectionEditModal({
       setTopics((prev) => [...prev, created]);
     } catch (err) {
       logger.error('Failed to add topic', { collectionId: collection.id, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to add topic');
     }
   }
 
@@ -203,6 +216,7 @@ export default function CollectionEditModal({
       setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
     } catch (err) {
       logger.error('Failed to update topic name', { topicId, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to update topic');
     }
   }
 
@@ -213,6 +227,7 @@ export default function CollectionEditModal({
       setTopicColorPicker(null);
     } catch (err) {
       logger.error('Failed to update topic color', { topicId, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to update topic color');
     }
   }
 
@@ -222,6 +237,7 @@ export default function CollectionEditModal({
       setTopics((prev) => prev.filter((t) => t.id !== topicId));
     } catch (err) {
       logger.error('Failed to delete topic', { topicId, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to delete topic');
     }
   }
 
@@ -411,6 +427,9 @@ export default function CollectionEditModal({
             Add topic
           </button>
         </div>
+
+        {/* Error */}
+        {error && <p className="text-xs text-red-400">{error}</p>}
 
         {/* Footer */}
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800">

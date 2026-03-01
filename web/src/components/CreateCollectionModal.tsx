@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, ArrowLeft, Plus } from 'lucide-react';
+import { X, ArrowLeft, Plus, RefreshCw } from 'lucide-react';
 import { logger } from '../logger';
 import type { CollectionTemplate, Collection } from '../types';
 import { COLOR_SWATCHES } from '../types';
@@ -17,6 +17,7 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
   const [step, setStep] = useState<'pick' | 'customize'>('pick');
   const [templates, setTemplates] = useState<CollectionTemplate[] | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<CollectionTemplate | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -26,8 +27,10 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch templates once on mount
-  useEffect(() => {
+  // Fetch templates
+  const fetchTemplates = useCallback(() => {
+    setTemplates(null);
+    setFetchError(null);
     let cancelled = false;
     getTemplates()
       .then((data) => {
@@ -35,12 +38,16 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
       })
       .catch((err) => {
         logger.error('Failed to fetch templates', { error: String(err) });
-        if (!cancelled) setTemplates([]);
+        if (!cancelled) setFetchError('Failed to load templates');
       });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    return fetchTemplates();
+  }, [fetchTemplates]);
 
   // Escape key handler
   const handleKeyDown = useCallback(
@@ -139,8 +146,19 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
               </button>
             </div>
 
-            {/* Template loading / list */}
-            {templates === null ? (
+            {/* Template loading / error / list */}
+            {fetchError ? (
+              <div className="text-center py-6 space-y-3">
+                <p className="text-xs text-red-400">{fetchError}</p>
+                <button
+                  onClick={fetchTemplates}
+                  className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Retry
+                </button>
+              </div>
+            ) : templates === null ? (
               <div className="grid grid-cols-2 gap-2">
                 {[0, 1, 2, 3].map((i) => (
                   <div
