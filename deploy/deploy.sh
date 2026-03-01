@@ -1,13 +1,6 @@
 #!/bin/bash
 set -e
 
-# One-time fix: restore unrestricted authorized_keys
-if [ -f ~/.ssh/authorized_keys.bak ]; then
-  cp ~/.ssh/authorized_keys.bak ~/.ssh/authorized_keys
-  rm ~/.ssh/authorized_keys.bak
-  echo "→ Restored authorized_keys"
-fi
-
 echo "→ Switching to main and pulling latest..."
 git checkout main
 git pull origin main
