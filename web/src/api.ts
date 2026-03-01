@@ -384,7 +384,7 @@ export async function generateCalendarToken(): Promise<{ token: string; url: str
 
 export async function downloadMarkdownExport(): Promise<void> {
   const res = await fetch(`${BASE_URL}/export/tasks.md`, {
-    headers: { Authorization: `Bearer ${getApiKey()}` },
+    credentials: 'include',
   });
   if (!res.ok) throw new Error(`Export failed: ${res.status}`);
   const blob = await res.blob();
