@@ -9,7 +9,7 @@ import type {
   MockSession,
   MockScore,
 } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, getTopicLabel } from '../types';
 import {
   getQuestion,
   evaluateAnswer,
@@ -189,7 +189,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
         <span className="font-mono tabular-nums">
           {currentIndex + 1} / {dueTasks.length}
         </span>
-        <span className="text-xs uppercase tracking-widest">{TOPIC_LABELS[task.topic]}</span>
+        <span className="text-xs uppercase tracking-widest">{getTopicLabel(task.topic)}</span>
       </div>
       <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
         <div

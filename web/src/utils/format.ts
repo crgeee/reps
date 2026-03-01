@@ -6,7 +6,7 @@ export function parseUserAgent(ua: string | null): string {
     .match(/(Mac OS X|Windows NT|Linux|Android|iOS)[\s/]?[\d._]*/)?.[0]
     ?.replace(/_/g, '.');
   if (browser && os) return `${browser.split('/')[0]} on ${os}`;
-  if (browser) return browser.split('/')[0];
+  if (browser) return browser.split('/')[0] ?? ua;
   return ua.length > 60 ? ua.slice(0, 60) + '...' : ua;
 }
 

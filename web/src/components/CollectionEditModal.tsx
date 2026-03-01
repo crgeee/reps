@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, LayoutTemplate } from 'lucide-react';
-import type { Collection, CollectionStatus } from '../types';
+import { logger } from '../logger';
+import type { Collection, CollectionStatus, CollectionTopic } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import {
   updateCollection,
@@ -8,6 +9,9 @@ import {
   createCollectionStatus,
   updateCollectionStatus,
   deleteCollectionStatus,
+  createCollectionTopic,
+  updateCollectionTopic,
+  deleteCollectionTopic,
   createTemplate,
 } from '../api';
 
@@ -61,6 +65,8 @@ export default function CollectionEditModal({
   const [color, setColor] = useState(collection.color ?? '#71717a');
   const [srEnabled, setSrEnabled] = useState(collection.srEnabled);
   const [statuses, setStatuses] = useState<CollectionStatus[]>(collection.statuses ?? []);
+  const [topics, setTopics] = useState<CollectionTopic[]>(collection.topics ?? []);
+  const [topicColorPicker, setTopicColorPicker] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusColorPicker, setStatusColorPicker] = useState<string | null>(null);
   const [templateSaving, setTemplateSaving] = useState(false);
@@ -83,10 +89,14 @@ export default function CollectionEditModal({
         color,
         srEnabled,
         statuses,
+        topics,
       };
       onSaved(updated);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to save collection', {
+        collectionId: collection.id,
+        error: String(err),
+      });
     } finally {
       setSaving(false);
     }
@@ -98,8 +108,11 @@ export default function CollectionEditModal({
       await deleteCollection(collection.id);
       onDeleted(collection.id);
       onClose();
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to delete collection', {
+        collectionId: collection.id,
+        error: String(err),
+      });
     }
   }
 
@@ -110,8 +123,8 @@ export default function CollectionEditModal({
         sortOrder: statuses.length,
       });
       setStatuses((prev) => [...prev, created]);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to add status', { collectionId: collection.id, error: String(err) });
     }
   }
 
@@ -121,8 +134,8 @@ export default function CollectionEditModal({
     try {
       const updated = await updateCollectionStatus(collection.id, statusId, { name: trimmed });
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to update status name', { statusId, error: String(err) });
     }
   }
 
@@ -131,8 +144,8 @@ export default function CollectionEditModal({
       const updated = await updateCollectionStatus(collection.id, statusId, { color: newColor });
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
       setStatusColorPicker(null);
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to update status color', { statusId, error: String(err) });
     }
   }
 
@@ -165,8 +178,50 @@ export default function CollectionEditModal({
     try {
       await deleteCollectionStatus(collection.id, statusId);
       setStatuses((prev) => prev.filter((s) => s.id !== statusId));
-    } catch {
-      // silently fail
+    } catch (err) {
+      logger.error('Failed to delete status', { statusId, error: String(err) });
+    }
+  }
+
+  async function handleAddTopic() {
+    try {
+      const created = await createCollectionTopic(collection.id, {
+        name: 'New Topic',
+        sortOrder: topics.length,
+      });
+      setTopics((prev) => [...prev, created]);
+    } catch (err) {
+      logger.error('Failed to add topic', { collectionId: collection.id, error: String(err) });
+    }
+  }
+
+  async function handleUpdateTopicName(topicId: string, newName: string) {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    try {
+      const updated = await updateCollectionTopic(collection.id, topicId, { name: trimmed });
+      setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
+    } catch (err) {
+      logger.error('Failed to update topic name', { topicId, error: String(err) });
+    }
+  }
+
+  async function handleUpdateTopicColor(topicId: string, newColor: string | null) {
+    try {
+      const updated = await updateCollectionTopic(collection.id, topicId, { color: newColor });
+      setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
+      setTopicColorPicker(null);
+    } catch (err) {
+      logger.error('Failed to update topic color', { topicId, error: String(err) });
+    }
+  }
+
+  async function handleDeleteTopic(topicId: string) {
+    try {
+      await deleteCollectionTopic(collection.id, topicId);
+      setTopics((prev) => prev.filter((t) => t.id !== topicId));
+    } catch (err) {
+      logger.error('Failed to delete topic', { topicId, error: String(err) });
     }
   }
 
@@ -301,6 +356,59 @@ export default function CollectionEditModal({
           >
             <Plus className="w-3.5 h-3.5" />
             Add status
+          </button>
+        </div>
+
+        {/* Topics */}
+        <div>
+          <label className="block text-xs text-zinc-400 mb-2 font-medium">
+            Topics ({topics.length})
+          </label>
+          <div className="space-y-2">
+            {topics.map((topic) => (
+              <div key={topic.id} className="flex items-center gap-2">
+                <div className="relative">
+                  <button
+                    onClick={() =>
+                      setTopicColorPicker(topicColorPicker === topic.id ? null : topic.id)
+                    }
+                    className="w-5 h-5 rounded-full border border-zinc-600 flex-shrink-0"
+                    style={{ backgroundColor: topic.color ?? '#71717a' }}
+                  />
+                  {topicColorPicker === topic.id && (
+                    <div className="absolute top-7 left-0 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-2 w-48">
+                      <SwatchPicker
+                        selected={topic.color}
+                        onSelect={(c) => handleUpdateTopicColor(topic.id, c)}
+                        size="sm"
+                      />
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  defaultValue={topic.name}
+                  onBlur={(e) => handleUpdateTopicName(topic.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  }}
+                  className="flex-1 px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
+                />
+                <button
+                  onClick={() => handleDeleteTopic(topic.id)}
+                  className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={handleAddTopic}
+            className="mt-2.5 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add topic
           </button>
         </div>
 

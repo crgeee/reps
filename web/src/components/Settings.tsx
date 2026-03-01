@@ -628,7 +628,7 @@ export default function Settings({ user, onUserUpdate }: Props) {
 
 // --- Reusable sub-components ---
 
-const SECTION_ICONS: Record<string, JSX.Element> = {
+const SECTION_ICONS: Record<string, React.ReactNode> = {
   user: (
     <path
       strokeLinecap="round"

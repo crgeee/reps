@@ -7,6 +7,8 @@ import {
   patchCollectionSchema,
   collectionStatusSchema,
   patchCollectionStatusSchema,
+  collectionTopicSchema,
+  patchCollectionTopicSchema,
   fromTemplateSchema,
 } from '../validation.js';
 
@@ -42,6 +44,24 @@ function statusRowToStatus(row: CollectionStatusRow) {
   };
 }
 
+interface CollectionTopicRow {
+  id: string;
+  collection_id: string;
+  name: string;
+  color: string | null;
+  sort_order: number;
+}
+
+function topicRowToTopic(row: CollectionTopicRow) {
+  return {
+    id: row.id,
+    collectionId: row.collection_id,
+    name: row.name,
+    color: row.color,
+    sortOrder: row.sort_order,
+  };
+}
+
 function rowToCollection(row: CollectionRow) {
   return {
     id: row.id,
@@ -64,19 +84,35 @@ collections.get('/', async (c) => {
   `;
   const collectionIds = rows.map((r) => r.id);
   if (collectionIds.length === 0) return c.json([]);
-  const statusRows = await sql<CollectionStatusRow[]>`
-    SELECT * FROM collection_statuses WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
-  `;
+
+  const [statusRows, topicRows] = await Promise.all([
+    sql<CollectionStatusRow[]>`
+      SELECT * FROM collection_statuses WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
+    `,
+    sql<CollectionTopicRow[]>`
+      SELECT * FROM collection_topics WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
+    `,
+  ]);
+
   const statusesByCollection = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
   for (const sr of statusRows) {
     const list = statusesByCollection.get(sr.collection_id) ?? [];
     list.push(statusRowToStatus(sr));
     statusesByCollection.set(sr.collection_id, list);
   }
+
+  const topicsByCollection = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
+  for (const tr of topicRows) {
+    const list = topicsByCollection.get(tr.collection_id) ?? [];
+    list.push(topicRowToTopic(tr));
+    topicsByCollection.set(tr.collection_id, list);
+  }
+
   return c.json(
     rows.map((row) => ({
       ...rowToCollection(row),
       statuses: statusesByCollection.get(row.id) ?? [],
+      topics: topicsByCollection.get(row.id) ?? [],
     })),
   );
 });
@@ -131,6 +167,9 @@ collections.post('/from-template', async (c) => {
   >`
     SELECT title, description, status_name, topic FROM template_tasks WHERE template_id = ${template.id} ORDER BY sort_order ASC
   `;
+  const templateTopics = await sql<{ name: string; color: string | null; sort_order: number }[]>`
+    SELECT name, color, sort_order FROM template_topics WHERE template_id = ${template.id} ORDER BY sort_order ASC
+  `;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await sql.begin(async (tx: any) => {
@@ -152,6 +191,16 @@ collections.post('/from-template', async (c) => {
       createdStatuses.push(statusRowToStatus(statusRow));
     }
 
+    const createdTopics = [];
+    for (const t of templateTopics) {
+      const [topicRow] = await tx<CollectionTopicRow[]>`
+        INSERT INTO collection_topics (collection_id, name, color, sort_order)
+        VALUES (${col.id}, ${t.name}, ${t.color}, ${t.sort_order})
+        RETURNING *
+      `;
+      createdTopics.push(topicRowToTopic(topicRow));
+    }
+
     const today = new Date().toISOString().split('T')[0];
     for (const t of templateTasks) {
       await tx`
@@ -160,7 +209,7 @@ collections.post('/from-template', async (c) => {
       `;
     }
 
-    return { ...rowToCollection(col), statuses: createdStatuses };
+    return { ...rowToCollection(col), statuses: createdStatuses, topics: createdTopics };
   });
 
   return c.json(result, 201);
@@ -319,6 +368,77 @@ collections.delete('/:id/statuses/:sid', async (c) => {
 
   await sql`DELETE FROM collection_statuses WHERE id = ${sid} AND collection_id = ${id}`;
   return c.json({ deleted: true, id: sid });
+});
+
+// POST /collections/:id/topics
+collections.post('/:id/topics', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  if (!validateUuid(id)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
+
+  const raw = await c.req.json();
+  const parsed = collectionTopicSchema.safeParse(raw);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  const body = parsed.data;
+
+  const [row] = await sql<CollectionTopicRow[]>`
+    INSERT INTO collection_topics (collection_id, name, color, sort_order)
+    VALUES (${id}, ${body.name}, ${body.color ?? null}, ${body.sortOrder ?? 0})
+    RETURNING *
+  `;
+  return c.json(topicRowToTopic(row), 201);
+});
+
+// PATCH /collections/:id/topics/:tid
+collections.patch('/:id/topics/:tid', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  const tid = c.req.param('tid');
+  if (!validateUuid(id) || !validateUuid(tid)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
+
+  const raw = await c.req.json();
+  const parsed = patchCollectionTopicSchema.safeParse(raw);
+  if (!parsed.success)
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  const body = parsed.data;
+
+  const updates = buildUpdates(body as Record<string, unknown>, {
+    name: 'name',
+    color: 'color',
+    sortOrder: 'sort_order',
+  });
+
+  if (Object.keys(updates).length === 0) return c.json({ error: 'No valid fields' }, 400);
+
+  const [row] = await sql<CollectionTopicRow[]>`
+    UPDATE collection_topics SET ${sql(updates)} WHERE id = ${tid} AND collection_id = ${id} RETURNING *
+  `;
+  if (!row) return c.json({ error: 'Topic not found' }, 404);
+  return c.json(topicRowToTopic(row));
+});
+
+// DELETE /collections/:id/topics/:tid
+collections.delete('/:id/topics/:tid', async (c) => {
+  const userId = c.get('userId') as string;
+  const id = c.req.param('id');
+  const tid = c.req.param('tid');
+  if (!validateUuid(id) || !validateUuid(tid)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  if (!(await verifyCollectionOwnership(id, userId)))
+    return c.json({ error: 'Collection not found' }, 404);
+
+  const [row] = await sql<CollectionTopicRow[]>`
+    DELETE FROM collection_topics WHERE id = ${tid} AND collection_id = ${id} RETURNING *
+  `;
+  if (!row) return c.json({ error: 'Topic not found' }, 404);
+  return c.json({ deleted: true, id: tid });
 });
 
 export default collections;

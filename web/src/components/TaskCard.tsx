@@ -1,18 +1,22 @@
 import { useState, memo } from 'react';
-import type { Task, Topic } from '../types';
-import { TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import type { Task } from '../types';
+import { getTopicLabel, getTopicColor } from '../types';
 import { updateTask, deleteTask, addNote, getTaskEventUrl } from '../api';
 import { logger } from '../logger';
 import TagBadge from './TagBadge';
 import NotesList from './NotesList';
 
-const TOPIC_BORDER_COLORS: Record<Topic, string> = {
+const TOPIC_BORDER_COLORS: Record<string, string> = {
   coding: 'border-l-blue-500',
   'system-design': 'border-l-purple-500',
   behavioral: 'border-l-green-500',
   papers: 'border-l-amber-500',
   custom: 'border-l-slate-500',
 };
+
+function getTopicBorderColor(topic: string): string {
+  return TOPIC_BORDER_COLORS[topic] ?? 'border-l-slate-500';
+}
 
 interface TaskCardProps {
   task: Task;
@@ -59,7 +63,7 @@ export default memo(function TaskCard({
 
   return (
     <div
-      className={`border-l-2 ${TOPIC_BORDER_COLORS[task.topic]} bg-zinc-900/40 hover:bg-zinc-800/40 transition-colors`}
+      className={`border-l-2 ${getTopicBorderColor(task.topic)} bg-zinc-900/40 hover:bg-zinc-800/40 transition-colors`}
     >
       <div className="flex items-center gap-2 px-3 py-1.5" {...dragHandleProps}>
         {/* Checkbox */}
@@ -116,8 +120,8 @@ export default memo(function TaskCard({
         {/* Meta — inline monospace stats */}
         {!compact && (
           <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tabular-nums flex-shrink-0 hidden sm:flex">
-            <span className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[task.topic]}`} />
-            <span>{TOPIC_LABELS[task.topic]}</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${getTopicColor(task.topic)}`} />
+            <span>{getTopicLabel(task.topic)}</span>
             <span>EF{task.easeFactor.toFixed(1)}</span>
             <span>×{task.repetitions}</span>
             {task.deadline && <span className="text-zinc-500">dl {task.deadline}</span>}
@@ -125,7 +129,7 @@ export default memo(function TaskCard({
         )}
 
         {compact && (
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`} />
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(task.topic)}`} />
         )}
 
         {/* Notes count */}
@@ -206,8 +210,8 @@ export default memo(function TaskCard({
       {/* Mobile meta row */}
       {!compact && (
         <div className="flex items-center gap-2 px-3 pb-1.5 text-[10px] text-zinc-500 font-mono tabular-nums sm:hidden">
-          <span className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[task.topic]}`} />
-          <span>{TOPIC_LABELS[task.topic]}</span>
+          <span className={`w-1.5 h-1.5 rounded-full ${getTopicColor(task.topic)}`} />
+          <span>{getTopicLabel(task.topic)}</span>
           <span>EF{task.easeFactor.toFixed(1)}</span>
           <span>×{task.repetitions}</span>
         </div>

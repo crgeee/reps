@@ -13,11 +13,11 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Task, Topic, TaskStatus, Tag, Collection, CollectionStatus } from '../types';
 import {
   TOPICS,
-  TOPIC_LABELS,
-  TOPIC_COLORS,
   STATUSES,
   STATUS_LABELS,
   formatStatusLabel,
+  getTopicLabel,
+  getTopicColor,
 } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import FilterBar from './FilterBar';
@@ -171,7 +171,7 @@ export default function TaskList({
 
             const label =
               filters.groupBy === 'topic'
-                ? (TOPIC_LABELS[groupKey as Topic] ?? groupKey)
+                ? getTopicLabel(groupKey)
                 : (STATUS_LABELS[groupKey as keyof typeof STATUS_LABELS] ??
                   formatStatusLabel(groupKey));
             const isDone = groupKey === 'done';
@@ -205,9 +205,9 @@ export default function TaskList({
           {Object.entries(topicGroups).map(([topic, topicTasks]) => (
             <div key={topic}>
               <div className="flex items-center gap-2 mb-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${TOPIC_COLORS[topic as Topic]}`} />
+                <div className={`w-1.5 h-1.5 rounded-full ${getTopicColor(topic)}`} />
                 <h2 className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">
-                  {TOPIC_LABELS[topic as Topic]}
+                  {getTopicLabel(topic)}
                 </h2>
                 <span className="text-[10px] text-zinc-500 font-mono">{topicTasks.length}</span>
               </div>

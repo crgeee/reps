@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Task, Streaks } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, getTopicColor } from '../types';
 import { getStreaks } from '../api';
 import { Flame } from 'lucide-react';
 
@@ -219,7 +219,7 @@ export default function Dashboard({
                   className="flex items-center gap-3 px-3 py-1.5 text-xs hover:bg-zinc-800/30 transition-colors"
                 >
                   <div
-                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[task.topic]}`}
+                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(task.topic)}`}
                   />
                   <span className="text-zinc-300 flex-1 truncate">{task.title}</span>
                   <span className="text-zinc-500 font-mono tabular-nums hidden sm:inline">

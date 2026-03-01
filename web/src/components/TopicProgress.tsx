@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Task, Topic, StatsOverview } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, getTopicLabel } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
@@ -76,9 +76,10 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
   const reviewsByTopicColors: Record<string, string> = {};
   if (stats?.reviewsByTopic) {
     for (const [topic, count] of Object.entries(stats.reviewsByTopic)) {
-      const label = TOPIC_LABELS[topic as Topic] ?? topic;
+      const label = getTopicLabel(topic);
       reviewsByTopicData[label] = count;
-      reviewsByTopicColors[label] = TOPIC_BAR_COLORS[topic as Topic] ?? 'bg-zinc-500';
+      reviewsByTopicColors[label] =
+        (TOPIC_BAR_COLORS as Record<string, string>)[topic] ?? 'bg-zinc-500';
     }
   }
 

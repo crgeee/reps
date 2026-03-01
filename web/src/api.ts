@@ -5,6 +5,7 @@ import type {
   EvaluationResult,
   Collection,
   CollectionStatus,
+  CollectionTopic,
   CollectionTemplate,
   CreateTemplateInput,
   CreateFromTemplateInput,
@@ -41,7 +42,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const contentType = res.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
-    throw new Error(`Expected JSON response but got ${contentType || 'unknown content type'} (${res.status})`);
+    throw new Error(
+      `Expected JSON response but got ${contentType || 'unknown content type'} (${res.status})`,
+    );
   }
 
   return res.json() as Promise<T>;
@@ -249,6 +252,33 @@ export async function deleteCollectionStatus(
   await request<unknown>(`/collections/${collectionId}/statuses/${statusId}`, { method: 'DELETE' });
 }
 
+// Collection Topics
+
+export async function createCollectionTopic(
+  collectionId: string,
+  input: { name: string; color?: string | null; sortOrder?: number },
+): Promise<CollectionTopic> {
+  return request<CollectionTopic>(`/collections/${collectionId}/topics`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCollectionTopic(
+  collectionId: string,
+  topicId: string,
+  updates: Partial<{ name: string; color: string | null; sortOrder: number }>,
+): Promise<CollectionTopic> {
+  return request<CollectionTopic>(`/collections/${collectionId}/topics/${topicId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteCollectionTopic(collectionId: string, topicId: string): Promise<void> {
+  await request<unknown>(`/collections/${collectionId}/topics/${topicId}`, { method: 'DELETE' });
+}
+
 // Tags
 
 export async function getTags(): Promise<Tag[]> {
@@ -354,7 +384,7 @@ export async function generateCalendarToken(): Promise<{ token: string; url: str
 
 export async function downloadMarkdownExport(): Promise<void> {
   const res = await fetch(`${BASE_URL}/export/tasks.md`, {
-    headers: { Authorization: `Bearer ${getApiKey()}` },
+    credentials: 'include',
   });
   if (!res.ok) throw new Error(`Export failed: ${res.status}`);
   const blob = await res.blob();

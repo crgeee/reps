@@ -44,6 +44,24 @@ interface TemplateTaskRow {
   sort_order: number;
 }
 
+interface TemplateTopicRow {
+  id: string;
+  template_id: string;
+  name: string;
+  color: string | null;
+  sort_order: number;
+}
+
+function topicRowToTopic(row: TemplateTopicRow) {
+  return {
+    id: row.id,
+    templateId: row.template_id,
+    name: row.name,
+    color: row.color,
+    sortOrder: row.sort_order,
+  };
+}
+
 function rowToTemplate(row: TemplateRow) {
   return {
     id: row.id,
@@ -98,7 +116,7 @@ templates.get('/', async (c) => {
 
   const templateIds = rows.map((r) => r.id);
 
-  const [statusRows, taskRows] = await Promise.all([
+  const [statusRows, taskRows, topicRows] = await Promise.all([
     sql<TemplateStatusRow[]>`
       SELECT * FROM template_statuses
       WHERE template_id = ANY(${templateIds})
@@ -106,6 +124,11 @@ templates.get('/', async (c) => {
     `,
     sql<TemplateTaskRow[]>`
       SELECT * FROM template_tasks
+      WHERE template_id = ANY(${templateIds})
+      ORDER BY sort_order ASC
+    `,
+    sql<TemplateTopicRow[]>`
+      SELECT * FROM template_topics
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
@@ -125,12 +148,20 @@ templates.get('/', async (c) => {
     tasksByTemplate.set(tr.template_id, list);
   }
 
+  const topicsByTemplate = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
+  for (const tr of topicRows) {
+    const list = topicsByTemplate.get(tr.template_id) ?? [];
+    list.push(topicRowToTopic(tr));
+    topicsByTemplate.set(tr.template_id, list);
+  }
+
   c.header('Cache-Control', 'private, max-age=300');
   return c.json(
     rows.map((row) => ({
       ...rowToTemplate(row),
       statuses: statusesByTemplate.get(row.id) ?? [],
       tasks: tasksByTemplate.get(row.id) ?? [],
+      topics: topicsByTemplate.get(row.id) ?? [],
     })),
   );
 });
@@ -149,7 +180,7 @@ templates.get('/admin/all', async (c) => {
 
   const templateIds = rows.map((r) => r.id);
 
-  const [statusRows, taskRows] = await Promise.all([
+  const [statusRows, taskRows, topicRows] = await Promise.all([
     sql<TemplateStatusRow[]>`
       SELECT * FROM template_statuses
       WHERE template_id = ANY(${templateIds})
@@ -157,6 +188,11 @@ templates.get('/admin/all', async (c) => {
     `,
     sql<TemplateTaskRow[]>`
       SELECT * FROM template_tasks
+      WHERE template_id = ANY(${templateIds})
+      ORDER BY sort_order ASC
+    `,
+    sql<TemplateTopicRow[]>`
+      SELECT * FROM template_topics
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
@@ -176,11 +212,19 @@ templates.get('/admin/all', async (c) => {
     tasksByTemplate.set(tr.template_id, list);
   }
 
+  const topicsByTemplate = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
+  for (const tr of topicRows) {
+    const list = topicsByTemplate.get(tr.template_id) ?? [];
+    list.push(topicRowToTopic(tr));
+    topicsByTemplate.set(tr.template_id, list);
+  }
+
   return c.json(
     rows.map((row) => ({
       ...rowToTemplate(row),
       statuses: statusesByTemplate.get(row.id) ?? [],
       tasks: tasksByTemplate.get(row.id) ?? [],
+      topics: topicsByTemplate.get(row.id) ?? [],
     })),
   );
 });
@@ -249,7 +293,20 @@ templates.post('/', async (c) => {
       }
     }
 
-    return { ...rowToTemplate(row), statuses, tasks };
+    const topics: ReturnType<typeof topicRowToTopic>[] = [];
+    if (body.topics && body.topics.length > 0) {
+      for (let i = 0; i < body.topics.length; i++) {
+        const t = body.topics[i];
+        const [tr] = await tx<TemplateTopicRow[]>`
+          INSERT INTO template_topics (template_id, name, color, sort_order)
+          VALUES (${row.id}, ${t.name}, ${t.color ?? null}, ${t.sortOrder ?? i})
+          RETURNING *
+        `;
+        topics.push(topicRowToTopic(tr));
+      }
+    }
+
+    return { ...rowToTemplate(row), statuses, tasks, topics };
   });
 
   return c.json(result, 201);

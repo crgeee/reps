@@ -19,14 +19,19 @@ export function getUtcOffset(tz: string): string {
 }
 
 export function buildTimezoneOptions(): TimezoneOption[] {
-  const allTz = Intl.supportedValuesOf('timeZone');
-  const options = allTz.map((tz) => {
+  const allTz = (Intl as unknown as { supportedValuesOf(key: string): string[] }).supportedValuesOf(
+    'timeZone',
+  );
+  const options = allTz.map((tz: string) => {
     const offset = getUtcOffset(tz);
     const city = tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
     return { value: tz, label: `${city} (${offset})`, offset };
   });
 
-  options.sort((a, b) => parseOffsetMinutes(a.offset) - parseOffsetMinutes(b.offset));
+  options.sort(
+    (a: TimezoneOption, b: TimezoneOption) =>
+      parseOffsetMinutes(a.offset) - parseOffsetMinutes(b.offset),
+  );
   return options;
 }
 

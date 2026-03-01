@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { Topic, Tag } from '../types';
+import { useState, useEffect } from 'react';
+import type { Tag, Collection } from '../types';
 import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask, createTag } from '../api';
 import { logger } from '../logger';
@@ -9,16 +9,27 @@ interface AddTaskProps {
   onCreated: () => void;
   availableTags?: Tag[];
   onTagCreated?: (tag: Tag) => void;
-  activeCollectionId?: string | null;
+  activeCollection?: Collection | null;
 }
 
 export default function AddTask({
   onCreated,
   availableTags = [],
   onTagCreated,
-  activeCollectionId,
+  activeCollection,
 }: AddTaskProps) {
-  const [topic, setTopic] = useState<Topic>('coding');
+  const collectionTopics = activeCollection?.topics ?? [];
+  const useCollectionTopics = collectionTopics.length > 0;
+  const topicOptions = useCollectionTopics
+    ? collectionTopics.map((t) => ({ value: t.name, label: t.name, color: t.color }))
+    : TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null }));
+
+  const defaultTopic = activeCollection?.topics?.[0]?.name ?? 'coding';
+  const [topic, setTopic] = useState<string>(defaultTopic);
+
+  useEffect(() => {
+    setTopic(activeCollection?.topics?.[0]?.name ?? 'coding');
+  }, [activeCollection?.id]);
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
@@ -38,7 +49,7 @@ export default function AddTask({
         title: title.trim(),
         deadline: deadline || undefined,
         note: note.trim() || undefined,
-        collectionId: activeCollectionId ?? undefined,
+        collectionId: activeCollection?.id ?? undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
       onCreated();
@@ -74,18 +85,18 @@ export default function AddTask({
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-2">Topic</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            {TOPICS.map((t) => (
+            {topicOptions.map((t) => (
               <button
-                key={t}
+                key={t.value}
                 type="button"
-                onClick={() => setTopic(t)}
+                onClick={() => setTopic(t.value)}
                 className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
-                  topic === t
+                  topic === t.value
                     ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
                     : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
                 }`}
               >
-                {TOPIC_LABELS[t]}
+                {t.label}
               </button>
             ))}
           </div>
