@@ -2,11 +2,13 @@ import { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { useTaskTopics } from '../hooks/useTaskTopics';
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
   closestCorners,
+  type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -176,6 +178,7 @@ export default function TaskList({
           onOptimisticUpdate={onOptimisticUpdate}
           onBackgroundRefresh={onBackgroundRefresh}
           collectionStatuses={collectionStatuses}
+          srByCollection={srByCollection}
         />
       ) : filters.groupBy !== 'none' ? (
         <>
@@ -364,10 +367,12 @@ const SortableCard = memo(function SortableCard({
   task,
   onRefresh,
   onEdit,
+  srEnabled,
 }: {
   task: Task;
   onRefresh: () => void;
   onEdit?: (task: Task) => void;
+  srEnabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -377,24 +382,26 @@ const SortableCard = memo(function SortableCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-    position: isDragging ? ('relative' as const) : undefined,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={isDragging ? 'shadow-lg shadow-black/40 rounded' : ''}
+      className={isDragging ? 'rounded border border-dashed border-zinc-600 bg-zinc-800/30' : ''}
     >
-      <TaskCard
-        task={task}
-        onRefresh={onRefresh}
-        compact
-        dragHandleProps={{ ...attributes, ...listeners }}
-        onEdit={onEdit}
-      />
+      {!isDragging && (
+        <TaskCard
+          task={task}
+          onRefresh={onRefresh}
+          compact
+          dragHandleProps={{ ...attributes, ...listeners }}
+          onEdit={onEdit}
+          srEnabled={srEnabled}
+        />
+      )}
+      {isDragging && <div className="h-8" />}
     </div>
   );
 });
@@ -406,6 +413,7 @@ const BoardColumn = memo(function BoardColumn({
   onRefresh,
   borderColor,
   onEdit,
+  srEnabled,
 }: {
   status: string;
   label: string;
@@ -413,6 +421,7 @@ const BoardColumn = memo(function BoardColumn({
   onRefresh: () => void;
   borderColor?: string;
   onEdit?: (task: Task) => void;
+  srEnabled?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -436,7 +445,13 @@ const BoardColumn = memo(function BoardColumn({
 
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
         {tasks.map((task) => (
-          <SortableCard key={task.id} task={task} onRefresh={onRefresh} onEdit={onEdit} />
+          <SortableCard
+            key={task.id}
+            task={task}
+            onRefresh={onRefresh}
+            onEdit={onEdit}
+            srEnabled={srEnabled}
+          />
         ))}
       </SortableContext>
 
@@ -457,6 +472,7 @@ function BoardLayout({
   onOptimisticUpdate,
   onBackgroundRefresh,
   collectionStatuses,
+  srByCollection,
 }: {
   tasks: Task[];
   filtered: Task[];
@@ -465,8 +481,18 @@ function BoardLayout({
   onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
   onBackgroundRefresh?: () => void;
   collectionStatuses?: CollectionStatus[];
+  srByCollection?: Map<string, boolean>;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [dragError, setDragError] = useState<string | null>(null);
+
+  // Derive srEnabled from collection of first task (board shows one collection at a time)
+  const srEnabled = useMemo(() => {
+    if (!srByCollection || filtered.length === 0) return false;
+    const first = filtered[0];
+    return first ? (srByCollection.get(first.collectionId ?? '') ?? false) : false;
+  }, [srByCollection, filtered]);
 
   const { statusList, statusLabels, statusColors } = useMemo(() => {
     if (collectionStatuses && collectionStatuses.length > 0) {
@@ -505,8 +531,17 @@ function BoardLayout({
     [statusList],
   );
 
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      setDragError(null);
+      setActiveTask(tasks.find((t) => t.id === event.active.id) ?? null);
+    },
+    [tasks],
+  );
+
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
+      setActiveTask(null);
       const { active, over } = event;
       if (!over) return;
 
@@ -526,11 +561,15 @@ function BoardLayout({
         if (onBackgroundRefresh) onBackgroundRefresh();
       } catch (err) {
         logger.error('Failed to update task status', { taskId, targetStatus, error: String(err) });
+        setDragError('Failed to move task. Reverting.');
         onRefresh();
+        setTimeout(() => setDragError(null), 3000);
       }
     },
     [tasks, onRefresh, onOptimisticUpdate, onBackgroundRefresh, findColumnForOver],
   );
+
+  const handleDragCancel = useCallback(() => setActiveTask(null), []);
 
   const gridColsClass = useMemo(() => {
     const count = statusList.length;
@@ -542,7 +581,14 @@ function BoardLayout({
   }, [statusList.length]);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      {dragError && <p className="text-xs text-red-400 mb-2">{dragError}</p>}
       <div className={`grid ${gridColsClass} gap-4 min-h-[60vh]`}>
         {statusList.map((status) => (
           <BoardColumn
@@ -553,9 +599,15 @@ function BoardLayout({
             onRefresh={onRefresh}
             borderColor={statusColors[status]}
             onEdit={onEdit}
+            srEnabled={srEnabled}
           />
         ))}
       </div>
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+        {activeTask && (
+          <TaskCard task={activeTask} onRefresh={onRefresh} compact srEnabled={srEnabled} />
+        )}
+      </DragOverlay>
     </DndContext>
   );
 }

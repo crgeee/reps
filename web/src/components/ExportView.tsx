@@ -15,7 +15,9 @@ export default function ExportView() {
         setToken(res.token);
         if ('url' in res) setUrl((res as { url: string }).url);
       })
-      .catch(() => {})
+      .catch((e) => {
+        console.error('Failed to load calendar token:', e);
+      })
       .finally(() => setLoading(false));
   }, []);
 

@@ -5,6 +5,12 @@ set -e
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
+if ! command -v node &>/dev/null; then
+  echo "✗ node not found — check nvm installation"
+  exit 1
+fi
+echo "  Using node $(node --version)"
+
 echo "→ Switching to main and pulling latest..."
 git checkout main
 git pull origin main
@@ -33,7 +39,7 @@ echo "→ Building web..."
 npm run build:web
 
 echo "→ Checking nginx config..."
-if ! sudo nginx -t 2>/dev/null; then
+if ! sudo nginx -t; then
   echo "✗ nginx config test failed"
   exit 1
 fi

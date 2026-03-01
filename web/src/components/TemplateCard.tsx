@@ -1,5 +1,12 @@
 import type { CollectionTemplate } from '../types';
 
+function pillStyle(color: string | null): React.CSSProperties {
+  return {
+    backgroundColor: color ? `${color}33` : 'rgba(113, 113, 122, 0.2)',
+    color: color ?? '#a1a1aa',
+  };
+}
+
 interface TemplateCardProps {
   template: CollectionTemplate;
   onClick: () => void;
@@ -28,10 +35,7 @@ export default function TemplateCard({ template, onClick }: TemplateCardProps) {
             <span
               key={status.id}
               className="text-[10px] px-1.5 py-0.5 rounded-full"
-              style={{
-                backgroundColor: status.color ? `${status.color}33` : 'rgba(113, 113, 122, 0.2)',
-                color: status.color ?? '#a1a1aa',
-              }}
+              style={pillStyle(status.color)}
             >
               {status.name}
             </span>

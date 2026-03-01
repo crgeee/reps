@@ -22,6 +22,10 @@ interface CollectionEditModalProps {
   onClose: () => void;
 }
 
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
 const ICON_OPTIONS = ['', '📚', '💻', '🎯', '🧠', '📝', '🔬', '🎨', '⚡', '🏆', '📊', '🔧'];
 
 function SwatchPicker({
@@ -76,6 +80,7 @@ export default function CollectionEditModal({
   async function handleSave() {
     if (!name.trim() || saving) return;
     setSaving(true);
+    setError(null);
     try {
       await updateCollection(collection.id, {
         name: name.trim(),
@@ -98,7 +103,7 @@ export default function CollectionEditModal({
         collectionId: collection.id,
         error: String(err),
       });
-      setError(err instanceof Error ? err.message : 'Failed to save collection');
+      setError(errorMessage(err, 'Failed to save collection'));
     } finally {
       setSaving(false);
     }
@@ -106,6 +111,7 @@ export default function CollectionEditModal({
 
   async function handleDeleteCollection() {
     if (!confirm('Delete this collection and all its tasks?')) return;
+    setError(null);
     try {
       await deleteCollection(collection.id);
       onDeleted(collection.id);
@@ -115,11 +121,12 @@ export default function CollectionEditModal({
         collectionId: collection.id,
         error: String(err),
       });
-      setError(err instanceof Error ? err.message : 'Failed to delete collection');
+      setError(errorMessage(err, 'Failed to delete collection'));
     }
   }
 
   async function handleAddStatus() {
+    setError(null);
     try {
       const created = await createCollectionStatus(collection.id, {
         name: 'New Status',
@@ -128,30 +135,32 @@ export default function CollectionEditModal({
       setStatuses((prev) => [...prev, created]);
     } catch (err) {
       logger.error('Failed to add status', { collectionId: collection.id, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to add status');
+      setError(errorMessage(err, 'Failed to add status'));
     }
   }
 
   async function handleUpdateStatusName(statusId: string, newName: string) {
     const trimmed = newName.trim();
     if (!trimmed) return;
+    setError(null);
     try {
       const updated = await updateCollectionStatus(collection.id, statusId, { name: trimmed });
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
     } catch (err) {
       logger.error('Failed to update status name', { statusId, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to update status');
+      setError(errorMessage(err, 'Failed to update status'));
     }
   }
 
   async function handleUpdateStatusColor(statusId: string, newColor: string | null) {
+    setError(null);
     try {
       const updated = await updateCollectionStatus(collection.id, statusId, { color: newColor });
       setStatuses((prev) => prev.map((s) => (s.id === statusId ? updated : s)));
       setStatusColorPicker(null);
     } catch (err) {
       logger.error('Failed to update status color', { statusId, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to update status color');
+      setError(errorMessage(err, 'Failed to update status color'));
     }
   }
 
@@ -178,6 +187,10 @@ export default function CollectionEditModal({
       setTemplateMessage('Template saved!');
       setTimeout(() => setTemplateMessage(null), 3000);
     } catch (err) {
+      logger.error('Failed to save as template', {
+        collectionId: collection.id,
+        error: String(err),
+      });
       const msg = err instanceof Error ? err.message : 'Failed to save template';
       setTemplateMessage(`Failed: ${msg}`);
     } finally {
@@ -186,16 +199,18 @@ export default function CollectionEditModal({
   }
 
   async function handleDeleteStatus(statusId: string) {
+    setError(null);
     try {
       await deleteCollectionStatus(collection.id, statusId);
       setStatuses((prev) => prev.filter((s) => s.id !== statusId));
     } catch (err) {
       logger.error('Failed to delete status', { statusId, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to delete status');
+      setError(errorMessage(err, 'Failed to delete status'));
     }
   }
 
   async function handleAddTopic() {
+    setError(null);
     try {
       const created = await createCollectionTopic(collection.id, {
         name: 'New Topic',
@@ -204,40 +219,43 @@ export default function CollectionEditModal({
       setTopics((prev) => [...prev, created]);
     } catch (err) {
       logger.error('Failed to add topic', { collectionId: collection.id, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to add topic');
+      setError(errorMessage(err, 'Failed to add topic'));
     }
   }
 
   async function handleUpdateTopicName(topicId: string, newName: string) {
     const trimmed = newName.trim();
     if (!trimmed) return;
+    setError(null);
     try {
       const updated = await updateCollectionTopic(collection.id, topicId, { name: trimmed });
       setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
     } catch (err) {
       logger.error('Failed to update topic name', { topicId, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to update topic');
+      setError(errorMessage(err, 'Failed to update topic'));
     }
   }
 
   async function handleUpdateTopicColor(topicId: string, newColor: string | null) {
+    setError(null);
     try {
       const updated = await updateCollectionTopic(collection.id, topicId, { color: newColor });
       setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
       setTopicColorPicker(null);
     } catch (err) {
       logger.error('Failed to update topic color', { topicId, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to update topic color');
+      setError(errorMessage(err, 'Failed to update topic color'));
     }
   }
 
   async function handleDeleteTopic(topicId: string) {
+    setError(null);
     try {
       await deleteCollectionTopic(collection.id, topicId);
       setTopics((prev) => prev.filter((t) => t.id !== topicId));
     } catch (err) {
       logger.error('Failed to delete topic', { topicId, error: String(err) });
-      setError(err instanceof Error ? err.message : 'Failed to delete topic');
+      setError(errorMessage(err, 'Failed to delete topic'));
     }
   }
 

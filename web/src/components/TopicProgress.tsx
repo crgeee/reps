@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Task, StatsOverview } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
+import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
 
@@ -45,21 +46,19 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
   useEffect(() => {
     getStatsOverview(activeCollectionId ?? undefined)
       .then(setStats)
-      .catch(() => null);
+      .catch((e) => {
+        console.error('Failed to load stats:', e);
+      });
     getHeatmap(activeCollectionId ?? undefined)
       .then(setHeatmapData)
-      .catch(() => null);
+      .catch((e) => {
+        console.error('Failed to load heatmap:', e);
+      });
   }, [activeCollectionId]);
 
   const today = new Date().toISOString().split('T')[0]!;
 
-  // Derive topics from actual tasks
-  const topicMap = new Map<string, Task[]>();
-  for (const t of tasks) {
-    const list = topicMap.get(t.topic) ?? [];
-    list.push(t);
-    topicMap.set(t.topic, list);
-  }
+  const topicMap = useGroupedTasksByTopic(tasks);
   const topicStats: TopicStat[] = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
     const active = topicTasks.filter((t) => !t.completed);
     const completed = topicTasks.filter((t) => t.completed);

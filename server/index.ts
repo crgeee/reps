@@ -41,6 +41,15 @@ app.use(
   }),
 );
 
+// Global error handler — catches JSON parse errors from c.req.json()
+app.onError((err, c) => {
+  if (err instanceof SyntaxError && err.message.includes('JSON')) {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
+  console.error('Unhandled error:', err);
+  return c.json({ error: 'Internal server error' }, 500);
+});
+
 // Body size limit — 1MB default
 app.use('/*', bodyLimit({ maxSize: 1024 * 1024 }));
 

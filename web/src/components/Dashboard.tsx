@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Task, Streaks } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
+import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import { Flame, Info } from 'lucide-react';
 
 type View =
@@ -46,20 +47,16 @@ export default function Dashboard({
   useEffect(() => {
     getStreaks(activeCollectionId ?? undefined)
       .then(setStreaks)
-      .catch(() => null);
+      .catch((e) => {
+        console.error('Failed to load streaks:', e);
+      });
   }, [activeCollectionId]);
 
   const overdueTasks = dueTasks.filter(isOverdue);
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
-  // Derive topics from actual tasks, not hardcoded list
-  const topicMap = new Map<string, Task[]>();
-  for (const t of tasks) {
-    const list = topicMap.get(t.topic) ?? [];
-    list.push(t);
-    topicMap.set(t.topic, list);
-  }
+  const topicMap = useGroupedTasksByTopic(tasks);
   const topicStats = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
     const done = topicTasks.filter((t) => t.completed).length;
     const due = topicTasks.filter(
@@ -174,7 +171,8 @@ export default function Dashboard({
             <button
               key={topic}
               onClick={() => onTopicClick?.(topic)}
-              className="flex items-center gap-3 px-3 py-2 text-xs w-full text-left hover:bg-zinc-800/40 transition-colors cursor-pointer">
+              className="flex items-center gap-3 px-3 py-2 text-xs w-full text-left hover:bg-zinc-800/40 transition-colors cursor-pointer"
+            >
               <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(topic)}`} />
               <span className="text-zinc-300 w-24 truncate">{getTopicLabel(topic)}</span>
               <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
