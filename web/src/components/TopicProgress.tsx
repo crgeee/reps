@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Task, Topic, StatsOverview } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, getTopicLabel } from '../types';
+import type { Task, StatsOverview } from '../types';
+import { getTopicLabel, getTopicColor } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
@@ -11,7 +11,7 @@ interface TopicProgressProps {
 }
 
 interface TopicStat {
-  topic: Topic;
+  topic: string;
   total: number;
   completed: number;
   active: number;
@@ -27,13 +27,16 @@ function getConfidenceLevel(ef: number): { label: string; color: string } {
   return { label: 'Low', color: 'text-red-400' };
 }
 
-const TOPIC_BAR_COLORS: Record<Topic, string> = {
-  coding: 'bg-blue-500',
-  'system-design': 'bg-purple-500',
-  behavioral: 'bg-green-500',
-  papers: 'bg-amber-500',
-  custom: 'bg-slate-500',
-};
+function getTopicBarColor(topic: string): string {
+  const map: Record<string, string> = {
+    coding: 'bg-blue-500',
+    'system-design': 'bg-purple-500',
+    behavioral: 'bg-green-500',
+    papers: 'bg-amber-500',
+    custom: 'bg-slate-500',
+  };
+  return map[topic] ?? 'bg-zinc-500';
+}
 
 export default function TopicProgress({ tasks, activeCollectionId }: TopicProgressProps) {
   const [stats, setStats] = useState<StatsOverview | null>(null);
@@ -50,8 +53,14 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
 
   const today = new Date().toISOString().split('T')[0]!;
 
-  const topicStats: TopicStat[] = TOPICS.map((topic) => {
-    const topicTasks = tasks.filter((t) => t.topic === topic);
+  // Derive topics from actual tasks
+  const topicMap = new Map<string, Task[]>();
+  for (const t of tasks) {
+    const list = topicMap.get(t.topic) ?? [];
+    list.push(t);
+    topicMap.set(t.topic, list);
+  }
+  const topicStats: TopicStat[] = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
     const active = topicTasks.filter((t) => !t.completed);
     const completed = topicTasks.filter((t) => t.completed);
     const reviewed = topicTasks
@@ -70,7 +79,7 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
       lastReviewed: reviewed[0]?.lastReviewed ?? null,
       dueCount,
     };
-  }).filter((s) => s.total > 0);
+  });
 
   const reviewsByTopicData: Record<string, number> = {};
   const reviewsByTopicColors: Record<string, string> = {};
@@ -78,8 +87,7 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
     for (const [topic, count] of Object.entries(stats.reviewsByTopic)) {
       const label = getTopicLabel(topic);
       reviewsByTopicData[label] = count;
-      reviewsByTopicColors[label] =
-        (TOPIC_BAR_COLORS as Record<string, string>)[topic] ?? 'bg-zinc-500';
+      reviewsByTopicColors[label] = getTopicBarColor(topic);
     }
   }
 
@@ -165,14 +173,14 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
                 >
                   <div className="w-28 flex items-center gap-2">
                     <div
-                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[stat.topic]}`}
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(stat.topic)}`}
                     />
-                    <span className="text-zinc-300 truncate">{TOPIC_LABELS[stat.topic]}</span>
+                    <span className="text-zinc-300 truncate">{getTopicLabel(stat.topic)}</span>
                   </div>
                   <div className="flex-1 flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${TOPIC_COLORS[stat.topic]} opacity-80`}
+                        className={`h-full rounded-full ${getTopicColor(stat.topic)} opacity-80`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>

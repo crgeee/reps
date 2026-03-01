@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, memo, useCallback } from 'react';
+import { useTaskTopics } from '../hooks/useTaskTopics';
 import {
   DndContext,
   PointerSensor,
@@ -62,6 +63,7 @@ export default function TaskList({
   initialTopicFilter,
 }: TaskListProps) {
   const { filters, setFilter, resetFilters, filtered, grouped } = useFilteredTasks(tasks);
+  const taskTopics = useTaskTopics(tasks);
   const [appliedInitialFilter, setAppliedInitialFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -134,6 +136,7 @@ export default function TaskList({
         resetFilters={resetFilters}
         hideStatus={layout === 'board'}
         statusOptions={statusOptions}
+        topics={taskTopics}
       />
 
       {/* Tag filter */}

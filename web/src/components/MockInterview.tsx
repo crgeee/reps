@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Brain } from 'lucide-react';
 import type { Topic, MockDifficulty, MockSession, MockScore } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS } from '../types';
+import { TOPICS, getTopicLabel, getTopicColor } from '../types';
 import { startMockInterview, respondToMock } from '../api';
 import FocusTimer from './FocusTimer';
 import ScoreCard from './ScoreCard';
@@ -114,8 +114,8 @@ export default function MockInterview() {
                       : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${TOPIC_COLORS[t]}`} />
-                  {TOPIC_LABELS[t]}
+                  <span className={`w-2 h-2 rounded-full ${getTopicColor(t)}`} />
+                  {getTopicLabel(t)}
                 </button>
               ))}
             </div>
@@ -169,7 +169,7 @@ export default function MockInterview() {
               <Brain className="w-4 h-4 text-purple-400" />
               <span className="text-xs text-zinc-500 uppercase tracking-wider">Interviewer</span>
               <span className="ml-auto text-xs text-zinc-600">
-                {TOPIC_LABELS[topic]} · {difficulty}
+                {getTopicLabel(topic)} · {difficulty}
               </span>
             </div>
             <p className="text-zinc-100 text-base leading-relaxed whitespace-pre-wrap">
