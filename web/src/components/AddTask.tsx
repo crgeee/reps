@@ -39,14 +39,7 @@ export default function AddTask({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const TITLE_PLACEHOLDERS: Record<string, string> = {
-    coding: 'e.g. LRU Cache implementation',
-    'system-design': 'e.g. Design a URL shortener',
-    behavioral: 'e.g. Tell me about a time you led a project',
-    papers: 'e.g. Attention Is All You Need',
-    custom: 'e.g. Mock interview practice',
-  };
-  const titlePlaceholder = TITLE_PLACEHOLDERS[topic] ?? `e.g. ${topic} task`;
+  const titlePlaceholder = `What do you want to work on?`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
