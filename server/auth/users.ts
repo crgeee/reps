@@ -12,6 +12,10 @@ export interface User {
   notifyDaily: boolean;
   notifyWeekly: boolean;
   dailyReviewGoal: number;
+  timeFormat: string;
+  dateFormat: string;
+  startOfWeek: number;
+  language: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +32,10 @@ interface UserRow {
   notify_daily: boolean;
   notify_weekly: boolean;
   daily_review_goal: number;
+  time_format: string;
+  date_format: string;
+  start_of_week: number;
+  language: string;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +53,10 @@ function rowToUser(row: UserRow): User {
     notifyDaily: row.notify_daily,
     notifyWeekly: row.notify_weekly,
     dailyReviewGoal: row.daily_review_goal,
+    timeFormat: row.time_format,
+    dateFormat: row.date_format,
+    startOfWeek: row.start_of_week,
+    language: row.language,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -80,6 +92,10 @@ export async function updateUserProfile(
     notifyDaily?: boolean;
     notifyWeekly?: boolean;
     dailyReviewGoal?: number;
+    timeFormat?: string;
+    dateFormat?: string;
+    startOfWeek?: number;
+    language?: string;
   },
 ): Promise<User | null> {
   const fieldMap: Record<string, string> = {
@@ -89,6 +105,10 @@ export async function updateUserProfile(
     notifyDaily: 'notify_daily',
     notifyWeekly: 'notify_weekly',
     dailyReviewGoal: 'daily_review_goal',
+    timeFormat: 'time_format',
+    dateFormat: 'date_format',
+    startOfWeek: 'start_of_week',
+    language: 'language',
   };
 
   const dbUpdates: Record<string, unknown> = {};
