@@ -1,3 +1,4 @@
--- Track renamed migration files so they are not re-run on existing databases
-UPDATE schema_migrations SET filename = '001_schema.sql' WHERE filename = 'schema.sql';
-UPDATE schema_migrations SET filename = '004b-multi-user-auth.sql' WHERE filename = '004-multi-user-auth.sql';
+-- Clean up old filename entries from before the rename.
+-- The new filenames (001_schema.sql, 004b-multi-user-auth.sql) are already tracked
+-- because the migrator ran them as "new" files on the first deploy after the rename.
+DELETE FROM schema_migrations WHERE filename IN ('schema.sql', '004-multi-user-auth.sql');
