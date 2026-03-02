@@ -224,6 +224,10 @@ export interface User {
   notifyDaily: boolean;
   notifyWeekly: boolean;
   dailyReviewGoal: number;
+  timeFormat: string;
+  dateFormat: string;
+  startOfWeek: number;
+  language: string;
   createdAt: string;
   updatedAt: string;
 }
