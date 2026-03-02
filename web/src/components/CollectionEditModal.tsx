@@ -16,6 +16,7 @@ import {
 } from '../api';
 
 import { errorMessage, ICON_OPTIONS } from '../utils/ui';
+import ButtonSpinner from './ButtonSpinner';
 
 interface CollectionEditModalProps {
   collection: Collection;
@@ -463,9 +464,10 @@ export default function CollectionEditModal({
             <button
               onClick={handleSave}
               disabled={!name.trim() || saving}
-              className="flex-1 sm:flex-initial px-5 py-2 bg-zinc-100 text-zinc-900 text-sm font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-initial px-5 py-2 bg-zinc-100 text-zinc-900 text-sm font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving && <ButtonSpinner />}
+              Save
             </button>
           </div>
         </div>

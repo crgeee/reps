@@ -3,6 +3,7 @@ import { X, ArrowLeft, Plus, RefreshCw } from 'lucide-react';
 import { logger } from '../logger';
 import type { CollectionTemplate, Collection } from '../types';
 import { COLOR_SWATCHES } from '../types';
+import ButtonSpinner from './ButtonSpinner';
 import { getTemplates, createCollection, createCollectionFromTemplate } from '../api';
 import TemplateCard from './TemplateCard';
 import { errorMessage, pillStyle, ICON_OPTIONS } from '../utils/ui';
@@ -380,23 +381,7 @@ export default function CreateCollectionModal({ onCreated, onClose }: CreateColl
                 disabled={!name.trim() || submitting}
                 className="bg-zinc-100 text-zinc-900 text-sm font-semibold rounded-lg px-5 py-2 hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {submitting && (
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
-                  </svg>
-                )}
+                {submitting && <ButtonSpinner />}
                 Create
               </button>
               <button

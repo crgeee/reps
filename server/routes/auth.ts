@@ -67,7 +67,7 @@ auth.get('/verify', async (c) => {
 
   setCookie(c, SESSION_COOKIE, result.sessionToken, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'Lax',
     path: '/',
     maxAge: COOKIE_MAX_AGE,

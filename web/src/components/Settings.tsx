@@ -17,6 +17,7 @@ import {
 import { buildTimezoneOptions } from '../utils/timezone';
 import { parseUserAgent, formatRelative } from '../utils/format';
 import { logger } from '../logger';
+import ButtonSpinner from './ButtonSpinner';
 
 const TIMEZONE_OPTIONS = buildTimezoneOptions();
 
@@ -65,8 +66,8 @@ export default function Settings({ user, onUserUpdate }: Props) {
     setSessionsLoading(true);
     try {
       setSessions(await getUserSessions());
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to load sessions', { error: String(err) });
     } finally {
       setSessionsLoading(false);
     }
@@ -76,8 +77,8 @@ export default function Settings({ user, onUserUpdate }: Props) {
     setTopicsLoading(true);
     try {
       setTopics(await getCustomTopics());
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to load topics', { error: String(err) });
     } finally {
       setTopicsLoading(false);
     }
@@ -121,6 +122,7 @@ export default function Settings({ user, onUserUpdate }: Props) {
       setSaveMessage({ text: 'Settings saved', type: 'success' });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
+      logger.error('Failed to save settings', { error: String(err) });
       setSaveMessage({
         text: err instanceof Error ? err.message : 'Failed to save',
         type: 'error',
@@ -134,8 +136,8 @@ export default function Settings({ user, onUserUpdate }: Props) {
     try {
       await deleteUserSession(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to revoke session', { sessionId: id, error: String(err) });
     }
   }
 
@@ -160,8 +162,8 @@ export default function Settings({ user, onUserUpdate }: Props) {
     try {
       await deleteCustomTopic(id);
       setTopics((prev) => prev.filter((t) => t.id !== id));
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to delete topic', { topicId: id, error: String(err) });
     }
   }
 
@@ -292,9 +294,10 @@ export default function Settings({ user, onUserUpdate }: Props) {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-2.5 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+          className="px-6 py-2.5 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center gap-2"
         >
-          {saving ? 'Saving...' : 'Save changes'}
+          {saving && <ButtonSpinner />}
+          Save changes
         </button>
         {saveMessage && (
           <span
@@ -483,8 +486,11 @@ export default function Settings({ user, onUserUpdate }: Props) {
                                   au.id === u.id ? { ...au, isAdmin: !au.isAdmin } : au,
                                 ),
                               );
-                            } catch {
-                              /* ignore */
+                            } catch (err) {
+                              logger.error('Failed to update admin status', {
+                                userId: u.id,
+                                error: String(err),
+                              });
                             }
                           }}
                           className={`p-1.5 rounded-md transition-colors ${
@@ -528,8 +534,11 @@ export default function Settings({ user, onUserUpdate }: Props) {
                                   au.id === u.id ? { ...au, isBlocked: !au.isBlocked } : au,
                                 ),
                               );
-                            } catch {
-                              /* ignore */
+                            } catch (err) {
+                              logger.error('Failed to update block status', {
+                                userId: u.id,
+                                error: String(err),
+                              });
                             }
                           }}
                           className={`p-1.5 rounded-md transition-colors ${
@@ -601,7 +610,11 @@ export default function Settings({ user, onUserUpdate }: Props) {
                           setAdminTemplates((cur) => cur.filter((at) => at.id !== t.id));
                           try {
                             await adminDeleteTemplate(t.id);
-                          } catch {
+                          } catch (err) {
+                            logger.error('Failed to delete template', {
+                              templateId: t.id,
+                              error: String(err),
+                            });
                             setAdminTemplates(prev);
                           }
                         }}

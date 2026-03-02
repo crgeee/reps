@@ -10,8 +10,10 @@ import {
   formatStatusLabel,
 } from '../types';
 import { updateTask, deleteTask, addNote, createTag } from '../api';
+import { logger } from '../logger';
 import TagPicker from './TagPicker';
 import NotesList from './NotesList';
+import ButtonSpinner from './ButtonSpinner';
 
 interface TaskEditModalProps {
   task: Task;
@@ -41,7 +43,8 @@ export default function TaskEditModal({
   const [description, setDescription] = useState(task.description ?? '');
   const [tagIds, setTagIds] = useState<string[]>(task.tags?.map((t) => t.id) ?? []);
   const [notes, setNotes] = useState(task.notes);
-  const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Derive statuses from collection
   const activeCollection = collectionId ? collections.find((c) => c.id === collectionId) : null;
@@ -60,7 +63,8 @@ export default function TaskEditModal({
 
   async function handleSave() {
     if (!title.trim()) return;
-    setSaving(true);
+    setBusy(true);
+    setError(null);
     try {
       await updateTask(task.id, {
         title: title.trim(),
@@ -74,32 +78,43 @@ export default function TaskEditModal({
       } as Partial<Task> & { tagIds?: string[] });
       onSaved();
       onClose();
-    } catch {
-      // stay open on error
+    } catch (err) {
+      logger.error('Failed to save task', { taskId: task.id, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to save task');
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   }
 
   async function handleDelete() {
     if (!confirm('Delete this task?')) return;
-    setSaving(true);
+    setBusy(true);
+    setError(null);
     try {
       await deleteTask(task.id);
       onSaved();
       onClose();
+    } catch (err) {
+      logger.error('Failed to delete task', { taskId: task.id, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to delete task');
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   }
 
   async function handleAddNote(text: string) {
-    await addNote(task.id, text);
-    setNotes((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), text, createdAt: new Date().toISOString().slice(0, 10) },
-    ]);
-    onSaved();
+    setError(null);
+    try {
+      await addNote(task.id, text);
+      setNotes((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), text, createdAt: new Date().toISOString().slice(0, 10) },
+      ]);
+      onSaved();
+    } catch (err) {
+      logger.error('Failed to add note', { taskId: task.id, error: String(err) });
+      setError(err instanceof Error ? err.message : 'Failed to add note');
+    }
   }
 
   async function handleCreateTag(name: string, color: string): Promise<Tag> {
@@ -273,11 +288,14 @@ export default function TaskEditModal({
           <span>Created: {task.createdAt}</span>
         </div>
 
+        {/* Error */}
+        {error && <p className="text-xs text-red-400">{error}</p>}
+
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
           <button
             onClick={handleDelete}
-            disabled={saving}
+            disabled={busy}
             className="text-sm text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
           >
             Delete task
@@ -291,10 +309,11 @@ export default function TaskEditModal({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving || !title.trim()}
-              className="px-4 py-2 text-sm bg-zinc-100 text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+              disabled={busy || !title.trim()}
+              className="px-4 py-2 text-sm bg-zinc-100 text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {busy && <ButtonSpinner />}
+              Save
             </button>
           </div>
         </div>
