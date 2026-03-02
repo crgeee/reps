@@ -15,6 +15,7 @@
 ### Task 1: DB Migration — collection topics tables
 
 **Files:**
+
 - Create: `db/008-collection-topics.sql`
 
 **Step 1: Write the migration**
@@ -132,6 +133,7 @@ git commit -m "feat: add template_topics and collection_topics tables with seed 
 ### Task 2: Validation schemas for topics
 
 **Files:**
+
 - Modify: `server/validation.ts`
 
 **Step 1: Add topic schemas**
@@ -215,6 +217,7 @@ git commit -m "feat: add validation schemas for collection and template topics"
 ### Task 3: Server — batch-load topics in GET /collections
 
 **Files:**
+
 - Modify: `server/routes/collections.ts`
 
 **Step 1: Add `CollectionTopicRow` interface**
@@ -246,38 +249,38 @@ function topicRowToTopic(row: CollectionTopicRow) {
 In the `GET /` handler (lines 58-82), change the status query block to load topics in parallel. Replace lines 67-75 with:
 
 ```typescript
-  const [statusRows, topicRows] = await Promise.all([
-    sql<CollectionStatusRow[]>`
+const [statusRows, topicRows] = await Promise.all([
+  sql<CollectionStatusRow[]>`
       SELECT * FROM collection_statuses WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
     `,
-    sql<CollectionTopicRow[]>`
+  sql<CollectionTopicRow[]>`
       SELECT * FROM collection_topics WHERE collection_id = ANY(${collectionIds}) ORDER BY sort_order ASC
     `,
-  ]);
-  const statusesByCollection = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
-  for (const sr of statusRows) {
-    const list = statusesByCollection.get(sr.collection_id) ?? [];
-    list.push(statusRowToStatus(sr));
-    statusesByCollection.set(sr.collection_id, list);
-  }
-  const topicsByCollection = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
-  for (const tr of topicRows) {
-    const list = topicsByCollection.get(tr.collection_id) ?? [];
-    list.push(topicRowToTopic(tr));
-    topicsByCollection.set(tr.collection_id, list);
-  }
+]);
+const statusesByCollection = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
+for (const sr of statusRows) {
+  const list = statusesByCollection.get(sr.collection_id) ?? [];
+  list.push(statusRowToStatus(sr));
+  statusesByCollection.set(sr.collection_id, list);
+}
+const topicsByCollection = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
+for (const tr of topicRows) {
+  const list = topicsByCollection.get(tr.collection_id) ?? [];
+  list.push(topicRowToTopic(tr));
+  topicsByCollection.set(tr.collection_id, list);
+}
 ```
 
 Update the response mapping (line 76-80) to include topics:
 
 ```typescript
-  return c.json(
-    rows.map((row) => ({
-      ...rowToCollection(row),
-      statuses: statusesByCollection.get(row.id) ?? [],
-      topics: topicsByCollection.get(row.id) ?? [],
-    })),
-  );
+return c.json(
+  rows.map((row) => ({
+    ...rowToCollection(row),
+    statuses: statusesByCollection.get(row.id) ?? [],
+    topics: topicsByCollection.get(row.id) ?? [],
+  })),
+);
 ```
 
 **Step 3: Copy topics in `POST /collections/from-template`**
@@ -285,7 +288,7 @@ Update the response mapping (line 76-80) to include topics:
 In the from-template handler (lines 101-167), after loading `templateStatuses` and `templateTasks`, also load template topics. Add after line 133:
 
 ```typescript
-  const templateTopics = await sql<{ name: string; color: string | null; sort_order: number }[]>`
+const templateTopics = await sql<{ name: string; color: string | null; sort_order: number }[]>`
     SELECT name, color, sort_order FROM template_topics WHERE template_id = ${template.id} ORDER BY sort_order ASC
   `;
 ```
@@ -293,21 +296,21 @@ In the from-template handler (lines 101-167), after loading `templateStatuses` a
 Inside the transaction, after the status insertion loop and before task insertion (after line 153), add:
 
 ```typescript
-    const createdTopics = [];
-    for (const t of templateTopics) {
-      const [topicRow] = await tx<CollectionTopicRow[]>`
+const createdTopics = [];
+for (const t of templateTopics) {
+  const [topicRow] = await tx<CollectionTopicRow[]>`
         INSERT INTO collection_topics (collection_id, name, color, sort_order)
         VALUES (${col.id}, ${t.name}, ${t.color}, ${t.sort_order})
         RETURNING *
       `;
-      createdTopics.push(topicRowToTopic(topicRow));
-    }
+  createdTopics.push(topicRowToTopic(topicRow));
+}
 ```
 
 Update the return value (line 163) to include topics:
 
 ```typescript
-    return { ...rowToCollection(col), statuses: createdStatuses, topics: createdTopics };
+return { ...rowToCollection(col), statuses: createdStatuses, topics: createdTopics };
 ```
 
 **Step 4: Add collection topic CRUD routes**
@@ -409,6 +412,7 @@ git commit -m "feat: batch-load collection topics, copy from template, add CRUD 
 ### Task 4: Server — batch-load topics in templates routes
 
 **Files:**
+
 - Modify: `server/routes/templates.ts`
 
 **Step 1: Add `TemplateTopicRow` interface and helper**
@@ -440,34 +444,34 @@ function topicRowToTopic(row: TemplateTopicRow) {
 In the handler (lines 85-136), update the `Promise.all` at line 101 to include topics:
 
 ```typescript
-  const [statusRows, taskRows, topicRows] = await Promise.all([
-    sql<TemplateStatusRow[]>`
+const [statusRows, taskRows, topicRows] = await Promise.all([
+  sql<TemplateStatusRow[]>`
       SELECT * FROM template_statuses
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
-    sql<TemplateTaskRow[]>`
+  sql<TemplateTaskRow[]>`
       SELECT * FROM template_tasks
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
-    sql<TemplateTopicRow[]>`
+  sql<TemplateTopicRow[]>`
       SELECT * FROM template_topics
       WHERE template_id = ANY(${templateIds})
       ORDER BY sort_order ASC
     `,
-  ]);
+]);
 ```
 
 After the `tasksByTemplate` Map building, add:
 
 ```typescript
-  const topicsByTemplate = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
-  for (const tr of topicRows) {
-    const list = topicsByTemplate.get(tr.template_id) ?? [];
-    list.push(topicRowToTopic(tr));
-    topicsByTemplate.set(tr.template_id, list);
-  }
+const topicsByTemplate = new Map<string, ReturnType<typeof topicRowToTopic>[]>();
+for (const tr of topicRows) {
+  const list = topicsByTemplate.get(tr.template_id) ?? [];
+  list.push(topicRowToTopic(tr));
+  topicsByTemplate.set(tr.template_id, list);
+}
 ```
 
 Update the response mapping to include topics:
@@ -490,24 +494,24 @@ Apply identical changes to the admin endpoint (lines 139-186): add topics to `Pr
 In the transaction in the POST handler (lines 210-253), after the tasks insertion loop (after line 250), add:
 
 ```typescript
-    const topics: ReturnType<typeof topicRowToTopic>[] = [];
-    if (body.topics && body.topics.length > 0) {
-      for (let i = 0; i < body.topics.length; i++) {
-        const t = body.topics[i];
-        const [tr] = await tx<TemplateTopicRow[]>`
+const topics: ReturnType<typeof topicRowToTopic>[] = [];
+if (body.topics && body.topics.length > 0) {
+  for (let i = 0; i < body.topics.length; i++) {
+    const t = body.topics[i];
+    const [tr] = await tx<TemplateTopicRow[]>`
           INSERT INTO template_topics (template_id, name, color, sort_order)
           VALUES (${row.id}, ${t.name}, ${t.color ?? null}, ${t.sortOrder ?? i})
           RETURNING *
         `;
-        topics.push(topicRowToTopic(tr));
-      }
-    }
+    topics.push(topicRowToTopic(tr));
+  }
+}
 ```
 
 Update the return value (line 252) to include topics:
 
 ```typescript
-    return { ...rowToTemplate(row), statuses, tasks, topics };
+return { ...rowToTemplate(row), statuses, tasks, topics };
 ```
 
 **Step 5: Verify build**
@@ -527,6 +531,7 @@ git commit -m "feat: batch-load template topics in GET, insert in POST"
 ### Task 5: Frontend types and API client
 
 **Files:**
+
 - Modify: `web/src/types.ts`
 - Modify: `web/src/api.ts`
 
@@ -602,10 +607,7 @@ export async function updateCollectionTopic(
   });
 }
 
-export async function deleteCollectionTopic(
-  collectionId: string,
-  topicId: string,
-): Promise<void> {
+export async function deleteCollectionTopic(collectionId: string, topicId: string): Promise<void> {
   await request<unknown>(`/collections/${collectionId}/topics/${topicId}`, { method: 'DELETE' });
 }
 ```
@@ -627,6 +629,7 @@ git commit -m "feat: add collection/template topic types and API client function
 ### Task 6: CreateCollectionModal component
 
 **Files:**
+
 - Create: `web/src/components/CreateCollectionModal.tsx`
 
 **Step 1: Create the component**
@@ -987,6 +990,7 @@ git commit -m "feat: add CreateCollectionModal with two-step template selection 
 ### Task 7: Refactor CollectionSwitcher to use CreateCollectionModal
 
 **Files:**
+
 - Modify: `web/src/components/CollectionSwitcher.tsx`
 - Modify: `web/src/App.tsx`
 
@@ -1002,33 +1006,35 @@ git commit -m "feat: add CreateCollectionModal with two-step template selection 
 8. Replace the entire `<div className="border-t border-zinc-800">` section (lines 152-241) — which contains the "Browse templates" button and the inline creation form — with:
 
 ```tsx
-          <div className="border-t border-zinc-800">
-            <button
-              onClick={() => {
-                setShowCreateModal(true);
-                setOpen(false);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors duration-150"
-            >
-              <Plus className="w-3 h-3" />
-              New collection
-            </button>
-          </div>
+<div className="border-t border-zinc-800">
+  <button
+    onClick={() => {
+      setShowCreateModal(true);
+      setOpen(false);
+    }}
+    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors duration-150"
+  >
+    <Plus className="w-3 h-3" />
+    New collection
+  </button>
+</div>
 ```
 
 9. After the `CollectionEditModal` render block (before closing `</div>`), add:
 
 ```tsx
-      {showCreateModal && (
-        <CreateCollectionModal
-          onCreated={(col) => {
-            onCollectionCreated(col);
-            onChange(col.id);
-            setShowCreateModal(false);
-          }}
-          onClose={() => setShowCreateModal(false)}
-        />
-      )}
+{
+  showCreateModal && (
+    <CreateCollectionModal
+      onCreated={(col) => {
+        onCollectionCreated(col);
+        onChange(col.id);
+        setShowCreateModal(false);
+      }}
+      onClose={() => setShowCreateModal(false)}
+    />
+  );
+}
 ```
 
 **Step 2: Update App.tsx**
@@ -1057,6 +1063,7 @@ git commit -m "refactor: replace inline collection form with CreateCollectionMod
 ### Task 8: AddTask — use collection topics
 
 **Files:**
+
 - Modify: `web/src/components/AddTask.tsx`
 - Modify: `web/src/App.tsx`
 
@@ -1083,11 +1090,11 @@ Update destructuring to use `activeCollection` instead of `activeCollectionId`.
 Inside the component, before the return, compute the topic options:
 
 ```typescript
-  const collectionTopics = activeCollection?.topics ?? [];
-  const useCollectionTopics = collectionTopics.length > 0;
-  const topicOptions = useCollectionTopics
-    ? collectionTopics.map((t) => ({ value: t.name, label: t.name, color: t.color }))
-    : TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null }));
+const collectionTopics = activeCollection?.topics ?? [];
+const useCollectionTopics = collectionTopics.length > 0;
+const topicOptions = useCollectionTopics
+  ? collectionTopics.map((t) => ({ value: t.name, label: t.name, color: t.color }))
+  : TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null }));
 ```
 
 Initialize topic state to the first available option:
@@ -1095,8 +1102,8 @@ Initialize topic state to the first available option:
 Change `const [topic, setTopic] = useState<Topic>('coding');` to:
 
 ```typescript
-  const defaultTopic = activeCollection?.topics?.[0]?.name ?? 'coding';
-  const [topic, setTopic] = useState<string>(defaultTopic);
+const defaultTopic = activeCollection?.topics?.[0]?.name ?? 'coding';
+const [topic, setTopic] = useState<string>(defaultTopic);
 ```
 
 **Step 3: Update the topic button rendering**
@@ -1104,22 +1111,22 @@ Change `const [topic, setTopic] = useState<Topic>('coding');` to:
 Replace the TOPICS mapping in the JSX (lines 77-91) with:
 
 ```tsx
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            {topicOptions.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setTopic(t.value)}
-                className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
-                  topic === t.value
-                    ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
-                    : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+  {topicOptions.map((t) => (
+    <button
+      key={t.value}
+      type="button"
+      onClick={() => setTopic(t.value)}
+      className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
+        topic === t.value
+          ? 'border-zinc-500 bg-zinc-800 text-zinc-100'
+          : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+      }`}
+    >
+      {t.label}
+    </button>
+  ))}
+</div>
 ```
 
 **Step 4: Update the createTask call**
@@ -1145,7 +1152,7 @@ Find the active collection from state and pass it:
 In the AddTask render block (lines 575-585), change:
 
 ```tsx
-  activeCollectionId={activeCollectionId}
+activeCollectionId = { activeCollectionId };
 ```
 
 to:
@@ -1171,6 +1178,7 @@ git commit -m "feat: AddTask uses collection-specific topics when available"
 ### Task 9: CollectionEditModal — add topics section
 
 **Files:**
+
 - Modify: `web/src/components/CollectionEditModal.tsx`
 
 **Step 1: Import topic API functions**
@@ -1197,8 +1205,8 @@ import type { Collection, CollectionStatus, CollectionTopic } from '../types';
 After the `statuses` state (line 63), add:
 
 ```typescript
-  const [topics, setTopics] = useState<CollectionTopic[]>(collection.topics ?? []);
-  const [topicColorPicker, setTopicColorPicker] = useState<string | null>(null);
+const [topics, setTopics] = useState<CollectionTopic[]>(collection.topics ?? []);
+const [topicColorPicker, setTopicColorPicker] = useState<string | null>(null);
 ```
 
 **Step 3: Add topic CRUD handlers**
@@ -1206,47 +1214,47 @@ After the `statuses` state (line 63), add:
 After the `handleDeleteStatus` function, add:
 
 ```typescript
-  async function handleAddTopic() {
-    try {
-      const created = await createCollectionTopic(collection.id, {
-        name: 'New Topic',
-        sortOrder: topics.length,
-      });
-      setTopics((prev) => [...prev, created]);
-    } catch {
-      // silently fail
-    }
+async function handleAddTopic() {
+  try {
+    const created = await createCollectionTopic(collection.id, {
+      name: 'New Topic',
+      sortOrder: topics.length,
+    });
+    setTopics((prev) => [...prev, created]);
+  } catch {
+    // silently fail
   }
+}
 
-  async function handleUpdateTopicName(topicId: string, newName: string) {
-    const trimmed = newName.trim();
-    if (!trimmed) return;
-    try {
-      const updated = await updateCollectionTopic(collection.id, topicId, { name: trimmed });
-      setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
-    } catch {
-      // silently fail
-    }
+async function handleUpdateTopicName(topicId: string, newName: string) {
+  const trimmed = newName.trim();
+  if (!trimmed) return;
+  try {
+    const updated = await updateCollectionTopic(collection.id, topicId, { name: trimmed });
+    setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
+  } catch {
+    // silently fail
   }
+}
 
-  async function handleUpdateTopicColor(topicId: string, newColor: string | null) {
-    try {
-      const updated = await updateCollectionTopic(collection.id, topicId, { color: newColor });
-      setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
-      setTopicColorPicker(null);
-    } catch {
-      // silently fail
-    }
+async function handleUpdateTopicColor(topicId: string, newColor: string | null) {
+  try {
+    const updated = await updateCollectionTopic(collection.id, topicId, { color: newColor });
+    setTopics((prev) => prev.map((t) => (t.id === topicId ? updated : t)));
+    setTopicColorPicker(null);
+  } catch {
+    // silently fail
   }
+}
 
-  async function handleDeleteTopic(topicId: string) {
-    try {
-      await deleteCollectionTopic(collection.id, topicId);
-      setTopics((prev) => prev.filter((t) => t.id !== topicId));
-    } catch {
-      // silently fail
-    }
+async function handleDeleteTopic(topicId: string) {
+  try {
+    await deleteCollectionTopic(collection.id, topicId);
+    setTopics((prev) => prev.filter((t) => t.id !== topicId));
+  } catch {
+    // silently fail
   }
+}
 ```
 
 **Step 4: Add topics UI section**
@@ -1254,58 +1262,56 @@ After the `handleDeleteStatus` function, add:
 After the Custom Statuses `</div>` (line 305) and before the Footer, add:
 
 ```tsx
-        {/* Topics */}
-        <div>
-          <label className="block text-xs text-zinc-400 mb-2 font-medium">
-            Topics ({topics.length})
-          </label>
-          <div className="space-y-2">
-            {topics.map((topic) => (
-              <div key={topic.id} className="flex items-center gap-2">
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setTopicColorPicker(topicColorPicker === topic.id ? null : topic.id)
-                    }
-                    className="w-5 h-5 rounded-full border border-zinc-600 flex-shrink-0"
-                    style={{ backgroundColor: topic.color ?? '#71717a' }}
-                  />
-                  {topicColorPicker === topic.id && (
-                    <div className="absolute top-7 left-0 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-2 w-48">
-                      <SwatchPicker
-                        selected={topic.color}
-                        onSelect={(c) => handleUpdateTopicColor(topic.id, c)}
-                        size="sm"
-                      />
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  defaultValue={topic.name}
-                  onBlur={(e) => handleUpdateTopicName(topic.id, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                  }}
-                  className="flex-1 px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
-                />
-                <button
-                  onClick={() => handleDeleteTopic(topic.id)}
-                  className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
+{
+  /* Topics */
+}
+<div>
+  <label className="block text-xs text-zinc-400 mb-2 font-medium">Topics ({topics.length})</label>
+  <div className="space-y-2">
+    {topics.map((topic) => (
+      <div key={topic.id} className="flex items-center gap-2">
+        <div className="relative">
           <button
-            onClick={handleAddTopic}
-            className="mt-2.5 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add topic
-          </button>
+            onClick={() => setTopicColorPicker(topicColorPicker === topic.id ? null : topic.id)}
+            className="w-5 h-5 rounded-full border border-zinc-600 flex-shrink-0"
+            style={{ backgroundColor: topic.color ?? '#71717a' }}
+          />
+          {topicColorPicker === topic.id && (
+            <div className="absolute top-7 left-0 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-2 w-48">
+              <SwatchPicker
+                selected={topic.color}
+                onSelect={(c) => handleUpdateTopicColor(topic.id, c)}
+                size="sm"
+              />
+            </div>
+          )}
         </div>
+        <input
+          type="text"
+          defaultValue={topic.name}
+          onBlur={(e) => handleUpdateTopicName(topic.id, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+          className="flex-1 px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
+        />
+        <button
+          onClick={() => handleDeleteTopic(topic.id)}
+          className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    ))}
+  </div>
+  <button
+    onClick={handleAddTopic}
+    className="mt-2.5 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+  >
+    <Plus className="w-3.5 h-3.5" />
+    Add topic
+  </button>
+</div>;
 ```
 
 **Step 5: Include topics in the `onSaved` callback**
@@ -1313,15 +1319,15 @@ After the Custom Statuses `</div>` (line 305) and before the Footer, add:
 In `handleSave`, update the `updated` object to include topics:
 
 ```typescript
-      const updated: Collection = {
-        ...collection,
-        name: name.trim(),
-        icon: icon || undefined,
-        color,
-        srEnabled,
-        statuses,
-        topics,
-      };
+const updated: Collection = {
+  ...collection,
+  name: name.trim(),
+  icon: icon || undefined,
+  color,
+  srEnabled,
+  statuses,
+  topics,
+};
 ```
 
 **Step 6: Verify build**

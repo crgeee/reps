@@ -44,6 +44,7 @@ Task 12 depends on all (save-as-template needs full flow).
 ### Task 0: Performance — Reduce API Calls + Code Splitting
 
 **Files:**
+
 - Modify: `web/src/App.tsx`
 - Modify: `web/src/api.ts`
 - Modify: `web/vite.config.ts`
@@ -58,7 +59,7 @@ In `web/src/App.tsx`, remove `getDueTasks()` from the parallel `Promise.all()` f
 // Remove: const dueTasks = await getDueTasks();
 // Replace with client-side derivation:
 const today = new Date().toISOString().split('T')[0];
-const dueTasks = tasks.filter(t => !t.completed && t.nextReview <= today);
+const dueTasks = tasks.filter((t) => !t.completed && t.nextReview <= today);
 ```
 
 Update the state: remove `dueTasks` as separate state, compute it with `useMemo` from `tasks`.
@@ -110,6 +111,7 @@ Run `npm run build:web` and check the output chunk sizes. Named imports like `im
 **Step 5: Add ETag middleware for API responses**
 
 Create `server/middleware/etag.ts` — a Hono middleware that:
+
 1. Intercepts GET responses
 2. Computes a hash of the JSON response body (use `crypto.createHash('md5')`)
 3. Sets `ETag` header with the hash
@@ -184,6 +186,7 @@ git commit -m "perf: add ETag caching, static asset headers, code splitting, red
 ### Task 1: Database Migration
 
 **Files:**
+
 - Create: `db/007-collection-templates.sql`
 
 **Step 1: Write the migration**
@@ -332,6 +335,7 @@ git commit -m "feat: add collection templates migration with seed data"
 ### Task 2: Zod Validation Schemas
 
 **Files:**
+
 - Modify: `server/validation.ts`
 
 **Step 1: Add template schemas after existing schemas**
@@ -341,7 +345,11 @@ Add these schemas to `server/validation.ts` after the existing `mockRespondSchem
 ```typescript
 export const templateStatusInput = z.object({
   name: z.string().min(1).max(100),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable()
+    .optional(),
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 
@@ -357,7 +365,10 @@ export const templateSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(500).nullable().optional(),
   icon: z.string().max(10).optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
   srEnabled: z.boolean().optional(),
   defaultView: z.enum(['list', 'board']).optional(),
   statuses: z.array(templateStatusInput).min(1).max(20),
@@ -368,7 +379,11 @@ export const patchTemplateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(500).nullable().optional(),
   icon: z.string().max(10).nullable().optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .nullable()
+    .optional(),
   srEnabled: z.boolean().optional(),
   defaultView: z.enum(['list', 'board']).optional(),
 });
@@ -384,7 +399,10 @@ export const patchTemplateTaskSchema = z.object({
 export const fromTemplateSchema = z.object({
   templateId: z.string().regex(UUID_RE),
   name: z.string().min(1).max(200).optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
 });
 ```
 
@@ -400,6 +418,7 @@ git commit -m "feat: add zod schemas for collection templates"
 ### Task 3: Frontend Types + API Client
 
 **Files:**
+
 - Modify: `web/src/types.ts`
 - Modify: `web/src/api.ts`
 
@@ -449,7 +468,13 @@ export interface CreateTemplateInput {
   srEnabled?: boolean;
   defaultView?: 'list' | 'board';
   statuses: { name: string; color?: string | null; sortOrder?: number }[];
-  tasks?: { title: string; description?: string; statusName: string; topic?: string; sortOrder?: number }[];
+  tasks?: {
+    title: string;
+    description?: string;
+    statusName: string;
+    topic?: string;
+    sortOrder?: number;
+  }[];
 }
 
 export interface CreateFromTemplateInput {
@@ -476,7 +501,10 @@ export async function createTemplate(input: CreateTemplateInput): Promise<Collec
   });
 }
 
-export async function updateTemplate(id: string, updates: Partial<CreateTemplateInput>): Promise<CollectionTemplate> {
+export async function updateTemplate(
+  id: string,
+  updates: Partial<CreateTemplateInput>,
+): Promise<CollectionTemplate> {
   return request<CollectionTemplate>(`/templates/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
@@ -488,14 +516,33 @@ export async function deleteTemplate(id: string): Promise<void> {
 }
 
 // Template tasks CRUD
-export async function createTemplateTask(templateId: string, input: { title: string; description?: string; statusName: string; topic?: string; sortOrder?: number }): Promise<TemplateTask> {
+export async function createTemplateTask(
+  templateId: string,
+  input: {
+    title: string;
+    description?: string;
+    statusName: string;
+    topic?: string;
+    sortOrder?: number;
+  },
+): Promise<TemplateTask> {
   return request<TemplateTask>(`/templates/${templateId}/tasks`, {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
-export async function updateTemplateTask(templateId: string, taskId: string, updates: Partial<{ title: string; description: string | null; statusName: string; topic: string; sortOrder: number }>): Promise<TemplateTask> {
+export async function updateTemplateTask(
+  templateId: string,
+  taskId: string,
+  updates: Partial<{
+    title: string;
+    description: string | null;
+    statusName: string;
+    topic: string;
+    sortOrder: number;
+  }>,
+): Promise<TemplateTask> {
   return request<TemplateTask>(`/templates/${templateId}/tasks/${taskId}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
@@ -507,7 +554,9 @@ export async function deleteTemplateTask(templateId: string, taskId: string): Pr
 }
 
 // Create collection from template
-export async function createCollectionFromTemplate(input: CreateFromTemplateInput): Promise<Collection> {
+export async function createCollectionFromTemplate(
+  input: CreateFromTemplateInput,
+): Promise<Collection> {
   return request<Collection>('/collections/from-template', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -536,6 +585,7 @@ git commit -m "feat: add template types and API client methods"
 ### Task 4: Server Routes — Template CRUD
 
 **Files:**
+
 - Create: `server/routes/templates.ts`
 - Modify: `server/index.ts` (register route)
 
@@ -650,12 +700,18 @@ templates.get('/', async (c) => {
   `;
 
   const templateIds = rows.map((r) => r.id);
-  const allStatuses = templateIds.length > 0
-    ? await sql<TemplateStatusRow[]>`SELECT * FROM template_statuses WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
-    : [];
-  const allTasks = templateIds.length > 0
-    ? await sql<TemplateTaskRow[]>`SELECT * FROM template_tasks WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
-    : [];
+  const allStatuses =
+    templateIds.length > 0
+      ? await sql<
+          TemplateStatusRow[]
+        >`SELECT * FROM template_statuses WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
+      : [];
+  const allTasks =
+    templateIds.length > 0
+      ? await sql<
+          TemplateTaskRow[]
+        >`SELECT * FROM template_tasks WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
+      : [];
 
   const statusesByTemplate = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
   for (const sr of allStatuses) {
@@ -670,11 +726,13 @@ templates.get('/', async (c) => {
     tasksByTemplate.set(tr.template_id, list);
   }
 
-  return c.json(rows.map((row) => ({
-    ...rowToTemplate(row),
-    statuses: statusesByTemplate.get(row.id) ?? [],
-    tasks: tasksByTemplate.get(row.id) ?? [],
-  })));
+  return c.json(
+    rows.map((row) => ({
+      ...rowToTemplate(row),
+      statuses: statusesByTemplate.get(row.id) ?? [],
+      tasks: tasksByTemplate.get(row.id) ?? [],
+    })),
+  );
 });
 
 // POST /templates — create custom template (max 1 for non-admin)
@@ -792,7 +850,9 @@ templates.post('/:id/tasks', async (c) => {
   const isAdmin = user?.isAdmin ?? false;
   const ownerWhere = isAdmin ? sql`` : sql`AND user_id = ${userId}`;
 
-  const [template] = await sql<TemplateRow[]>`SELECT id FROM collection_templates WHERE id = ${id} ${ownerWhere}`;
+  const [template] = await sql<
+    TemplateRow[]
+  >`SELECT id FROM collection_templates WHERE id = ${id} ${ownerWhere}`;
   if (!template) return c.json({ error: 'Template not found' }, 404);
 
   const raw = await c.req.json();
@@ -814,13 +874,16 @@ templates.patch('/:id/tasks/:taskId', async (c) => {
   const userId = c.get('userId') as string;
   const id = c.req.param('id');
   const taskId = c.req.param('taskId');
-  if (!validateUuid(id) || !validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
+  if (!validateUuid(id) || !validateUuid(taskId))
+    return c.json({ error: 'Invalid ID format' }, 400);
 
   const user = await getUserById(userId);
   const isAdmin = user?.isAdmin ?? false;
   const ownerWhere = isAdmin ? sql`` : sql`AND user_id = ${userId}`;
 
-  const [template] = await sql<TemplateRow[]>`SELECT id FROM collection_templates WHERE id = ${id} ${ownerWhere}`;
+  const [template] = await sql<
+    TemplateRow[]
+  >`SELECT id FROM collection_templates WHERE id = ${id} ${ownerWhere}`;
   if (!template) return c.json({ error: 'Template not found' }, 404);
 
   const raw = await c.req.json();
@@ -851,13 +914,16 @@ templates.delete('/:id/tasks/:taskId', async (c) => {
   const userId = c.get('userId') as string;
   const id = c.req.param('id');
   const taskId = c.req.param('taskId');
-  if (!validateUuid(id) || !validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
+  if (!validateUuid(id) || !validateUuid(taskId))
+    return c.json({ error: 'Invalid ID format' }, 400);
 
   const user = await getUserById(userId);
   const isAdmin = user?.isAdmin ?? false;
   const ownerWhere = isAdmin ? sql`` : sql`AND user_id = ${userId}`;
 
-  const [template] = await sql<TemplateRow[]>`SELECT id FROM collection_templates WHERE id = ${id} ${ownerWhere}`;
+  const [template] = await sql<
+    TemplateRow[]
+  >`SELECT id FROM collection_templates WHERE id = ${id} ${ownerWhere}`;
   if (!template) return c.json({ error: 'Template not found' }, 404);
 
   const [row] = await sql<TemplateTaskRow[]>`
@@ -879,12 +945,18 @@ templates.get('/admin/all', async (c) => {
     SELECT * FROM collection_templates ORDER BY is_system DESC, created_at ASC
   `;
   const templateIds = rows.map((r) => r.id);
-  const allStatuses = templateIds.length > 0
-    ? await sql<TemplateStatusRow[]>`SELECT * FROM template_statuses WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
-    : [];
-  const allTasks = templateIds.length > 0
-    ? await sql<TemplateTaskRow[]>`SELECT * FROM template_tasks WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
-    : [];
+  const allStatuses =
+    templateIds.length > 0
+      ? await sql<
+          TemplateStatusRow[]
+        >`SELECT * FROM template_statuses WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
+      : [];
+  const allTasks =
+    templateIds.length > 0
+      ? await sql<
+          TemplateTaskRow[]
+        >`SELECT * FROM template_tasks WHERE template_id = ANY(${templateIds}) ORDER BY sort_order ASC`
+      : [];
 
   const statusesByTemplate = new Map<string, ReturnType<typeof statusRowToStatus>[]>();
   for (const sr of allStatuses) {
@@ -899,11 +971,13 @@ templates.get('/admin/all', async (c) => {
     tasksByTemplate.set(tr.template_id, list);
   }
 
-  return c.json(rows.map((row) => ({
-    ...rowToTemplate(row),
-    statuses: statusesByTemplate.get(row.id) ?? [],
-    tasks: tasksByTemplate.get(row.id) ?? [],
-  })));
+  return c.json(
+    rows.map((row) => ({
+      ...rowToTemplate(row),
+      statuses: statusesByTemplate.get(row.id) ?? [],
+      tasks: tasksByTemplate.get(row.id) ?? [],
+    })),
+  );
 });
 
 export default templates;
@@ -927,6 +1001,7 @@ git commit -m "feat: add template CRUD server routes with task editing"
 ### Task 5: From-Template Endpoint
 
 **Files:**
+
 - Modify: `server/routes/collections.ts`
 
 **Step 1: Add the `POST /from-template` endpoint**
@@ -944,10 +1019,19 @@ collections.post('/from-template', async (c) => {
   const body = parsed.data;
 
   // Load template
-  const [template] = await sql<{
-    id: string; name: string; description: string | null; icon: string | null;
-    color: string | null; sr_enabled: boolean; default_view: string; is_system: boolean; user_id: string | null;
-  }[]>`
+  const [template] = await sql<
+    {
+      id: string;
+      name: string;
+      description: string | null;
+      icon: string | null;
+      color: string | null;
+      sr_enabled: boolean;
+      default_view: string;
+      is_system: boolean;
+      user_id: string | null;
+    }[]
+  >`
     SELECT * FROM collection_templates WHERE id = ${body.templateId}
     AND (is_system = true OR user_id = ${userId})
   `;
@@ -956,7 +1040,15 @@ collections.post('/from-template', async (c) => {
   const templateStatuses = await sql<{ name: string; color: string | null; sort_order: number }[]>`
     SELECT name, color, sort_order FROM template_statuses WHERE template_id = ${template.id} ORDER BY sort_order ASC
   `;
-  const templateTasks = await sql<{ title: string; description: string | null; status_name: string; topic: string; sort_order: number }[]>`
+  const templateTasks = await sql<
+    {
+      title: string;
+      description: string | null;
+      status_name: string;
+      topic: string;
+      sort_order: number;
+    }[]
+  >`
     SELECT title, description, status_name, topic, sort_order FROM template_tasks WHERE template_id = ${template.id} ORDER BY sort_order ASC
   `;
 
@@ -991,7 +1083,11 @@ collections.post('/from-template', async (c) => {
       `;
     }
 
-    return { ...rowToCollection(col), defaultView: col.default_view ?? 'list', statuses: createdStatuses };
+    return {
+      ...rowToCollection(col),
+      defaultView: col.default_view ?? 'list',
+      statuses: createdStatuses,
+    };
   });
 
   return c.json(result, 201);
@@ -1020,6 +1116,7 @@ git commit -m "feat: add POST /collections/from-template transactional endpoint"
 ### Task 6: Update Frontend Collection Type
 
 **Files:**
+
 - Modify: `web/src/types.ts`
 
 **Step 1: Add `defaultView` to Collection interface**
@@ -1031,7 +1128,7 @@ export interface Collection {
   icon?: string;
   color?: string;
   srEnabled: boolean;
-  defaultView?: 'list' | 'board';  // NEW
+  defaultView?: 'list' | 'board'; // NEW
   sortOrder: number;
   createdAt: string;
   statuses: CollectionStatus[];
@@ -1050,6 +1147,7 @@ git commit -m "feat: add defaultView to Collection type"
 ### Task 7: TemplateCard Component
 
 **Files:**
+
 - Create: `web/src/components/TemplateCard.tsx`
 
 **Step 1: Create the component**
@@ -1057,6 +1155,7 @@ git commit -m "feat: add defaultView to Collection type"
 A card that displays a template's preview: icon, name, description, colored status chips, SR badge, view indicator, task count. Receives `template` and `onClick` props. Use Tailwind dark theme consistent with existing components.
 
 Layout:
+
 - Top: icon (large emoji) + name
 - Middle: description text (zinc-400, 2-line clamp)
 - Status chips row: small colored pills with status names
@@ -1077,6 +1176,7 @@ git commit -m "feat: add TemplateCard component"
 ### Task 8: CreateFromTemplate Modal Component
 
 **Files:**
+
 - Create: `web/src/components/CreateFromTemplate.tsx`
 
 **Step 1: Create the component**
@@ -1084,6 +1184,7 @@ git commit -m "feat: add TemplateCard component"
 A modal/overlay that appears when a template card is clicked. Props: `template: CollectionTemplate`, `onCreated: (collection: Collection) => void`, `onClose: () => void`.
 
 Layout:
+
 - Template icon + name as header
 - Name input (pre-filled with template name, editable)
 - Color picker (8 swatches, pre-filled with template color)
@@ -1106,6 +1207,7 @@ git commit -m "feat: add CreateFromTemplate modal component"
 ### Task 9: TemplateGallery View Component
 
 **Files:**
+
 - Create: `web/src/components/TemplateGallery.tsx`
 
 **Step 1: Create the component**
@@ -1113,6 +1215,7 @@ git commit -m "feat: add CreateFromTemplate modal component"
 Full-screen gallery view. Props: `onCollectionCreated: (collection: Collection) => void`, `onNavigate: (view: string) => void`, `user: User`.
 
 Layout:
+
 - Header: "Start a new collection" h1 + "Choose a template or start from scratch" subtitle
 - If user has a custom template: "My Templates" section header + card
 - "Templates" section header + grid of system template cards
@@ -1135,6 +1238,7 @@ git commit -m "feat: add TemplateGallery view component"
 ### Task 10: Wire Up App.tsx + CollectionSwitcher
 
 **Files:**
+
 - Modify: `web/src/App.tsx`
 - Modify: `web/src/components/CollectionSwitcher.tsx`
 
@@ -1185,6 +1289,7 @@ git commit -m "feat: wire template gallery into app routing and collection switc
 ### Task 11: Admin Template Management
 
 **Files:**
+
 - Modify: `web/src/components/Settings.tsx`
 
 **Step 1: Add template management section to admin panel**
@@ -1210,6 +1315,7 @@ git commit -m "feat: add admin template management to settings panel"
 ### Task 12: Save As Template
 
 **Files:**
+
 - Modify: `web/src/components/CollectionEditModal.tsx`
 
 **Step 1: Add "Save as Template" button**
@@ -1224,6 +1330,7 @@ In the CollectionEditModal, add a button after the existing form fields (before 
 - Disabled state while saving
 
 The button should call `createTemplate()` from api.ts with:
+
 ```typescript
 {
   name: collection.name,

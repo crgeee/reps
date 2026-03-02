@@ -15,6 +15,7 @@
 ### Task 1: Database Migration — Add Preference Columns
 
 **Files:**
+
 - Create: `db/010-user-preferences.sql`
 
 **Step 1: Create migration file**
@@ -49,24 +50,25 @@ git commit -m "feat: add user preference columns for date/time format, start of 
 ### Task 2: Server — Extend User Type & Update Logic
 
 **Files:**
+
 - Modify: `server/auth/users.ts` (User interface lines 3-17, UserRow lines 19-33, rowToUser lines 35-51, updateUserProfile lines 74-110)
 
 **Step 1: Add fields to User interface (line 14, before createdAt)**
 
 ```typescript
-  timeFormat: string;
-  dateFormat: string;
-  startOfWeek: number;
-  language: string;
+timeFormat: string;
+dateFormat: string;
+startOfWeek: number;
+language: string;
 ```
 
 **Step 2: Add fields to UserRow interface (line 31, before created_at)**
 
 ```typescript
-  time_format: string;
-  date_format: string;
-  start_of_week: number;
-  language: string;
+time_format: string;
+date_format: string;
+start_of_week: number;
+language: string;
 ```
 
 **Step 3: Add fields to rowToUser (line 48, before createdAt)**
@@ -108,6 +110,7 @@ git commit -m "feat: extend User type with preference fields"
 ### Task 3: Server — Add Validation for New Fields
 
 **Files:**
+
 - Modify: `server/routes/users.ts` (updateProfileSchema lines 15-26)
 
 **Step 1: Add new fields to updateProfileSchema (line 25, before closing brace)**
@@ -141,15 +144,16 @@ git commit -m "feat: add validation for user preference fields"
 ### Task 4: Frontend — Extend User Type
 
 **Files:**
+
 - Modify: `web/src/types.ts` (User interface lines 215-229)
 
 **Step 1: Add fields to User interface (line 227, before createdAt)**
 
 ```typescript
-  timeFormat: string;
-  dateFormat: string;
-  startOfWeek: number;
-  language: string;
+timeFormat: string;
+dateFormat: string;
+startOfWeek: number;
+language: string;
 ```
 
 **Step 2: Commit**
@@ -164,6 +168,7 @@ git commit -m "feat: extend frontend User type with preference fields"
 ### Task 5: Frontend — Create Shared Settings Sub-Components
 
 **Files:**
+
 - Create: `web/src/components/settings/shared.tsx`
 
 **Step 1: Create the shared file**
@@ -227,6 +232,7 @@ git commit -m "refactor: extract shared settings sub-components"
 ### Task 6: Frontend — Create GeneralSettings Tab Component
 
 **Files:**
+
 - Create: `web/src/components/settings/GeneralSettings.tsx`
 
 **Step 1: Create the component**
@@ -234,6 +240,7 @@ git commit -m "refactor: extract shared settings sub-components"
 This component renders: Language, Date format, Time format, Start of week, Timezone, Theme, Daily review goal, and a Save button.
 
 Props:
+
 ```typescript
 interface Props {
   user: User;
@@ -250,6 +257,7 @@ Initialize from `user` props. On save, call `onSave({ language, dateFormat, time
 Use `SectionHeader` with `globe` icon and title "General". Use the `SelectRow` component for dropdowns. Reuse the existing daily goal stepper UI pattern.
 
 Options:
+
 - Language: `[{ value: 'en', label: 'English' }]`
 - Date format: `[{ value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' }, { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' }, { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' }]`
 - Time format: `[{ value: '12h', label: '12-hour (1:30 PM)' }, { value: '24h', label: '24-hour (13:30)' }]`
@@ -269,11 +277,13 @@ git commit -m "feat: create GeneralSettings tab component"
 ### Task 7: Frontend — Create NotificationSettings Tab Component
 
 **Files:**
+
 - Create: `web/src/components/settings/NotificationSettings.tsx`
 
 **Step 1: Create the component**
 
 Props:
+
 ```typescript
 interface Props {
   user: User;
@@ -297,11 +307,13 @@ git commit -m "feat: create NotificationSettings tab component"
 ### Task 8: Frontend — Create AccountSettings Tab Component
 
 **Files:**
+
 - Create: `web/src/components/settings/AccountSettings.tsx`
 
 **Step 1: Create the component**
 
 Props:
+
 ```typescript
 interface Props {
   user: User;
@@ -312,6 +324,7 @@ interface Props {
 ```
 
 Contains 3 sections (from existing Settings.tsx):
+
 1. **Profile** — Gravatar, display name input, email read-only. Save button after profile section.
 2. **Custom Topics** — Full existing topics section (lines 308-377). Fetches topics on mount, add/remove handlers.
 3. **Active Sessions** — Full existing sessions section (lines 379-403). Fetches sessions on mount, revoke handler.
@@ -330,11 +343,13 @@ git commit -m "feat: create AccountSettings tab component"
 ### Task 9: Frontend — Create AdminSettings Tab Component
 
 **Files:**
+
 - Create: `web/src/components/settings/AdminSettings.tsx`
 
 **Step 1: Create the component**
 
 Props:
+
 ```typescript
 interface Props {
   user: User;
@@ -355,11 +370,13 @@ git commit -m "feat: create AdminSettings tab component"
 ### Task 10: Frontend — Rewrite Settings.tsx as Layout Shell with Sidebar Navigation
 
 **Files:**
+
 - Modify: `web/src/components/Settings.tsx`
 
 **Step 1: Replace Settings.tsx with layout shell**
 
 Define tab type and list:
+
 ```typescript
 type SettingsTab = 'general' | 'notifications' | 'account' | 'admin';
 
@@ -376,6 +393,7 @@ State: `activeTab` (default `'general'`), `saving`, `saveMessage`.
 Shared `handleSave` function that calls `updateProfile` and `onUserUpdate`.
 
 **Desktop layout (md+):**
+
 ```
 ┌──────────────────────────────────────────┐
 │ Settings                                 │
@@ -392,6 +410,7 @@ Sidebar: `w-48 flex-shrink-0` column of buttons. Active tab gets `bg-zinc-800 te
 Content: `flex-1 min-w-0` renders the active tab component.
 
 **Mobile layout (<md):**
+
 - When no `activeTab` is drilled into (or on first load): show list of tabs as full-width buttons, each with icon, label, and chevron right.
 - When a tab is active: show back button ("← Settings") at top, then the tab content.
 - Use `mobileView` state: `null` (list) or `SettingsTab` (drilled in).
@@ -424,6 +443,7 @@ git commit -m "feat: rewrite Settings as tabbed layout with sidebar navigation"
 
 Run: `cd web && npx vite`
 Navigate to `#settings`. Verify:
+
 - Sidebar visible on left with 4 tabs (3 if not admin)
 - Clicking tabs switches content
 - Save works per tab
@@ -432,6 +452,7 @@ Navigate to `#settings`. Verify:
 **Step 2: Test mobile layout**
 
 Use browser devtools to set viewport to 375px wide. Verify:
+
 - Tab list shows as full-width buttons
 - Tapping drills into tab content with back button
 - Back button returns to tab list

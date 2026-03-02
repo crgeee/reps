@@ -55,13 +55,13 @@ ALTER TABLE collections ADD COLUMN default_view TEXT DEFAULT 'list';
 
 ### System template seed data
 
-| Template | SR | View | Statuses | Sample Tasks |
-|---|---|---|---|---|
-| Interview Prep | on | board | todo, studying, practicing, confident, mastered | "System design: URL shortener", "Behavioral: conflict resolution", "LeetCode: sliding window" |
-| Task Manager | off | list | backlog, todo, in-progress, done | "Set up project structure", "Write documentation", "Review pull requests" |
-| Bug Tracker | off | board | triage, investigating, fixing, in-review, verified, closed | "Login page 500 error", "Dark mode contrast issue" |
-| Learning Tracker | on | board | to-learn, learning, practicing, mastered | "TypeScript generics", "React Server Components" |
-| Reading List | off | list | to-read, reading, taking-notes, finished | "Designing Data-Intensive Applications", "Clean Architecture" |
+| Template         | SR  | View  | Statuses                                                   | Sample Tasks                                                                                  |
+| ---------------- | --- | ----- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Interview Prep   | on  | board | todo, studying, practicing, confident, mastered            | "System design: URL shortener", "Behavioral: conflict resolution", "LeetCode: sliding window" |
+| Task Manager     | off | list  | backlog, todo, in-progress, done                           | "Set up project structure", "Write documentation", "Review pull requests"                     |
+| Bug Tracker      | off | board | triage, investigating, fixing, in-review, verified, closed | "Login page 500 error", "Dark mode contrast issue"                                            |
+| Learning Tracker | on  | board | to-learn, learning, practicing, mastered                   | "TypeScript generics", "React Server Components"                                              |
+| Reading List     | off | list  | to-read, reading, taking-notes, finished                   | "Designing Data-Intensive Applications", "Clean Architecture"                                 |
 
 ## API Routes
 
@@ -81,6 +81,7 @@ POST   /collections/from-template    — body: { templateId, name?, color? }
 ```
 
 Single-transaction endpoint that:
+
 1. Loads template + statuses + tasks
 2. Creates collection (user can override name/color)
 3. Bulk-inserts statuses from template_statuses
@@ -108,6 +109,7 @@ PATCH  /admin/templates/:id          — edit any template
 Added to the `View` union type and hash routing.
 
 **Layout:**
+
 - Header: "Start a new collection" with subtitle
 - Card grid: 2-col mobile, 3-col desktop
 - Each card displays: icon, name, description, colored status chips, SR badge, view indicator, sample task count
@@ -115,6 +117,7 @@ Added to the `View` union type and hash routing.
 - "My Template" section above system templates if user has one
 
 **Card click flow:**
+
 1. Click template card
 2. Quick customize overlay: pre-filled name, color picker, "Create" button
 3. `POST /collections/from-template`
@@ -146,41 +149,61 @@ const templateSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(500).optional(),
   icon: z.string().max(10).optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
   srEnabled: z.boolean().optional(),
   defaultView: z.enum(['list', 'board']).optional(),
-  statuses: z.array(z.object({
-    name: z.string().min(1).max(100),
-    color: z.string().regex(/^#[0-9a-f]{6}$/i).nullable().optional(),
-    sortOrder: z.number().int().min(0).max(1000).optional(),
-  })).min(1).max(20),
-  tasks: z.array(z.object({
-    title: z.string().min(1).max(500),
-    description: z.string().max(2000).optional(),
-    statusName: z.string().min(1).max(100),
-    topic: z.string().max(100).optional(),
-  })).max(10).optional(),
+  statuses: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        color: z
+          .string()
+          .regex(/^#[0-9a-f]{6}$/i)
+          .nullable()
+          .optional(),
+        sortOrder: z.number().int().min(0).max(1000).optional(),
+      }),
+    )
+    .min(1)
+    .max(20),
+  tasks: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(500),
+        description: z.string().max(2000).optional(),
+        statusName: z.string().min(1).max(100),
+        topic: z.string().max(100).optional(),
+      }),
+    )
+    .max(10)
+    .optional(),
 });
 
 const fromTemplateSchema = z.object({
   templateId: z.string().uuid(),
   name: z.string().min(1).max(200).optional(),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .optional(),
 });
 ```
 
 ## File ownership
 
-| Component | Files |
-|---|---|
-| DB migration | `db/00X-collection-templates.sql` |
-| Server routes | `server/routes/templates.ts` |
-| Server route (from-template) | `server/routes/collections.ts` (add endpoint) |
-| Web types | `web/src/types.ts` (add Template types) |
-| Web API client | `web/src/api.ts` (add template methods) |
-| Gallery component | `web/src/components/TemplateGallery.tsx` |
-| Template card | `web/src/components/TemplateCard.tsx` |
-| Create overlay | `web/src/components/CreateFromTemplate.tsx` |
-| App routing | `web/src/App.tsx` (add view + nav entry) |
-| CollectionSwitcher | `web/src/components/CollectionSwitcher.tsx` (add link) |
-| CollectionEditModal | `web/src/components/CollectionEditModal.tsx` (save as template) |
+| Component                    | Files                                                           |
+| ---------------------------- | --------------------------------------------------------------- |
+| DB migration                 | `db/00X-collection-templates.sql`                               |
+| Server routes                | `server/routes/templates.ts`                                    |
+| Server route (from-template) | `server/routes/collections.ts` (add endpoint)                   |
+| Web types                    | `web/src/types.ts` (add Template types)                         |
+| Web API client               | `web/src/api.ts` (add template methods)                         |
+| Gallery component            | `web/src/components/TemplateGallery.tsx`                        |
+| Template card                | `web/src/components/TemplateCard.tsx`                           |
+| Create overlay               | `web/src/components/CreateFromTemplate.tsx`                     |
+| App routing                  | `web/src/App.tsx` (add view + nav entry)                        |
+| CollectionSwitcher           | `web/src/components/CollectionSwitcher.tsx` (add link)          |
+| CollectionEditModal          | `web/src/components/CollectionEditModal.tsx` (save as template) |

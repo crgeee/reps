@@ -14,11 +14,13 @@
 Replace the inline creation form in `CollectionSwitcher` with a proper modal.
 
 **Step 1 — Pick starting point**
+
 - Fetch templates on mount (same `getTemplates()` call)
 - Grid of `TemplateCard` components + a dashed "Blank collection" card
 - System templates and user templates in separate sections
 
 **Step 2 — Customize**
+
 - Name (pre-filled from template or empty)
 - Icon picker (12 emoji options, reuse from CollectionEditModal)
 - Color swatches
@@ -27,10 +29,12 @@ Replace the inline creation form in `CollectionSwitcher` with a proper modal.
 - Back button to step 1, Create button to submit
 
 **API calls** (both exist already):
+
 - Blank → `createCollection()`
 - From template → `createCollectionFromTemplate()`
 
 **CollectionSwitcher changes**:
+
 - Remove inline form state: `creating`, `newName`, `newColor`, `newSrEnabled`, `submitting`, the form JSX, `nameInputRef`
 - Merge "Browse templates" and "New collection" into a single "New collection" button that opens the modal
 - Remove `onBrowseTemplates` prop
@@ -65,13 +69,13 @@ ALTER TABLE tasks ADD CONSTRAINT tasks_topic_check CHECK (char_length(topic) > 0
 
 Seed template topics:
 
-| Template         | Topics                                  |
-|------------------|-----------------------------------------|
+| Template         | Topics                                    |
+| ---------------- | ----------------------------------------- |
 | Interview Prep   | Coding, System Design, Behavioral, Papers |
-| Task Manager     | Feature, Bug, Chore                     |
-| Bug Tracker      | Frontend, Backend, Infra                |
-| Learning Tracker | Concept, Practice, Project              |
-| Reading List     | Book, Paper, Article                    |
+| Task Manager     | Feature, Bug, Chore                       |
+| Bug Tracker      | Frontend, Backend, Infra                  |
+| Learning Tracker | Concept, Practice, Project                |
+| Reading List     | Book, Paper, Article                      |
 
 **Server changes**:
 
@@ -85,6 +89,7 @@ Seed template topics:
    - `DELETE /collections/:id/topics/:topicId` — remove
 
 **Performance notes**:
+
 - `GET /collections` adds ONE batch query (`WHERE collection_id = ANY(ids)`) — no N+1
 - `GET /templates` same pattern — one batch query for topics
 - `CreateCollectionModal` fetches templates once on open, not on every render
@@ -124,27 +129,29 @@ interface TemplateTopic {
 ```
 
 **AddTask changes**:
+
 - Accept `activeCollection: Collection | null` prop (instead of just `activeCollectionId`)
 - If `activeCollection?.topics.length > 0` → render those as topic buttons
 - Otherwise → fall back to global `TOPICS`
 - Topic value stored on task is the topic `name` string (matches existing behavior)
 
 **CollectionEditModal changes**:
+
 - Add "Topics" section below statuses (same UI pattern: editable name, color dot, delete, add)
 - CRUD via new collection topic endpoints
 
 ## Files changed
 
-| File | Change |
-|------|--------|
-| `db/008-collection-topics.sql` | New migration |
-| `server/routes/collections.ts` | Batch-load topics in GET, copy in from-template, new CRUD routes |
-| `server/routes/templates.ts` | Batch-load topics in GET, accept in POST |
-| `server/validation.ts` | Add topic schemas |
-| `web/src/types.ts` | Add CollectionTopic, TemplateTopic interfaces; extend Collection/Template |
-| `web/src/api.ts` | Add topic CRUD functions |
-| `web/src/components/CreateCollectionModal.tsx` | New — two-step modal |
-| `web/src/components/CollectionSwitcher.tsx` | Remove inline form, add modal trigger |
-| `web/src/components/CollectionEditModal.tsx` | Add topics section |
-| `web/src/components/AddTask.tsx` | Use collection topics when available |
-| `web/src/App.tsx` | Pass activeCollection to AddTask, remove onBrowseTemplates wiring |
+| File                                           | Change                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------- |
+| `db/008-collection-topics.sql`                 | New migration                                                             |
+| `server/routes/collections.ts`                 | Batch-load topics in GET, copy in from-template, new CRUD routes          |
+| `server/routes/templates.ts`                   | Batch-load topics in GET, accept in POST                                  |
+| `server/validation.ts`                         | Add topic schemas                                                         |
+| `web/src/types.ts`                             | Add CollectionTopic, TemplateTopic interfaces; extend Collection/Template |
+| `web/src/api.ts`                               | Add topic CRUD functions                                                  |
+| `web/src/components/CreateCollectionModal.tsx` | New — two-step modal                                                      |
+| `web/src/components/CollectionSwitcher.tsx`    | Remove inline form, add modal trigger                                     |
+| `web/src/components/CollectionEditModal.tsx`   | Add topics section                                                        |
+| `web/src/components/AddTask.tsx`               | Use collection topics when available                                      |
+| `web/src/App.tsx`                              | Pass activeCollection to AddTask, remove onBrowseTemplates wiring         |

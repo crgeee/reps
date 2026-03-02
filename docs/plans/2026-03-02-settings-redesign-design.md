@@ -18,6 +18,7 @@ The Settings page is a single scrolling page with Profile, Notifications, Custom
 ### Tab Structure (4 tabs)
 
 #### General (default) — Globe icon
+
 - **Language**: Dropdown, `English` only for now (schema supports future i18n)
 - **Date format**: `MM/DD/YYYY` | `DD/MM/YYYY` | `YYYY-MM-DD`
 - **Time format**: `12-hour` | `24-hour`
@@ -27,15 +28,18 @@ The Settings page is a single scrolling page with Profile, Notifications, Custom
 - **Daily review goal**: Existing stepper (1–50)
 
 #### Notifications — Bell icon
+
 - Daily briefing toggle (existing)
 - Weekly insight toggle (existing)
 
 #### Account — User icon
+
 - Profile card: Gravatar, display name input, email (read-only)
 - Custom topics: Existing add/remove with color swatches
 - Active sessions: Existing list with revoke
 
 #### Admin — Shield icon (visible only to admins)
+
 - Stats cards (existing)
 - User management (existing)
 - Template management (existing)
@@ -45,10 +49,10 @@ The Settings page is a single scrolling page with Profile, Notifications, Custom
 Add to `User` type and `users` DB table:
 
 ```typescript
-timeFormat: '12h' | '24h';       // default: '12h'
-dateFormat: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';  // default: 'MM/DD/YYYY'
-startOfWeek: 0 | 1;              // 0=Sunday (default), 1=Monday
-language: string;                 // default: 'en'
+timeFormat: '12h' | '24h'; // default: '12h'
+dateFormat: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'; // default: 'MM/DD/YYYY'
+startOfWeek: 0 | 1; // 0=Sunday (default), 1=Monday
+language: string; // default: 'en'
 ```
 
 DB migration adds columns with defaults so existing users are unaffected.

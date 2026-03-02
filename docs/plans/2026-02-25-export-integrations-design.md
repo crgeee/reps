@@ -24,13 +24,13 @@ Read-only sync out — reps remains the source of truth. Four features:
 
 New route file: `server/routes/export.ts`
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/export/calendar/:token.ics` | Token-in-URL | iCal feed (all incomplete tasks' next_review dates) |
-| `GET` | `/export/tasks/:id/event.ics` | Bearer | Single task .ics download |
-| `GET` | `/export/tasks.md` | Bearer | Bulk Markdown export |
-| `POST` | `/export/calendar/token` | Bearer | Generate/regenerate subscription token |
-| `GET` | `/export/calendar/token` | Bearer | Get current token |
+| Method | Path                          | Auth         | Description                                         |
+| ------ | ----------------------------- | ------------ | --------------------------------------------------- |
+| `GET`  | `/export/calendar/:token.ics` | Token-in-URL | iCal feed (all incomplete tasks' next_review dates) |
+| `GET`  | `/export/tasks/:id/event.ics` | Bearer       | Single task .ics download                           |
+| `GET`  | `/export/tasks.md`            | Bearer       | Bulk Markdown export                                |
+| `POST` | `/export/calendar/token`      | Bearer       | Generate/regenerate subscription token              |
+| `GET`  | `/export/calendar/token`      | Bearer       | Get current token                                   |
 
 ### iCal Feed (`/export/calendar/:token.ics`)
 
@@ -92,6 +92,7 @@ New "Export & Integrations" view (`web/src/components/ExportView.tsx`):
   - "Download Markdown" button (triggers GET /export/tasks.md)
 
 Per-task actions on TaskCard:
+
 - "Add to Calendar" icon — downloads .ics
 - "Copy" icon — copies formatted text to clipboard
 
@@ -102,9 +103,9 @@ Navigation: Add 'export' to View type, add to MORE_NAV array.
 Hand-rolled (no library). Utility functions in export route:
 
 ```typescript
-function generateVEvent(task: Task): string
-function generateCalendar(tasks: Task[]): string
-function formatIcsDate(dateStr: string): string  // YYYY-MM-DD → YYYYMMDD
+function generateVEvent(task: Task): string;
+function generateCalendar(tasks: Task[]): string;
+function formatIcsDate(dateStr: string): string; // YYYY-MM-DD → YYYYMMDD
 ```
 
 All-day events: `DTSTART;VALUE=DATE:20260226` (no time component).
