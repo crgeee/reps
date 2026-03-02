@@ -23,6 +23,10 @@ const updateProfileSchema = z.object({
   notifyDaily: z.boolean().optional(),
   notifyWeekly: z.boolean().optional(),
   dailyReviewGoal: z.number().int().min(1).max(50).optional(),
+  timeFormat: z.enum(['12h', '24h']).optional(),
+  dateFormat: z.enum(['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD']).optional(),
+  startOfWeek: z.number().int().min(0).max(1).optional(),
+  language: z.enum(['en']).optional(),
 });
 
 const createTopicSchema = z.object({

@@ -65,9 +65,10 @@ auth.get('/verify', async (c) => {
     return c.redirect(`${appUrl}/#login?error=invalid`);
   }
 
+  const isProduction = process.env.NODE_ENV === 'production';
   setCookie(c, SESSION_COOKIE, result.sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'Lax',
     path: '/',
     maxAge: COOKIE_MAX_AGE,

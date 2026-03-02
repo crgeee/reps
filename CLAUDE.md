@@ -379,15 +379,14 @@ PORT=3000
 
 ## Git Workflow
 
-**All changes MUST go through a worktree + branch + PR. Never commit directly to main.**
+**All changes MUST go through a branch + PR. Never commit directly to main.**
 
-1. **Create a worktree** — always work in `.worktrees/<feature-name>` (directory is in `.gitignore`)
-2. **Create a feature branch** — `git worktree add .worktrees/<name> -b <branch-name>`
-3. **Do all work in the worktree** — commits, builds, verification
-4. **Rebase onto `origin/main`** before pushing — ensure branch is up to date
-5. **Push and create a PR** — use `gh pr create`
-6. **Merge the PR** — use `gh pr merge`
-7. **Never push directly to main** — even for small fixes
+1. **Create a feature branch** — `git checkout -b <branch-name>`
+2. **Do all work on the branch** — commits, builds, verification
+3. **Push and create a PR** — `git push -u origin <branch-name>` then `gh pr create`
+4. **Merge the PR** — use `gh pr merge`
+5. **Switch back to main** — `git checkout main && git pull`
+6. **Never push directly to main** — even for small fixes
 
 ---
 
