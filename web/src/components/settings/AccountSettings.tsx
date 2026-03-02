@@ -9,6 +9,7 @@ import {
   deleteCustomTopic,
 } from '../../api';
 import { parseUserAgent, formatRelative } from '../../utils/format';
+import { logger } from '../../logger';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import SaveIndicator from '../SaveIndicator';
 import { SectionHeader, ListRow } from './shared';
@@ -52,8 +53,8 @@ export default function AccountSettings({ user, onProfileUpdate }: Props) {
     setSessionsLoading(true);
     try {
       setSessions(await getUserSessions());
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to load sessions', { error: String(err) });
     } finally {
       setSessionsLoading(false);
     }
@@ -63,8 +64,8 @@ export default function AccountSettings({ user, onProfileUpdate }: Props) {
     setTopicsLoading(true);
     try {
       setTopics(await getCustomTopics());
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to load topics', { error: String(err) });
     } finally {
       setTopicsLoading(false);
     }
@@ -79,8 +80,8 @@ export default function AccountSettings({ user, onProfileUpdate }: Props) {
     try {
       await deleteUserSession(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to revoke session', { sessionId: id, error: String(err) });
     }
   }
 
@@ -105,8 +106,8 @@ export default function AccountSettings({ user, onProfileUpdate }: Props) {
     try {
       await deleteCustomTopic(id);
       setTopics((prev) => prev.filter((t) => t.id !== id));
-    } catch {
-      /* ignore */
+    } catch (err) {
+      logger.error('Failed to delete topic', { topicId: id, error: String(err) });
     }
   }
 

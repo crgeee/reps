@@ -8,7 +8,7 @@ import AdminSettings from './settings/AdminSettings';
 
 type SettingsTab = 'general' | 'notifications' | 'account' | 'admin';
 
-const TABS: { id: SettingsTab; label: string; icon: JSX.Element; adminOnly?: boolean }[] = [
+const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
   {
     id: 'general',
     label: 'General',

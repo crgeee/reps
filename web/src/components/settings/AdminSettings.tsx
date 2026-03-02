@@ -120,8 +120,11 @@ export default function AdminSettings({ user }: Props) {
                               au.id === u.id ? { ...au, isAdmin: !au.isAdmin } : au,
                             ),
                           );
-                        } catch {
-                          /* ignore */
+                        } catch (err) {
+                          logger.error('Failed to update admin status', {
+                            userId: u.id,
+                            error: String(err),
+                          });
                         }
                       }}
                       className={`p-1.5 rounded-md transition-colors ${
@@ -165,8 +168,11 @@ export default function AdminSettings({ user }: Props) {
                               au.id === u.id ? { ...au, isBlocked: !au.isBlocked } : au,
                             ),
                           );
-                        } catch {
-                          /* ignore */
+                        } catch (err) {
+                          logger.error('Failed to update block status', {
+                            userId: u.id,
+                            error: String(err),
+                          });
                         }
                       }}
                       className={`p-1.5 rounded-md transition-colors ${
@@ -238,7 +244,11 @@ export default function AdminSettings({ user }: Props) {
                       setAdminTemplates((cur) => cur.filter((at) => at.id !== t.id));
                       try {
                         await adminDeleteTemplate(t.id);
-                      } catch {
+                      } catch (err) {
+                        logger.error('Failed to delete template', {
+                          templateId: t.id,
+                          error: String(err),
+                        });
                         setAdminTemplates(prev);
                       }
                     }}

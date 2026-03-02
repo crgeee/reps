@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { X, Plus, Trash2, LayoutTemplate } from 'lucide-react';
 import { logger } from '../logger';
 import type { Collection, CollectionStatus, CollectionTopic } from '../types';
@@ -16,8 +16,7 @@ import {
 } from '../api';
 
 import { errorMessage, ICON_OPTIONS } from '../utils/ui';
-import SaveIndicator from './SaveIndicator';
-import { useAutoSave } from '../hooks/useAutoSave';
+import ButtonSpinner from './ButtonSpinner';
 
 interface CollectionEditModalProps {
   collection: Collection;
@@ -69,43 +68,43 @@ export default function CollectionEditModal({
   const [statuses, setStatuses] = useState<CollectionStatus[]>(collection.statuses ?? []);
   const [topics, setTopics] = useState<CollectionTopic[]>(collection.topics ?? []);
   const [topicColorPicker, setTopicColorPicker] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [statusColorPicker, setStatusColorPicker] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [templateSaving, setTemplateSaving] = useState(false);
   const [templateMessage, setTemplateMessage] = useState<string | null>(null);
 
-  const autoSaveValues = useMemo(
-    () => ({ name, color, srEnabled, icon }),
-    [name, color, srEnabled, icon],
-  );
-
-  const handleAutoSave = useCallback(
-    async (values: typeof autoSaveValues) => {
+  async function handleSave() {
+    if (!name.trim() || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
       await updateCollection(collection.id, {
-        name: values.name.trim(),
-        color: values.color,
-        srEnabled: values.srEnabled,
-        icon: values.icon || undefined,
+        name: name.trim(),
+        color,
+        srEnabled,
+        icon: icon || undefined,
       });
       const updated: Collection = {
         ...collection,
-        name: values.name.trim(),
-        icon: values.icon || undefined,
-        color: values.color,
-        srEnabled: values.srEnabled,
+        name: name.trim(),
+        icon: icon || undefined,
+        color,
+        srEnabled,
         statuses,
         topics,
       };
       onSaved(updated);
-    },
-    [collection, onSaved, statuses, topics],
-  );
-
-  const { status: saveStatus, error: saveError } = useAutoSave({
-    values: autoSaveValues,
-    onSave: handleAutoSave,
-    enabled: !!name.trim(),
-  });
+    } catch (err) {
+      logger.error('Failed to save collection', {
+        collectionId: collection.id,
+        error: String(err),
+      });
+      setError(errorMessage(err, 'Failed to save collection'));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleDeleteCollection() {
     if (!confirm('Delete this collection and all its tasks?')) return;
@@ -448,14 +447,29 @@ export default function CollectionEditModal({
         {error && <p className="text-xs text-red-400">{error}</p>}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800">
           <button
             onClick={handleDeleteCollection}
-            className="text-sm text-red-400 hover:text-red-300 transition-colors"
+            className="text-sm text-red-400 hover:text-red-300 transition-colors py-2 sm:py-0"
           >
             Delete collection
           </button>
-          <SaveIndicator status={saveStatus} error={saveError} />
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 sm:flex-initial px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!name.trim() || saving}
+              className="flex-1 sm:flex-initial px-5 py-2 bg-zinc-100 text-zinc-900 text-sm font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {saving && <ButtonSpinner />}
+              Save
+            </button>
+          </div>
         </div>
 
         {/* Save as Template */}

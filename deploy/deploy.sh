@@ -38,9 +38,12 @@ cp package.json dist/package.json
 echo "→ Building web..."
 npm run build:web
 
-echo "→ Checking nginx config..."
+echo "→ Syncing nginx config..."
+sudo cp /etc/nginx/sites-available/reps /etc/nginx/sites-available/reps.bak
+sudo cp deploy/nginx.conf /etc/nginx/sites-available/reps
 if ! sudo nginx -t; then
-  echo "✗ nginx config test failed"
+  echo "✗ nginx config test failed — rolling back"
+  sudo cp /etc/nginx/sites-available/reps.bak /etc/nginx/sites-available/reps
   exit 1
 fi
 sudo systemctl reload nginx
