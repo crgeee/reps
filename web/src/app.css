@@ -12,6 +12,12 @@ body {
   background-color: #09090b; /* zinc-950 */
 }
 
+button,
+[role='button'],
+a[href] {
+  cursor: pointer;
+}
+
 html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

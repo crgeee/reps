@@ -4,12 +4,13 @@ import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
 import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
-import { Flame, Info } from 'lucide-react';
+import { Flame, Info, Brain } from 'lucide-react';
 
 type View =
   | 'dashboard'
   | 'tasks'
   | 'review'
+  | 'practice'
   | 'add'
   | 'progress'
   | 'calendar'
@@ -145,6 +146,20 @@ export default function Dashboard({
           </span>
         </button>
       )}
+
+      {/* ── Practice CTA ── */}
+      <button
+        onClick={() => onNavigate('practice' as View)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/15 transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <Brain className="w-4 h-4 text-purple-400" />
+          <span className="text-purple-200 font-semibold text-sm">Practice Interview</span>
+        </div>
+        <span className="text-purple-400/60 text-sm group-hover:text-purple-300 transition-colors">
+          Mock session <span className="ml-1 text-purple-400/40">→</span>
+        </span>
+      </button>
 
       {/* ── Topic breakdown ── */}
       <div>

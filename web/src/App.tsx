@@ -18,7 +18,7 @@ import DeviceApproval from './components/DeviceApproval';
 import Footer from './components/Footer';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
-import { Home, ListTodo, Plus, GraduationCap, BarChart3 } from 'lucide-react';
+import { Home, ListTodo, Plus, BarChart3 } from 'lucide-react';
 
 const ReviewSession = lazy(() => import('./components/ReviewSession'));
 const CalendarView = lazy(() => import('./components/CalendarView'));
@@ -29,6 +29,7 @@ type View =
   | 'dashboard'
   | 'tasks'
   | 'review'
+  | 'practice'
   | 'add'
   | 'progress'
   | 'calendar'
@@ -43,6 +44,7 @@ const VALID_VIEWS = new Set<string>([
   'dashboard',
   'tasks',
   'review',
+  'practice',
   'add',
   'progress',
   'calendar',
@@ -59,14 +61,13 @@ const VALID_VIEWS = new Set<string>([
 
 const LEGACY_REDIRECTS: Record<string, View> = {
   board: 'tasks',
-  mock: 'review',
+  mock: 'practice',
 };
 
 const BOTTOM_NAV_ITEMS: { view: View; label: string; Icon: typeof Home }[] = [
   { view: 'dashboard', label: 'Home', Icon: Home },
   { view: 'tasks', label: 'Tasks', Icon: ListTodo },
   { view: 'add', label: 'Add', Icon: Plus },
-  { view: 'review', label: 'Review', Icon: GraduationCap },
   { view: 'progress', label: 'Progress', Icon: BarChart3 },
 ];
 
@@ -80,7 +81,6 @@ function getViewFromHash(): View {
 const NAV_ITEMS: { view: View; label: string }[] = [
   { view: 'dashboard', label: 'Dashboard' },
   { view: 'tasks', label: 'Tasks' },
-  { view: 'review', label: 'Review' },
   { view: 'progress', label: 'Progress' },
   { view: 'calendar', label: 'Calendar' },
 ];
@@ -340,6 +340,22 @@ export default function App() {
                 {label}
               </button>
             ))}
+            {filteredDueTasks.length > 0 && (
+              <button
+                onClick={() => setView('review')}
+                aria-current={view === 'review' ? 'page' : undefined}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                  view === 'review'
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-900'
+                }`}
+              >
+                Review
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">
+                  {filteredDueTasks.length}
+                </span>
+              </button>
+            )}
           </nav>
 
           {/* Desktop add + settings + sign out */}
@@ -465,6 +481,25 @@ export default function App() {
                     {label}
                   </button>
                 ))}
+                {filteredDueTasks.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setView('review');
+                      setMobileMenuOpen(false);
+                    }}
+                    aria-current={view === 'review' ? 'page' : undefined}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
+                      view === 'review'
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    Review
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">
+                      {filteredDueTasks.length}
+                    </span>
+                  </button>
+                )}
                 <div className="border-t border-zinc-800 mt-1 pt-1">
                   <button
                     onClick={() => {
@@ -591,6 +626,22 @@ export default function App() {
                       fetchData();
                       setView('dashboard');
                     }}
+                    mode="review"
+                  />
+                </Suspense>
+              )}
+              {view === 'practice' && (
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-6 w-6 border-2 border-zinc-500 border-t-zinc-200 rounded-full" />
+                    </div>
+                  }
+                >
+                  <ReviewSession
+                    dueTasks={[]}
+                    onComplete={() => setView('dashboard')}
+                    mode="practice"
                   />
                 </Suspense>
               )}

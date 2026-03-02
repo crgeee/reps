@@ -24,49 +24,16 @@ import ScoreCard from './ScoreCard';
 interface ReviewSessionProps {
   dueTasks: Task[];
   onComplete: () => void;
+  mode?: 'review' | 'practice';
 }
 
-type ReviewMode = 'review' | 'practice';
-
-export default function ReviewSession({ dueTasks, onComplete }: ReviewSessionProps) {
-  const [mode, setMode] = useState<ReviewMode>('review');
-
+export default function ReviewSession({
+  dueTasks,
+  onComplete,
+  mode = 'review',
+}: ReviewSessionProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Mode toggle */}
-      <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-full sm:w-fit">
-        <button
-          onClick={() => setMode('review')}
-          className={`flex-1 sm:flex-initial px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-            mode === 'review'
-              ? 'bg-zinc-700 text-zinc-100 shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-          }`}
-        >
-          Review
-          {dueTasks.length > 0 && (
-            <span
-              className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                mode === 'review' ? 'bg-amber-500/20 text-amber-300' : 'bg-zinc-800 text-zinc-500'
-              }`}
-            >
-              {dueTasks.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setMode('practice')}
-          className={`flex-1 sm:flex-initial px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-            mode === 'practice'
-              ? 'bg-zinc-700 text-zinc-100 shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-          }`}
-        >
-          <Brain className="w-3.5 h-3.5" />
-          Practice
-        </button>
-      </div>
-
       {mode === 'review' ? (
         <SpacedReview dueTasks={dueTasks} onComplete={onComplete} />
       ) : (
