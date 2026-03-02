@@ -248,6 +248,28 @@ export default function App() {
     return activeStatuses.map((s) => ({ value: s.name, label: formatStatusLabel(s.name) }));
   }, [activeStatuses]);
 
+  // Privacy and Terms are accessible without auth
+  if (view === 'privacy' || view === 'terms') {
+    const PageComponent = view === 'privacy' ? PrivacyPolicy : TermsOfService;
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex-1">
+          <button
+            onClick={() => {
+              window.location.hash = '';
+              setView('dashboard');
+            }}
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-6 flex items-center gap-1"
+          >
+            ← Back
+          </button>
+          <PageComponent />
+        </div>
+        <Footer onNavigate={(v) => setView(v as View)} />
+      </div>
+    );
+  }
+
   // Show loading spinner while checking auth
   if (authLoading) {
     return (
@@ -706,8 +728,6 @@ export default function App() {
                 <Settings user={user} onUserUpdate={handleUserUpdate} />
               )}
               {view === 'device-approve' && <DeviceApproval />}
-              {view === 'privacy' && <PrivacyPolicy />}
-              {view === 'terms' && <TermsOfService />}
             </div>
           </ErrorBoundary>
         )}
