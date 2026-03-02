@@ -9,7 +9,7 @@ import type {
   MockSession,
   MockScore,
 } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, getTopicLabel } from '../types';
+import { TOPICS, getTopicLabel, getTopicColor } from '../types';
 import {
   getQuestion,
   evaluateAnswer,
@@ -468,8 +468,8 @@ function PracticeMode() {
                       : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${TOPIC_COLORS[t]}`} />
-                  {TOPIC_LABELS[t]}
+                  <span className={`w-2 h-2 rounded-full ${getTopicColor(t)}`} />
+                  {getTopicLabel(t)}
                 </button>
               ))}
             </div>
@@ -521,7 +521,7 @@ function PracticeMode() {
               <Brain className="w-4 h-4 text-purple-400" />
               <span className="text-xs text-zinc-500 uppercase tracking-wider">Interviewer</span>
               <span className="ml-auto text-xs text-zinc-400">
-                {TOPIC_LABELS[topic]} · {difficulty}
+                {getTopicLabel(topic)} · {difficulty}
               </span>
             </div>
             <p className="text-zinc-100 text-base leading-relaxed whitespace-pre-wrap">

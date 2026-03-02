@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import type { Task, Streaks } from '../types';
-import { TOPICS, TOPIC_LABELS, TOPIC_COLORS, getTopicColor } from '../types';
+import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
-import { Flame } from 'lucide-react';
+import { logger } from '../logger';
+import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
+import { Flame, Info } from 'lucide-react';
 
 type View =
   | 'dashboard'
@@ -19,6 +21,7 @@ interface DashboardProps {
   dueTasks: Task[];
   onStartReview: () => void;
   onNavigate: (view: View) => void;
+  onTopicClick?: (topic: string) => void;
   activeCollectionId?: string | null;
 }
 
@@ -37,6 +40,7 @@ export default function Dashboard({
   dueTasks,
   onStartReview,
   onNavigate,
+  onTopicClick,
   activeCollectionId,
 }: DashboardProps) {
   const [streaks, setStreaks] = useState<Streaks | null>(null);
@@ -44,15 +48,17 @@ export default function Dashboard({
   useEffect(() => {
     getStreaks(activeCollectionId ?? undefined)
       .then(setStreaks)
-      .catch(() => null);
+      .catch((e) => {
+        logger.error('Failed to load streaks', { error: String(e) });
+      });
   }, [activeCollectionId]);
 
   const overdueTasks = dueTasks.filter(isOverdue);
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
-  const topicStats = TOPICS.map((topic) => {
-    const topicTasks = tasks.filter((t) => t.topic === topic);
+  const topicMap = useGroupedTasksByTopic(tasks);
+  const topicStats = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
     const done = topicTasks.filter((t) => t.completed).length;
     const due = topicTasks.filter(
       (t) => !t.completed && new Date(t.nextReview) <= new Date(),
@@ -70,7 +76,7 @@ export default function Dashboard({
       pct: total > 0 ? Math.round((done / total) * 100) : 0,
       avgEF,
     };
-  }).filter((s) => s.total > 0);
+  });
 
   const streakActive = streaks && streaks.currentStreak > 0;
 
@@ -143,9 +149,17 @@ export default function Dashboard({
       {/* ── Topic breakdown ── */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium">
-            Topics
-          </h2>
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium">
+              Topics
+            </h2>
+            <span className="group relative">
+              <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400 cursor-help transition-colors" />
+              <span className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] rounded-md shadow-lg whitespace-nowrap z-50">
+                Tasks grouped by topic. Click a row to filter your task list.
+              </span>
+            </span>
+          </div>
           <button
             onClick={() => onNavigate('progress')}
             className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-wider"
@@ -155,17 +169,21 @@ export default function Dashboard({
         </div>
         <div className="border border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-800/60 bg-zinc-900/40">
           {topicStats.map(({ topic, done, due, total, pct, avgEF }) => (
-            <div key={topic} className="flex items-center gap-3 px-3 py-2 text-xs">
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TOPIC_COLORS[topic]}`} />
-              <span className="text-zinc-300 w-24 truncate">{TOPIC_LABELS[topic]}</span>
+            <button
+              key={topic}
+              onClick={() => onTopicClick?.(topic)}
+              className="flex items-center gap-3 px-3 py-2 text-xs w-full text-left hover:bg-zinc-800/40 transition-colors cursor-pointer"
+            >
+              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(topic)}`} />
+              <span className="text-zinc-300 w-24 truncate">{getTopicLabel(topic)}</span>
               <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   role="progressbar"
                   aria-valuenow={pct}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`${TOPIC_LABELS[topic]} progress: ${pct}%`}
-                  className={`h-full rounded-full ${TOPIC_COLORS[topic]} opacity-80`}
+                  aria-label={`${getTopicLabel(topic)} progress: ${pct}%`}
+                  className={`h-full rounded-full ${getTopicColor(topic)} opacity-80`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -186,7 +204,7 @@ export default function Dashboard({
               >
                 EF {avgEF.toFixed(1)}
               </span>
-            </div>
+            </button>
           ))}
           {topicStats.length === 0 && (
             <div className="px-3 py-4 text-center text-zinc-500 text-xs">

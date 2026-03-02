@@ -1,4 +1,5 @@
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, useEffect, useMemo, memo, useCallback } from 'react';
+import { useTaskTopics } from '../hooks/useTaskTopics';
 import {
   DndContext,
   DragOverlay,
@@ -41,6 +42,7 @@ interface TaskListProps {
   onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
   onBackgroundRefresh?: () => void;
   collectionStatuses?: CollectionStatus[];
+  initialTopicFilter?: string | null;
 }
 
 const DEFAULT_STATUS_COLORS: Record<TaskStatus, string> = {
@@ -60,8 +62,18 @@ export default function TaskList({
   onOptimisticUpdate,
   onBackgroundRefresh,
   collectionStatuses,
+  initialTopicFilter,
 }: TaskListProps) {
   const { filters, setFilter, resetFilters, filtered, grouped } = useFilteredTasks(tasks);
+  const taskTopics = useTaskTopics(tasks);
+  const [appliedInitialFilter, setAppliedInitialFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialTopicFilter && initialTopicFilter !== appliedInitialFilter) {
+      setFilter('topic', initialTopicFilter as Topic | 'all');
+      setAppliedInitialFilter(initialTopicFilter);
+    }
+  }, [initialTopicFilter, appliedInitialFilter, setFilter]);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [layout, setLayout] = useState<LayoutMode>(() => {
@@ -126,6 +138,7 @@ export default function TaskList({
         resetFilters={resetFilters}
         hideStatus={layout === 'board'}
         statusOptions={statusOptions}
+        topics={taskTopics}
       />
 
       {/* Tag filter */}

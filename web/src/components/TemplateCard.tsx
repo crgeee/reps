@@ -1,4 +1,5 @@
 import type { CollectionTemplate } from '../types';
+import { pillStyle } from '../utils/ui';
 
 function pillStyle(color: string | null): React.CSSProperties {
   return {

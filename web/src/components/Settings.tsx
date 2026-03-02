@@ -16,6 +16,7 @@ import {
 } from '../api';
 import { buildTimezoneOptions } from '../utils/timezone';
 import { parseUserAgent, formatRelative } from '../utils/format';
+import { logger } from '../logger';
 
 const TIMEZONE_OPTIONS = buildTimezoneOptions();
 
@@ -88,13 +89,19 @@ export default function Settings({ user, onUserUpdate }: Props) {
     if (user.isAdmin) {
       getAdminUsers()
         .then(setAdminUsers)
-        .catch(() => {});
+        .catch((e) => {
+          logger.error('Failed to load admin users', { error: String(e) });
+        });
       getAdminStats()
         .then(setAdminStats)
-        .catch(() => {});
+        .catch((e) => {
+          logger.error('Failed to load admin stats', { error: String(e) });
+        });
       getAdminTemplates()
         .then(setAdminTemplates)
-        .catch(() => {});
+        .catch((e) => {
+          logger.error('Failed to load admin templates', { error: String(e) });
+        });
     }
   }, [fetchSessions, fetchTopics, user.isAdmin]);
 

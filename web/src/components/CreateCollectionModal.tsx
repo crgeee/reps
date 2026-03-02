@@ -5,24 +5,12 @@ import type { CollectionTemplate, Collection } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import { getTemplates, createCollection, createCollectionFromTemplate } from '../api';
 import TemplateCard from './TemplateCard';
+import { errorMessage, pillStyle, ICON_OPTIONS } from '../utils/ui';
 
 interface CreateCollectionModalProps {
   onCreated: (collection: Collection) => void;
   onClose: () => void;
 }
-
-function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof Error ? err.message : fallback;
-}
-
-function pillStyle(color: string | null): React.CSSProperties {
-  return {
-    backgroundColor: color ? `${color}33` : 'rgba(113, 113, 122, 0.2)',
-    color: color ?? '#a1a1aa',
-  };
-}
-
-const ICON_OPTIONS = ['', '📚', '💻', '🎯', '🧠', '📝', '🔬', '🎨', '⚡', '🏆', '📊', '🔧'];
 
 export default function CreateCollectionModal({ onCreated, onClose }: CreateCollectionModalProps) {
   const [step, setStep] = useState<'pick' | 'customize'>('pick');

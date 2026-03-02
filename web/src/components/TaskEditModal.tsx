@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import type { Task, Collection, Tag, Priority, CollectionStatus } from '../types';
 import {
   TOPICS,
-  TOPIC_LABELS,
+  getTopicLabel,
   PRIORITIES,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
@@ -52,6 +52,11 @@ export default function TaskEditModal({
           .sort((a: CollectionStatus, b: CollectionStatus) => a.sortOrder - b.sortOrder)
           .map((s: CollectionStatus) => s.name)
       : DEFAULT_STATUSES;
+
+  // Derive topic options from collection, with current topic always included
+  const collectionTopics = activeCollection?.topics?.map((t) => t.name) ?? [];
+  const topicList = collectionTopics.length > 0 ? collectionTopics : TOPICS;
+  const topicOptions = topicList.includes(topic) ? topicList : [topic, ...topicList];
 
   async function handleSave() {
     if (!title.trim()) return;
@@ -136,7 +141,7 @@ export default function TaskEditModal({
 
         {/* Topic pills */}
         <div className="flex flex-wrap gap-1.5">
-          {TOPICS.map((t) => (
+          {topicOptions.map((t) => (
             <button
               key={t}
               onClick={() => setTopic(t)}
@@ -146,7 +151,7 @@ export default function TaskEditModal({
                   : 'text-zinc-500 hover:text-zinc-300 bg-zinc-800/50'
               }`}
             >
-              {TOPIC_LABELS[t]}
+              {getTopicLabel(t)}
             </button>
           ))}
         </div>

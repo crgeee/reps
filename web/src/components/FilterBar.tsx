@@ -1,5 +1,5 @@
-import type { Topic } from '../types';
-import { TOPICS, TOPIC_LABELS, STATUSES, STATUS_LABELS } from '../types';
+import { getTopicLabel } from '../types';
+import { STATUSES, STATUS_LABELS } from '../types';
 import type { FilterState, DueFilter, SortField, GroupBy } from '../hooks/useFilteredTasks';
 
 interface FilterBarProps {
@@ -8,6 +8,8 @@ interface FilterBarProps {
   resetFilters: () => void;
   hideStatus?: boolean;
   statusOptions?: { value: string; label: string }[];
+  /** Dynamic topic list derived from actual tasks. Falls back to no topic chips if empty. */
+  topics?: string[];
 }
 
 const DUE_OPTIONS: { value: DueFilter; label: string }[] = [
@@ -31,6 +33,7 @@ export default function FilterBar({
   resetFilters,
   hideStatus,
   statusOptions,
+  topics = [],
 }: FilterBarProps) {
   const hasActiveFilters =
     filters.topic !== 'all' ||
@@ -59,9 +62,9 @@ export default function FilterBar({
           value={filters.topic}
           options={[
             { value: 'all' as const, label: 'All' },
-            ...TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t] })),
+            ...topics.map((t) => ({ value: t, label: getTopicLabel(t) })),
           ]}
-          onChange={(v) => setFilter('topic', v as Topic | 'all')}
+          onChange={(v) => setFilter('topic', v)}
         />
 
         {/* Status chips (hidden on board) */}
