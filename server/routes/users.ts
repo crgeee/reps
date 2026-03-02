@@ -26,7 +26,7 @@ const updateProfileSchema = z.object({
   timeFormat: z.enum(['12h', '24h']).optional(),
   dateFormat: z.enum(['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD']).optional(),
   startOfWeek: z.number().int().min(0).max(1).optional(),
-  language: z.string().max(10).optional(),
+  language: z.enum(['en']).optional(),
 });
 
 const createTopicSchema = z.object({
