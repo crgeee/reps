@@ -3,54 +3,33 @@ import { Brain, Sparkles, ListTodo } from 'lucide-react';
 import { sendMagicLink } from '../api';
 import Footer from './Footer';
 
-const RepsIconLarge = () => (
-  <svg className="w-12 h-12" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-    <rect width="32" height="32" rx="6" fill="#09090b" stroke="#27272a" strokeWidth="0.5" />
-    <text
-      x="16"
-      y="23"
-      fontFamily="system-ui"
-      fontWeight="800"
-      fontSize="22"
-      fill="#f59e0b"
-      textAnchor="middle"
-    >
-      r
-    </text>
-    <path
-      d="M24 8 C26 10, 26 13, 24 15"
-      stroke="#f59e0b"
-      strokeWidth="1.5"
-      fill="none"
-      strokeLinecap="round"
-      opacity="0.6"
-    />
-    <path
-      d="M26 7 C29 10, 29 14, 26 17"
-      stroke="#f59e0b"
-      strokeWidth="1.5"
-      fill="none"
-      strokeLinecap="round"
-      opacity="0.3"
-    />
-  </svg>
-);
+/** Logo: three ascending bars — stacking reps, rising mastery */
+function RepsLogo({ className = 'w-10 h-10' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="10" fill="#18181b" />
+      <rect x="8" y="24" width="6" height="8" rx="1.5" fill="#f59e0b" opacity="0.4" />
+      <rect x="17" y="18" width="6" height="14" rx="1.5" fill="#f59e0b" opacity="0.7" />
+      <rect x="26" y="10" width="6" height="22" rx="1.5" fill="#f59e0b" />
+    </svg>
+  );
+}
 
 const FEATURES = [
   {
     icon: ListTodo,
-    title: 'Organize Tasks',
-    description: 'Collections, boards, priorities, tags, and custom statuses.',
+    title: 'Organize',
+    description: 'Collections, boards, priorities, tags, and custom workflows.',
   },
   {
     icon: Brain,
-    title: 'Spaced Repetition',
-    description: 'SM-2 algorithm schedules reviews at optimal intervals.',
+    title: 'Remember',
+    description: 'SM-2 spaced repetition schedules reviews at the right time.',
   },
   {
     icon: Sparkles,
-    title: 'AI Coaching',
-    description: 'Claude-powered questions and real-time feedback.',
+    title: 'Practice',
+    description: 'AI-generated interview questions with instant evaluation.',
   },
 ];
 
@@ -77,24 +56,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col relative overflow-hidden">
+      {/* Ambient glow */}
+      <div
+        className="pointer-events-none absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-[0.07]"
+        style={{
+          background: 'radial-gradient(circle, #f59e0b 0%, transparent 70%)',
+        }}
+      />
+
       {/* Hero + Login */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
-        <RepsIconLarge />
-        <h1 className="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight">
-          Get your reps in.
+      <section className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center relative z-10">
+        <div className="anim-fade-in">
+          <RepsLogo className="w-14 h-14 mx-auto" />
+        </div>
+
+        <h1
+          className="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight anim-slide-up"
+          style={{ animationDelay: '50ms' }}
+        >
+          <span className="wordmark">reps</span>
         </h1>
-        <p className="mt-3 text-base text-zinc-400 max-w-md">
-          Track your interview prep with task management, spaced repetition, and AI coaching — all
-          in one place.
+
+        <p
+          className="mt-3 text-base sm:text-lg text-zinc-400 max-w-md anim-slide-up"
+          style={{ animationDelay: '100ms' }}
+        >
+          Track tasks. Build recall. Practice with AI.
+          <br />
+          <span className="text-zinc-500">Your interview prep, systematized.</span>
         </p>
 
         {/* Login Form */}
-        <div className="mt-8 w-full max-w-sm">
+        <div className="mt-8 w-full max-w-sm anim-slide-up" style={{ animationDelay: '150ms' }}>
           {sent ? (
-            <div>
-              <div className="p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
-                <p className="text-zinc-300 mb-1">Check your email</p>
+            <div className="anim-scale-in">
+              <div className="p-5 bg-zinc-900/80 border border-zinc-800 rounded-xl backdrop-blur-sm">
+                <p className="text-zinc-200 font-medium mb-1">Check your email</p>
                 <p className="text-zinc-500 text-sm">
                   We sent a sign-in link to <span className="text-zinc-300">{email}</span>.
                 </p>
@@ -114,7 +112,7 @@ export default function LoginPage() {
               {error && (
                 <div
                   role="alert"
-                  className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm"
+                  className="p-3 bg-red-950/80 border border-red-800 rounded-lg text-red-200 text-sm anim-scale-in"
                 >
                   {error}
                 </div>
@@ -130,12 +128,12 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+                className="w-full px-4 py-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition-all backdrop-blur-sm"
               />
               <button
                 type="submit"
                 disabled={sending || !email.trim()}
-                className="w-full py-3 bg-amber-500 text-zinc-950 font-semibold rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="glow-amber w-full py-3 bg-amber-500 text-zinc-950 font-semibold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {sending ? 'Sending...' : 'Get started'}
               </button>
@@ -145,11 +143,14 @@ export default function LoginPage() {
       </section>
 
       {/* Features */}
-      <section className="px-6 pb-16">
-        <div className="max-w-3xl mx-auto grid gap-4 sm:grid-cols-3">
+      <section className="px-6 pb-20 relative z-10">
+        <div className="max-w-xl mx-auto grid gap-3 sm:grid-cols-3 anim-stagger">
           {FEATURES.map((f) => (
-            <div key={f.title} className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-              <f.icon className="w-5 h-5 text-amber-500 mb-2" />
+            <div
+              key={f.title}
+              className="anim-slide-up group p-4 bg-zinc-900/40 border border-zinc-800/60 rounded-xl hover:border-zinc-700 transition-colors"
+            >
+              <f.icon className="w-5 h-5 text-amber-500/80 mb-2.5 group-hover:text-amber-400 transition-colors" />
               <h3 className="text-sm font-semibold text-zinc-200">{f.title}</h3>
               <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{f.description}</p>
             </div>
