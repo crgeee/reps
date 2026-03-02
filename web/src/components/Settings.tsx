@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { User, AdminUser, SessionInfo, CustomTopic, CollectionTemplate } from '../types';
 import { COLOR_SWATCHES } from '../types';
 import {
@@ -17,6 +17,8 @@ import {
 import { buildTimezoneOptions } from '../utils/timezone';
 import { parseUserAgent, formatRelative } from '../utils/format';
 import { logger } from '../logger';
+import SaveIndicator from './SaveIndicator';
+import { useAutoSave } from '../hooks/useAutoSave';
 
 const TIMEZONE_OPTIONS = buildTimezoneOptions();
 
@@ -38,11 +40,6 @@ export default function Settings({ user, onUserUpdate }: Props) {
   const [notifyDaily, setNotifyDaily] = useState(user.notifyDaily);
   const [notifyWeekly, setNotifyWeekly] = useState(user.notifyWeekly);
   const [dailyGoal, setDailyGoal] = useState(user.dailyReviewGoal);
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    text: string;
-    type: 'success' | 'error';
-  } | null>(null);
 
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -105,30 +102,31 @@ export default function Settings({ user, onUserUpdate }: Props) {
     }
   }, [fetchSessions, fetchTopics, user.isAdmin]);
 
-  async function handleSave() {
-    setSaving(true);
-    setSaveMessage(null);
-    try {
+  const autoSaveValues = useMemo(
+    () => ({ displayName, timezone, theme, notifyDaily, notifyWeekly, dailyGoal }),
+    [displayName, timezone, theme, notifyDaily, notifyWeekly, dailyGoal],
+  );
+
+  const handleAutoSave = useCallback(
+    async (values: typeof autoSaveValues) => {
       const updated = await updateProfile({
-        displayName: displayName.trim() || null,
-        timezone,
-        theme,
-        notifyDaily,
-        notifyWeekly,
-        dailyReviewGoal: dailyGoal,
+        displayName: values.displayName.trim() || null,
+        timezone: values.timezone,
+        theme: values.theme,
+        notifyDaily: values.notifyDaily,
+        notifyWeekly: values.notifyWeekly,
+        dailyReviewGoal: values.dailyGoal,
       } as Partial<User>);
       onUserUpdate(updated);
-      setSaveMessage({ text: 'Settings saved', type: 'success' });
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err) {
-      setSaveMessage({
-        text: err instanceof Error ? err.message : 'Failed to save',
-        type: 'error',
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+    [onUserUpdate],
+  );
+
+  const { status: saveStatus, error: saveError } = useAutoSave({
+    values: autoSaveValues,
+    onSave: handleAutoSave,
+    delay: 800,
+  });
 
   async function handleDeleteSession(id: string) {
     try {
@@ -287,22 +285,9 @@ export default function Settings({ user, onUserUpdate }: Props) {
         </div>
       </section>
 
-      {/* Save Button */}
+      {/* Save Indicator */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-2.5 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save changes'}
-        </button>
-        {saveMessage && (
-          <span
-            className={`text-sm ${saveMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
-          >
-            {saveMessage.text}
-          </span>
-        )}
+        <SaveIndicator status={saveStatus} error={saveError} />
       </div>
 
       {/* Custom Topics Section */}

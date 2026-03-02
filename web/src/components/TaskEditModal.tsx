@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { X } from 'lucide-react';
 import type { Task, Collection, Tag, Priority, CollectionStatus } from '../types';
 import {
@@ -12,6 +12,8 @@ import {
 import { updateTask, deleteTask, addNote, createTag } from '../api';
 import TagPicker from './TagPicker';
 import NotesList from './NotesList';
+import SaveIndicator from './SaveIndicator';
+import { useAutoSave } from '../hooks/useAutoSave';
 
 interface TaskEditModalProps {
   task: Task;
@@ -41,7 +43,7 @@ export default function TaskEditModal({
   const [description, setDescription] = useState(task.description ?? '');
   const [tagIds, setTagIds] = useState<string[]>(task.tags?.map((t) => t.id) ?? []);
   const [notes, setNotes] = useState(task.notes);
-  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Derive statuses from collection
   const activeCollection = collectionId ? collections.find((c) => c.id === collectionId) : null;
@@ -58,38 +60,43 @@ export default function TaskEditModal({
   const topicList = collectionTopics.length > 0 ? collectionTopics : TOPICS;
   const topicOptions = topicList.includes(topic) ? topicList : [topic, ...topicList];
 
-  async function handleSave() {
-    if (!title.trim()) return;
-    setSaving(true);
-    try {
+  const autoSaveValues = useMemo(
+    () => ({ title, topic, status, priority, deadline, collectionId, description, tagIds }),
+    [title, topic, status, priority, deadline, collectionId, description, tagIds],
+  );
+
+  const handleAutoSave = useCallback(
+    async (values: typeof autoSaveValues) => {
       await updateTask(task.id, {
-        title: title.trim(),
-        topic,
-        status: status as Task['status'],
-        priority,
-        deadline: deadline || undefined,
-        collectionId: collectionId || undefined,
-        description: description || undefined,
-        tagIds,
+        title: values.title.trim(),
+        topic: values.topic,
+        status: values.status as Task['status'],
+        priority: values.priority,
+        deadline: values.deadline || undefined,
+        collectionId: values.collectionId || undefined,
+        description: values.description || undefined,
+        tagIds: values.tagIds,
       } as Partial<Task> & { tagIds?: string[] });
       onSaved();
-      onClose();
-    } catch {
-      // stay open on error
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+    [task.id, onSaved],
+  );
+
+  const { status: saveStatus, error: saveError } = useAutoSave({
+    values: autoSaveValues,
+    onSave: handleAutoSave,
+    enabled: !!title.trim(),
+  });
 
   async function handleDelete() {
     if (!confirm('Delete this task?')) return;
-    setSaving(true);
+    setDeleting(true);
     try {
       await deleteTask(task.id);
       onSaved();
       onClose();
     } finally {
-      setSaving(false);
+      setDeleting(false);
     }
   }
 
@@ -277,26 +284,12 @@ export default function TaskEditModal({
         <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
           <button
             onClick={handleDelete}
-            disabled={saving}
+            disabled={deleting}
             className="text-sm text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
           >
             Delete task
           </button>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || !title.trim()}
-              className="px-4 py-2 text-sm bg-zinc-100 text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
+          <SaveIndicator status={saveStatus} error={saveError} />
         </div>
       </div>
     </div>
