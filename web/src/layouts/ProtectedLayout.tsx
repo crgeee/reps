@@ -159,19 +159,20 @@ export default function ProtectedLayout() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchData();
-      fetchCollections();
-      fetchTags();
+      Promise.all([fetchData(), fetchCollections(), fetchTags()]);
     }
   }, [isAuthenticated, fetchData, fetchCollections, fetchTags]);
 
-  function handleUserUpdate(_updated: User) {
-    refreshAuth();
-  }
+  const handleUserUpdate = useCallback(
+    (_updated: User) => {
+      refreshAuth();
+    },
+    [refreshAuth],
+  );
 
-  function handleTagCreated(tag: Tag) {
+  const handleTagCreated = useCallback((tag: Tag) => {
     setTags((prev) => [...prev, tag]);
-  }
+  }, []);
 
   // Derive due tasks client-side -- only from SR-enabled collections
   const today = new Date().toISOString().split('T')[0]!;
@@ -218,30 +219,56 @@ export default function ProtectedLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  const outletContext: ProtectedContext = {
-    tasks,
-    filteredTasks,
-    dueTasks,
-    filteredDueTasks,
-    collections,
-    tags,
-    activeCollectionId,
-    activeStatuses,
-    activeStatusOptions,
-    user,
-    fetchData,
-    refreshQuietly,
-    optimisticUpdateTask,
-    fetchCollections,
-    handleCollectionChange,
-    handleTagCreated,
-    handleUserUpdate,
-    handleCollectionCreated,
-    handleCollectionUpdated,
-    handleCollectionDeleted,
-    initialTopicFilter,
-    setInitialTopicFilter,
-  };
+  const outletContext: ProtectedContext = useMemo(
+    () => ({
+      tasks,
+      filteredTasks,
+      dueTasks,
+      filteredDueTasks,
+      collections,
+      tags,
+      activeCollectionId,
+      activeStatuses,
+      activeStatusOptions,
+      user,
+      fetchData,
+      refreshQuietly,
+      optimisticUpdateTask,
+      fetchCollections,
+      handleCollectionChange,
+      handleTagCreated,
+      handleUserUpdate,
+      handleCollectionCreated,
+      handleCollectionUpdated,
+      handleCollectionDeleted,
+      initialTopicFilter,
+      setInitialTopicFilter,
+    }),
+    [
+      tasks,
+      filteredTasks,
+      dueTasks,
+      filteredDueTasks,
+      collections,
+      tags,
+      activeCollectionId,
+      activeStatuses,
+      activeStatusOptions,
+      user,
+      fetchData,
+      refreshQuietly,
+      optimisticUpdateTask,
+      fetchCollections,
+      handleCollectionChange,
+      handleTagCreated,
+      handleUserUpdate,
+      handleCollectionCreated,
+      handleCollectionUpdated,
+      handleCollectionDeleted,
+      initialTopicFilter,
+      setInitialTopicFilter,
+    ],
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">

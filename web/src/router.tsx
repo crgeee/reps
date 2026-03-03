@@ -8,13 +8,13 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
-import AddTask from './components/AddTask';
-import TopicProgress from './components/TopicProgress';
-import Settings from './components/Settings';
 
+const AddTask = lazy(() => import('./components/AddTask'));
 const ReviewSession = lazy(() => import('./components/ReviewSession'));
+const TopicProgress = lazy(() => import('./components/TopicProgress'));
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const ExportView = lazy(() => import('./components/ExportView'));
+const Settings = lazy(() => import('./components/Settings'));
 const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
 
 function LazyFallback() {
@@ -69,13 +69,13 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: '/tasks', element: <TaskList /> },
-      { path: '/add', element: <AddTask /> },
+      { path: '/add', element: <Lazy><AddTask /></Lazy> },
       { path: '/review', element: <Lazy><ReviewSession /></Lazy> },
       { path: '/practice', element: <Lazy><ReviewSession /></Lazy> },
-      { path: '/progress', element: <TopicProgress /> },
+      { path: '/progress', element: <Lazy><TopicProgress /></Lazy> },
       { path: '/calendar', element: <Lazy><CalendarView /></Lazy> },
       { path: '/export', element: <Lazy><ExportView /></Lazy> },
-      { path: '/settings', element: <Settings /> },
+      { path: '/settings', element: <Lazy><Settings /></Lazy> },
       { path: '/templates', element: <Lazy><TemplateGallery /></Lazy> },
       // Catch-all: redirect unknown paths to dashboard
       { path: '*', element: <Navigate to="/" replace /> },
