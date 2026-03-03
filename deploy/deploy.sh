@@ -38,6 +38,23 @@ cp package.json dist/package.json
 echo "→ Building web..."
 npm run build:web
 
+echo "→ Restarting reps with pm2..."
+pm2 restart reps --update-env
+
+echo "→ Waiting for backend to be ready..."
+for i in $(seq 1 30); do
+  if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
+    echo "  Backend ready"
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    echo "✗ Backend failed to start after 30s"
+    pm2 logs reps --lines 20 --nostream
+    exit 1
+  fi
+  sleep 1
+done
+
 echo "→ Syncing nginx config..."
 sudo cp /etc/nginx/sites-available/reps /etc/nginx/sites-available/reps.bak
 sudo cp deploy/nginx.conf /etc/nginx/sites-available/reps
@@ -46,17 +63,39 @@ if ! sudo nginx -t; then
   sudo cp /etc/nginx/sites-available/reps.bak /etc/nginx/sites-available/reps
   exit 1
 fi
-sudo systemctl reload nginx
 
-echo "→ Restarting reps with pm2..."
-pm2 restart reps --update-env
+# Re-apply SSL cert (Certbot modifies the config in-place)
+if command -v certbot &>/dev/null; then
+  echo "→ Re-applying SSL certificate..."
+  if ! sudo certbot --nginx -d reps-prep.duckdns.org --non-interactive --agree-tos --email crgeee@gmail.com; then
+    echo "✗ Certbot failed — rolling back nginx config"
+    sudo cp /etc/nginx/sites-available/reps.bak /etc/nginx/sites-available/reps
+    sudo systemctl reload nginx
+    exit 1
+  fi
+fi
 
-echo "→ Verifying server is healthy..."
-sleep 3
+if ! sudo systemctl reload nginx; then
+  echo "✗ nginx reload failed — rolling back config"
+  sudo cp /etc/nginx/sites-available/reps.bak /etc/nginx/sites-available/reps
+  sudo systemctl reload nginx
+  exit 1
+fi
+
+echo "→ Verifying deployment..."
+sleep 2
 if curl -sf http://localhost:3000/health > /dev/null; then
-  echo "✓ reps deployed successfully"
+  echo "  ✓ Backend healthy"
 else
   echo "✗ Health check failed — server may not be running"
   pm2 logs reps --lines 20 --nostream
   exit 1
 fi
+
+if curl -sf https://reps-prep.duckdns.org/ > /dev/null 2>&1; then
+  echo "  ✓ HTTPS healthy"
+else
+  echo "  ⚠ HTTPS not reachable — check SSL certificate"
+fi
+
+echo "✓ reps deployed successfully"
