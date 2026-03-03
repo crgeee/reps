@@ -19,7 +19,11 @@ function daysUntil(dateStr: string): number {
 }
 
 export default function Dashboard() {
-  const { filteredTasks: tasks, filteredDueTasks: dueTasks, activeCollectionId } = useProtectedContext();
+  const {
+    filteredTasks: tasks,
+    filteredDueTasks: dueTasks,
+    activeCollectionId,
+  } = useProtectedContext();
   const navigate = useNavigate();
   const [streaks, setStreaks] = useState<Streaks | null>(null);
 

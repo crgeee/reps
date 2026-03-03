@@ -18,7 +18,8 @@ export default function AddTask() {
   const navigate = useNavigate();
 
   const activeCollection = useMemo(
-    () => (activeCollectionId ? collections.find((c) => c.id === activeCollectionId) ?? null : null),
+    () =>
+      activeCollectionId ? (collections.find((c) => c.id === activeCollectionId) ?? null) : null,
     [activeCollectionId, collections],
   );
 

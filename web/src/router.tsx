@@ -42,7 +42,10 @@ function RouteErrorFallback() {
       <div className="max-w-md text-center space-y-4">
         <h1 className="text-xl font-bold text-red-400">Error</h1>
         <p className="text-zinc-400">{message}</p>
-        <a href="/" className="inline-block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+        <a
+          href="/"
+          className="inline-block text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
           Go to dashboard
         </a>
       </div>
@@ -69,14 +72,70 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: '/tasks', element: <TaskList /> },
-      { path: '/add', element: <Lazy><AddTask /></Lazy> },
-      { path: '/review', element: <Lazy><ReviewSession /></Lazy> },
-      { path: '/practice', element: <Lazy><ReviewSession /></Lazy> },
-      { path: '/progress', element: <Lazy><TopicProgress /></Lazy> },
-      { path: '/calendar', element: <Lazy><CalendarView /></Lazy> },
-      { path: '/export', element: <Lazy><ExportView /></Lazy> },
-      { path: '/settings', element: <Lazy><Settings /></Lazy> },
-      { path: '/templates', element: <Lazy><TemplateGallery /></Lazy> },
+      {
+        path: '/add',
+        element: (
+          <Lazy>
+            <AddTask />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/review',
+        element: (
+          <Lazy>
+            <ReviewSession />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/practice',
+        element: (
+          <Lazy>
+            <ReviewSession />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/progress',
+        element: (
+          <Lazy>
+            <TopicProgress />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/calendar',
+        element: (
+          <Lazy>
+            <CalendarView />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/export',
+        element: (
+          <Lazy>
+            <ExportView />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/settings',
+        element: (
+          <Lazy>
+            <Settings />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/templates',
+        element: (
+          <Lazy>
+            <TemplateGallery />
+          </Lazy>
+        ),
+      },
       // Catch-all: redirect unknown paths to dashboard
       { path: '*', element: <Navigate to="/" replace /> },
     ],
