@@ -22,7 +22,16 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# 0. Check Docker is available
+# 0. Kill stale processes on our ports
+for port in 3000 5173; do
+  pid=$(lsof -ti :$port 2>/dev/null || true)
+  if [ -n "$pid" ]; then
+    echo -e "${DIM}Killing stale process on :$port (PID $pid)${RESET}"
+    kill "$pid" 2>/dev/null || true
+  fi
+done
+
+# 1. Check Docker is available
 if ! command -v docker &>/dev/null; then
   echo -e "${RED}ERROR: docker is not installed${RESET}"
   exit 1
