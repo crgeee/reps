@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { User } from '../types';
 import { updateProfile } from '../api';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import GeneralSettings from './settings/GeneralSettings';
 import NotificationSettings from './settings/NotificationSettings';
 import AccountSettings from './settings/AccountSettings';
@@ -108,12 +109,8 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; adminOnly?:
   },
 ];
 
-interface Props {
-  user: User;
-  onUserUpdate: (user: User) => void;
-}
-
-export default function Settings({ user, onUserUpdate }: Props) {
+export default function Settings() {
+  const { user, handleUserUpdate: onUserUpdate } = useProtectedContext();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [mobileView, setMobileView] = useState<SettingsTab | null>(null);
 

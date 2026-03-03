@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Best Open-Source Todoist Alternatives for Developers (2026)</title>
+  <meta name="description" content="A genuine comparison of the best open-source Todoist alternatives for developers in 2026. Covers reps, Vikunja, Planka, AppFlowy, Focalboard, Taskwarrior, and Super Productivity with a feature comparison table." />
+  <meta name="keywords" content="open source todoist alternatives, todoist alternative, open source task manager, developer task manager, spaced repetition, self-hosted todo app" />
+  <link rel="canonical" href="https://reps-prep.duckdns.org/blog/open-source-todoist-alternatives.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Best Open-Source Todoist Alternatives for Developers (2026)" />
+  <meta property="og:description" content="A genuine comparison of the best open-source Todoist alternatives for developers in 2026. Covers reps, Vikunja, Planka, AppFlowy, Focalboard, Taskwarrior, and Super Productivity." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://reps-prep.duckdns.org/blog/open-source-todoist-alternatives.html" />
+  <meta property="og:site_name" content="reps" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Best Open-Source Todoist Alternatives for Developers (2026)" />
+  <meta name="twitter:description" content="A genuine comparison of 7 open-source Todoist alternatives built for developers. Feature comparison, self-hosting, and how to choose." />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Best Open-Source Todoist Alternatives for Developers (2026)",
+    "description": "A genuine comparison of the best open-source Todoist alternatives for developers in 2026.",
+    "author": {
+      "@type": "Organization",
+      "name": "reps"
+    },
+    "datePublished": "2026-03-02",
+    "dateModified": "2026-03-02",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://reps-prep.duckdns.org/blog/open-source-todoist-alternatives.html"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "reps"
+    }
+  }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sora: ['Sora', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { font-family: 'Sora', sans-serif; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800">
+    <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-xl font-bold tracking-tight text-white hover:text-zinc-300 transition-colors">reps</a>
+      <a href="/blog/" class="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">&larr; Back to blog</a>
+    </div>
+  </header>
+
+  <!-- Article -->
+  <main class="max-w-3xl mx-auto px-6 py-12">
+    <article>
+
+      <!-- Article Header -->
+      <header class="mb-10">
+        <p class="text-sm text-zinc-500 mb-3">March 2, 2026 &middot; 12 min read</p>
+        <h1 class="text-3xl sm:text-4xl font-bold leading-tight text-white mb-4">Best Open-Source Todoist Alternatives for Developers (2026)</h1>
+        <p class="text-lg text-zinc-400 leading-relaxed">A fair, detailed comparison of seven open-source task managers that respect your data, your workflow, and your terminal.</p>
+      </header>
+
+      <!-- Article Body -->
+      <div class="prose prose-invert max-w-none space-y-6 text-zinc-300 leading-relaxed">
+
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">Why Developers Leave Todoist</h2>
+
+        <p>Todoist is a well-made product. It has clean design, reliable sync, and natural language input that genuinely saves time. Millions of people use it, and for good reason. But if you're a developer, you've probably hit its ceiling.</p>
+
+        <p>The free tier caps you at five projects. Reminders require a paid plan. There's no API access for automation without paying. The app is closed-source, which means you can't inspect what it does with your data, you can't self-host it, and you can't extend it in ways the product team hasn't anticipated. These aren't complaints about quality. They're structural limits that matter more to developers than to most users.</p>
+
+        <p>There's a deeper mismatch, too. Todoist was designed for general productivity. It handles grocery lists and work projects the same way. But developers have specific workflows that generic task managers ignore: learning systems that require spaced repetition, technical review cadences, CLI-first interaction patterns, and the need to integrate task management into existing toolchains through APIs and scripts.</p>
+
+        <p>This guide covers seven open-source alternatives, each with different strengths. We built one of them (reps), so we're upfront about that bias. But we've tried to write the comparison we wished existed when we were evaluating tools ourselves. Every recommendation here is genuine.</p>
+
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">What Developers Actually Need from a Task Manager</h2>
+
+        <p>Before jumping into specific tools, it helps to name the features that matter to developers but rarely show up in mainstream task apps.</p>
+
+        <h3 class="text-xl font-medium text-white mt-8 mb-3">Spaced Repetition for Learning Tasks</h3>
+        <p>If you're studying for interviews, learning a new framework, or reviewing system design concepts, you need more than a due date. You need a system that schedules reviews based on how well you know the material. The SM-2 algorithm, originally developed for flashcard software like Anki, is the gold standard here. It adjusts review intervals based on your self-assessed recall quality, so you spend more time on material you find difficult and less time on what you've already mastered. Very few task managers include this. Most developers end up maintaining a separate Anki deck alongside their task list, which fragments their workflow.</p>
+
+        <h3 class="text-xl font-medium text-white mt-8 mb-3">AI-Powered Assistance</h3>
+        <p>LLMs have become useful enough that a task manager without AI integration feels incomplete. The most valuable applications aren't chatbot novelties. They're concrete: generating practice interview questions tailored to your study topics, evaluating your written answers against structured rubrics, summarizing research papers into talking points, and providing daily coaching that adapts to your progress. The key is that AI should be embedded in the task workflow, not bolted on as a separate feature.</p>
+
+        <h3 class="text-xl font-medium text-white mt-8 mb-3">Keyboard-First Workflows</h3>
+        <p>Developers spend their days in terminals and editors. A task manager that requires a mouse and a browser tab for every interaction creates friction. CLI access isn't just a nice-to-have; for many developers, it's the primary interface. The ability to add a task, check what's due, or complete a review without leaving the terminal is a meaningful productivity gain.</p>
+
+        <h3 class="text-xl font-medium text-white mt-8 mb-3">API Access and Extensibility</h3>
+        <p>Task management doesn't exist in isolation. Developers want to trigger task creation from CI pipelines, sync task status with GitHub issues, generate reports from task data, and build custom integrations. A well-documented REST API isn't a premium feature. It's table stakes for developer tools.</p>
+
+        <h3 class="text-xl font-medium text-white mt-8 mb-3">Self-Hosting</h3>
+        <p>Running your own instance means your data stays on your infrastructure. It means no vendor lock-in, no surprise pricing changes, and no service shutdowns. For developers who already maintain a VPS or homelab, self-hosting a task manager is trivial. For everyone else, it's still worth having the option.</p>
+
+        <h3 class="text-xl font-medium text-white mt-8 mb-3">Markdown Support</h3>
+        <p>Developers think in Markdown. Task descriptions, notes, and documentation should support it natively, not through a rich text editor that generates opaque HTML.</p>
+
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">The Seven Best Open-Source Todoist Alternatives</h2>
+
+        <!-- reps -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">1. reps &mdash; Spaced Repetition Task Tracker with AI Coaching</h3>
+
+        <p><strong>Best for:</strong> Interview preparation, structured learning, developers who want spaced repetition built into their task manager.</p>
+
+        <p><strong>Stack:</strong> TypeScript, Hono, PostgreSQL, React, Vite</p>
+
+        <p>reps was built to solve a specific problem: tracking technical interview preparation with the rigor of a spaced repetition system and the intelligence of an AI coach. It implements the SM-2 algorithm directly in its task model. Every task carries spaced repetition metadata (repetitions, interval, ease factor, next review date), so the system automatically schedules when you should revisit each topic based on your performance history.</p>
+
+        <p>The AI integration uses Claude to generate realistic interview questions matched to your study topics, evaluate your written answers on clarity, specificity, and depth, and deliver daily coaching briefings that adapt to your progress. It's not a generic AI chatbot stapled to a task list. The AI is purpose-built for the prep workflow.</p>
+
+        <p>reps ships with both a CLI and a web UI. The CLI covers everything: adding tasks, reviewing due items, recording notes, checking your dashboard. The web interface adds visual progress tracking with per-topic breakdowns and a guided review session flow. Self-hosting requires a PostgreSQL database and a Node.js process. A single Hetzner VPS handles it comfortably.</p>
+
+        <p>The honest limitation: reps is focused. It's not trying to be a general-purpose project management tool. If you need Kanban boards, team collaboration, or calendar integrations, the other tools on this list will serve you better. reps is for people who want to get their reps in on learning tasks and want the system to be smart about scheduling.</p>
+
+        <p><strong>License:</strong> MIT<br />
+        <strong>GitHub:</strong> <a href="https://github.com/crgeee/reps" class="text-blue-400 hover:text-blue-300 underline">crgeee/reps</a></p>
+
+        <!-- Vikunja -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">2. Vikunja &mdash; Full-Featured Open-Source Task Management</h3>
+
+        <p><strong>Best for:</strong> General task management, teams who want a self-hosted Todoist replacement with full feature parity.</p>
+
+        <p><strong>Stack:</strong> Go (backend), Vue.js (frontend)</p>
+
+        <p>Vikunja is the closest thing to a direct open-source Todoist replacement. It supports lists, labels, priorities, due dates, reminders, attachments, and recurring tasks. It also goes beyond Todoist in several areas: Kanban boards, Gantt charts, CalDAV integration for syncing with calendar apps, and a link sharing system for collaboration without requiring accounts.</p>
+
+        <p>The Go backend is fast and memory-efficient. A Vikunja instance runs comfortably on minimal hardware. It supports SQLite, MySQL, and PostgreSQL for storage, and can authenticate against LDAP or OpenID Connect providers. The API is comprehensive and well-documented, making it straightforward to script against.</p>
+
+        <p>Vikunja's biggest strength is breadth. It covers the vast majority of use cases that Todoist handles and adds self-hosting on top. If you're looking for a general-purpose, full-featured task manager that you own and control, Vikunja is the most complete option available.</p>
+
+        <p>The trade-off is that it doesn't specialize. There's no spaced repetition, no AI features, and the CLI experience is secondary to the web UI. It's a very good general tool, not a specialized developer tool.</p>
+
+        <p><strong>License:</strong> AGPL-3.0<br />
+        <strong>Website:</strong> <a href="https://vikunja.io" class="text-blue-400 hover:text-blue-300 underline">vikunja.io</a></p>
+
+        <!-- Planka -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">3. Planka &mdash; Real-Time Kanban Boards</h3>
+
+        <p><strong>Best for:</strong> Visual project management, teams that prefer Trello-style boards, sprint planning.</p>
+
+        <p><strong>Stack:</strong> Node.js, React, PostgreSQL</p>
+
+        <p>Planka is an open-source Trello alternative with a focus on real-time collaboration. Changes appear instantly across all connected clients. It supports boards, lists, cards, labels, due dates, attachments, and card comments. The interface is clean and responsive, and it handles the core Kanban workflow without unnecessary complexity.</p>
+
+        <p>The deployment is straightforward: a Node.js process and a PostgreSQL database, packaged in a Docker Compose file. Planka supports user management with role-based access, so it works for small teams without requiring an external auth system.</p>
+
+        <p>If your task management style is primarily visual and board-based, Planka is excellent. It does one thing well. The limitation is that it's purely a Kanban tool. There's no list view, no calendar integration, no CLI, and no advanced features like recurring tasks or time tracking. It's Trello, self-hosted, and that's exactly what some people want.</p>
+
+        <p><strong>License:</strong> AGPL-3.0<br />
+        <strong>GitHub:</strong> <a href="https://github.com/plankanban/planka" class="text-blue-400 hover:text-blue-300 underline">plankanban/planka</a></p>
+
+        <!-- AppFlowy -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">4. AppFlowy &mdash; Open-Source Notion Alternative</h3>
+
+        <p><strong>Best for:</strong> Developers who want Notion's flexibility (documents + databases + tasks) without Notion's lock-in.</p>
+
+        <p><strong>Stack:</strong> Rust (backend), Flutter (desktop), Dart</p>
+
+        <p>AppFlowy positions itself as the open-source Notion alternative, and it's the most credible contender in that space. It combines rich document editing with database views (table, board, calendar, grid), so you can build a task management system that matches your exact workflow. The editor supports Markdown shortcuts, slash commands, and nested pages.</p>
+
+        <p>The Rust backend gives AppFlowy strong performance characteristics. The Flutter-based desktop app feels native on macOS, Linux, and Windows, avoiding the sluggishness that plagues many Electron-based tools. AppFlowy Cloud provides optional hosted sync, but you can run everything locally or self-host the backend.</p>
+
+        <p>AppFlowy's greatest strength is flexibility. Because it gives you building blocks (documents, databases, views) rather than a fixed task management structure, you can create a system that fits your workflow precisely. The trade-off is that you have to build that system yourself. Out of the box, AppFlowy is a blank workspace, not a task manager. It takes time to set up a productive configuration, and there's no built-in spaced repetition, AI assistance, or CLI access.</p>
+
+        <p>For developers who want a personal knowledge base and task manager in one tool and don't mind the setup investment, AppFlowy is compelling.</p>
+
+        <p><strong>License:</strong> AGPL-3.0<br />
+        <strong>Website:</strong> <a href="https://appflowy.io" class="text-blue-400 hover:text-blue-300 underline">appflowy.io</a></p>
+
+        <!-- Focalboard -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">5. Focalboard &mdash; Project Tracking for Mattermost Teams</h3>
+
+        <p><strong>Best for:</strong> Teams already using Mattermost, organizations that want project tracking integrated with their chat platform.</p>
+
+        <p><strong>Stack:</strong> Go (backend), React (frontend)</p>
+
+        <p>Focalboard, built by the Mattermost team, offers Kanban boards, table views, calendar views, and gallery views for managing tasks and projects. It ships as a standalone application or as a Mattermost plugin, which is where it really shines. When integrated with Mattermost, Focalboard provides project tracking directly inside the communication tool, reducing context switching.</p>
+
+        <p>The standalone version supports personal task management with multiple boards, filtered views, and card properties. It's less feature-rich than Vikunja for general task management, but the multi-view system (switching between board, table, and calendar for the same data) is genuinely useful for developers who think about tasks differently depending on context.</p>
+
+        <p>The main consideration is the Mattermost dependency for the best experience. As a standalone tool, Focalboard is competent but not exceptional. As a Mattermost integration, it's excellent. If your team uses Mattermost, Focalboard is an obvious choice. If not, the other tools on this list probably offer more value.</p>
+
+        <p><strong>License:</strong> MIT (personal), Mattermost license (plugin)<br />
+        <strong>Website:</strong> <a href="https://www.focalboard.com" class="text-blue-400 hover:text-blue-300 underline">focalboard.com</a></p>
+
+        <!-- Taskwarrior -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">6. Taskwarrior &mdash; The Terminal Purist's Task Manager</h3>
+
+        <p><strong>Best for:</strong> Developers who live in the terminal, power users who want maximum scriptability, CLI enthusiasts.</p>
+
+        <p><strong>Stack:</strong> C++</p>
+
+        <p>Taskwarrior is the veteran of this list and arguably the most powerful CLI task manager ever built. It's been in active development since 2006. Every interaction happens in the terminal. You add tasks, annotate them, filter them, report on them, and manage dependencies entirely through command-line arguments. The filtering system is remarkably expressive: you can construct complex queries combining tags, projects, priorities, dates, and custom attributes.</p>
+
+        <p>Taskwarrior stores data in plain text files, making it trivially easy to back up, version control, and script against. The plugin system (hooks) lets you run arbitrary scripts when tasks are added, modified, or completed. The community has built integrations with everything from i3 status bars to Vim plugins. Taskserver (taskd) provides optional sync between devices.</p>
+
+        <p>The learning curve is steep. Taskwarrior's power comes from its depth, and that depth requires investment. The documentation is thorough, but there's no GUI to fall back on. If you want a web interface, you'll need a third-party frontend like Taskwarrior-TUI or Inthe.AM. There's no built-in AI assistance, no spaced repetition, and the setup for sync across devices is nontrivial.</p>
+
+        <p>For terminal purists who want complete control over their task management and enjoy building their own workflows from composable primitives, Taskwarrior is unmatched. It's the Unix philosophy applied to task management.</p>
+
+        <p><strong>License:</strong> MIT<br />
+        <strong>Website:</strong> <a href="https://taskwarrior.org" class="text-blue-400 hover:text-blue-300 underline">taskwarrior.org</a></p>
+
+        <!-- Super Productivity -->
+        <h3 class="text-xl font-medium text-white mt-10 mb-3">7. Super Productivity &mdash; Time Tracking Meets Task Management</h3>
+
+        <p><strong>Best for:</strong> Freelancers tracking billable hours, developers who want integrated time tracking, anyone practicing timeboxing or Pomodoro.</p>
+
+        <p><strong>Stack:</strong> TypeScript, Angular, Electron</p>
+
+        <p>Super Productivity distinguishes itself by treating time tracking as a first-class feature alongside task management. Every task has an integrated timer. You can estimate time, track actual time spent, and compare the two. It supports timeboxing workflows with break reminders and idle detection. For freelancers who need to track billable hours, this alone might be reason enough to switch.</p>
+
+        <p>Beyond time tracking, Super Productivity includes standard task management features: projects, tags, subtasks, and notes. It integrates with Jira, GitHub, GitLab, Redmine, and OpenProject, pulling in issues as tasks and syncing status changes. This makes it viable as a personal frontend for your team's issue tracker.</p>
+
+        <p>The application runs as an Electron desktop app on macOS, Linux, and Windows, with an Android app for mobile. Data is stored locally by default, with optional sync through Google Drive, Dropbox, or WebDAV. There's no self-hosted server component, which is both a simplification (nothing to deploy) and a limitation (no web access from arbitrary devices).</p>
+
+        <p>The Electron dependency means it's heavier than a web app or native tool. The Angular codebase is large. But for the specific use case of task management with integrated time tracking and issue tracker sync, Super Productivity is the best open-source option available.</p>
+
+        <p><strong>License:</strong> MIT<br />
+        <strong>Website:</strong> <a href="https://super-productivity.com" class="text-blue-400 hover:text-blue-300 underline">super-productivity.com</a></p>
+
+        <!-- Comparison Table -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-6">Feature Comparison Table</h2>
+
+        <div class="overflow-x-auto rounded-lg border border-zinc-800">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="bg-zinc-900 text-zinc-300 border-b border-zinc-800">
+                <th class="px-4 py-3 font-semibold">Tool</th>
+                <th class="px-4 py-3 font-semibold">Self-Host</th>
+                <th class="px-4 py-3 font-semibold">Spaced Repetition</th>
+                <th class="px-4 py-3 font-semibold">AI Features</th>
+                <th class="px-4 py-3 font-semibold">CLI</th>
+                <th class="px-4 py-3 font-semibold">Language</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-zinc-800 bg-zinc-950">
+                <td class="px-4 py-3 font-medium text-white">reps</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3 text-green-400">SM-2 built-in</td>
+                <td class="px-4 py-3 text-green-400">Claude coaching</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3">TypeScript</td>
+              </tr>
+              <tr class="border-b border-zinc-800 bg-zinc-900/50">
+                <td class="px-4 py-3 font-medium text-white">Vikunja</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">Limited</td>
+                <td class="px-4 py-3">Go</td>
+              </tr>
+              <tr class="border-b border-zinc-800 bg-zinc-950">
+                <td class="px-4 py-3 font-medium text-white">Planka</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3">Node.js</td>
+              </tr>
+              <tr class="border-b border-zinc-800 bg-zinc-900/50">
+                <td class="px-4 py-3 font-medium text-white">AppFlowy</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-yellow-400">AI writing assist</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3">Rust / Dart</td>
+              </tr>
+              <tr class="border-b border-zinc-800 bg-zinc-950">
+                <td class="px-4 py-3 font-medium text-white">Focalboard</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3">Go</td>
+              </tr>
+              <tr class="border-b border-zinc-800 bg-zinc-900/50">
+                <td class="px-4 py-3 font-medium text-white">Taskwarrior</td>
+                <td class="px-4 py-3 text-green-400">Yes</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-green-400">CLI-only</td>
+                <td class="px-4 py-3">C++</td>
+              </tr>
+              <tr class="bg-zinc-950">
+                <td class="px-4 py-3 font-medium text-white">Super Productivity</td>
+                <td class="px-4 py-3 text-yellow-400">Local only</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3 text-zinc-500">No</td>
+                <td class="px-4 py-3">TypeScript</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- How to Choose -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">How to Choose: A Decision Framework</h2>
+
+        <p>With seven solid options, the choice depends less on which tool is "best" and more on which problem you're actually solving. Here's a framework for deciding.</p>
+
+        <div class="bg-zinc-900 rounded-lg border border-zinc-800 p-6 my-6 space-y-4">
+          <p class="text-zinc-200"><strong class="text-white">Are you preparing for technical interviews or studying with spaced repetition?</strong><br />
+          Use <strong>reps</strong>. It's the only tool on this list with SM-2 scheduling and AI-powered interview coaching built in. The others can track study tasks, but they can't space your reviews or generate practice questions.</p>
+
+          <p class="text-zinc-200"><strong class="text-white">Do you want a full Todoist replacement you can self-host?</strong><br />
+          Use <strong>Vikunja</strong>. It has the broadest feature set for general task management: lists, labels, reminders, CalDAV, collaboration. It's the safe, comprehensive choice.</p>
+
+          <p class="text-zinc-200"><strong class="text-white">Do you primarily work in Kanban boards?</strong><br />
+          Use <strong>Planka</strong> for the best Kanban experience, or <strong>Focalboard</strong> if your team already uses Mattermost.</p>
+
+          <p class="text-zinc-200"><strong class="text-white">Do you want a Notion-style workspace with documents and databases?</strong><br />
+          Use <strong>AppFlowy</strong>. It's more than a task manager, it's a full workspace. But you'll need to invest time structuring it to fit your workflow.</p>
+
+          <p class="text-zinc-200"><strong class="text-white">Do you live in the terminal and want maximum scriptability?</strong><br />
+          Use <strong>Taskwarrior</strong>. Nothing else comes close for CLI power users. It's been battle-tested for nearly two decades.</p>
+
+          <p class="text-zinc-200"><strong class="text-white">Do you need integrated time tracking?</strong><br />
+          Use <strong>Super Productivity</strong>. Its time tracking is the best of any open-source task manager, and the issue tracker integrations are a genuine differentiator.</p>
+        </div>
+
+        <p>One more piece of advice: don't over-optimize the choice. Pick the tool that solves your most pressing problem right now. All of these are open source, so switching costs are low. You can always migrate later.</p>
+
+        <!-- Why We Built reps -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">Why We Built reps</h2>
+
+        <p>We want to be transparent about why reps exists alongside tools that are more mature and more general.</p>
+
+        <p>The project started with a frustration: preparing for technical interviews requires a fundamentally different kind of task management than building a product or running a team. Interview prep is a learning problem, not a project management problem. You need to revisit topics on a schedule driven by your retention, not by arbitrary deadlines. You need practice questions that adapt to your study areas. You need feedback on your answers that's more structured than "that sounded okay."</p>
+
+        <p>We tried using Todoist, then Notion, then a combination of Anki plus a task manager. Each approach had friction. Todoist doesn't know what spaced repetition is. Notion required building a custom system from scratch with no algorithmic scheduling. Anki handles flashcards but not the broader task management around prep, like tracking deadlines, managing notes, or monitoring progress across topics. And none of them could generate practice questions or evaluate answers.</p>
+
+        <p>reps was built to solve that specific workflow. It implements SM-2 directly in the task model, uses Claude to generate and evaluate practice content, and provides both a CLI for quick interactions and a web UI for review sessions. It's TypeScript throughout, runs on a single VPS with PostgreSQL, and the entire codebase is small enough to understand in an afternoon.</p>
+
+        <p>It's not trying to replace Vikunja for team task management or Taskwarrior for general-purpose CLI productivity. It's trying to be the best tool for developers who are actively learning and want their task manager to be smart about scheduling that learning.</p>
+
+        <p>If that describes you, we think you'll like it. If it doesn't, the other six tools on this list are genuinely good, and we'd recommend any of them over a closed-source alternative.</p>
+
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">The Case for Open Source Task Management</h2>
+
+        <p>Regardless of which tool you choose, there's a broader argument for using open-source software for something as personal as task management. Your task list is a map of your priorities, your goals, and your time. It's intimate data. Hosting it on infrastructure you control, using software you can inspect and modify, is a reasonable default for anyone with the technical ability to do so.</p>
+
+        <p>The practical benefits are real, too. No pricing changes. No feature removals. No sunset announcements. No rate limits on your own API. No terms of service that grant the vendor rights to your data. These aren't hypothetical risks. Wunderlist was shut down. Google Tasks has been redesigned multiple times. Products change and disappear. Open-source tools endure because their users can maintain them.</p>
+
+        <p>Every tool on this list is free to use, free to modify, and free to host wherever you want. That's worth something, even if the UI isn't as polished as a VC-funded product. Polish can be added. Freedom has to be built in from the start.</p>
+
+        <!-- CTA Box -->
+        <div class="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-xl border border-zinc-700 p-8 mt-12 text-center">
+          <h2 class="text-2xl font-bold text-white mb-3">Try reps free</h2>
+          <p class="text-zinc-400 mb-6 max-w-lg mx-auto">Open-source task tracking with SM-2 spaced repetition and AI coaching. Self-host it or try the hosted version.</p>
+          <a href="https://reps-prep.duckdns.org" class="inline-block bg-white text-zinc-900 font-semibold px-6 py-3 rounded-lg hover:bg-zinc-200 transition-colors">Get Started with reps</a>
+          <p class="text-zinc-500 text-sm mt-4">No account required to explore. MIT licensed.</p>
+        </div>
+
+      </div>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-800 mt-16">
+    <div class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-zinc-500">&copy; 2026 <a href="/" class="text-zinc-400 hover:text-zinc-200 transition-colors">reps</a>. Open source under the MIT License.</p>
+      <a href="/" class="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Back to reps &rarr;</a>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -74,9 +74,7 @@ export default function AdminSettings({ user }: Props) {
     try {
       await adminToggleUserMcp(userId, !currentlyEnabled);
       setAdminUsers((prev) =>
-        prev.map((au) =>
-          au.id === userId ? { ...au, mcpEnabled: !currentlyEnabled } : au,
-        ),
+        prev.map((au) => (au.id === userId ? { ...au, mcpEnabled: !currentlyEnabled } : au)),
       );
     } catch (err) {
       logger.error('Failed to toggle user MCP', { userId, error: String(err) });
@@ -372,11 +370,7 @@ export default function AdminSettings({ user }: Props) {
           <div className="flex items-center gap-2">
             <span
               className={`inline-block w-2 h-2 rounded-full ${
-                mcpEnabled === null
-                  ? 'bg-zinc-600'
-                  : mcpEnabled
-                    ? 'bg-green-600'
-                    : 'bg-red-400'
+                mcpEnabled === null ? 'bg-zinc-600' : mcpEnabled ? 'bg-green-600' : 'bg-red-400'
               }`}
             />
             <button
@@ -390,7 +384,13 @@ export default function AdminSettings({ user }: Props) {
                     : 'text-red-400 bg-red-500/10 hover:bg-red-500/20'
               }`}
             >
-              {mcpEnabled === null ? 'Loading...' : mcpToggling ? 'Saving...' : mcpEnabled ? 'Enabled' : 'Disabled'}
+              {mcpEnabled === null
+                ? 'Loading...'
+                : mcpToggling
+                  ? 'Saving...'
+                  : mcpEnabled
+                    ? 'Enabled'
+                    : 'Disabled'}
             </button>
           </div>
         </div>
@@ -436,9 +436,7 @@ export default function AdminSettings({ user }: Props) {
                         <td className="py-1.5 pr-2 text-zinc-400 truncate max-w-[120px]">
                           {entry.key_name || '--'}
                         </td>
-                        <td className="py-1.5 pr-2 text-zinc-300 font-mono">
-                          {entry.tool_name}
-                        </td>
+                        <td className="py-1.5 pr-2 text-zinc-300 font-mono">{entry.tool_name}</td>
                         <td className="py-1.5">
                           {entry.success ? (
                             <span className="text-green-600">ok</span>

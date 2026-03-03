@@ -285,7 +285,9 @@ export default function McpSettings({ user, onUserUpdate }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-zinc-200 text-sm font-medium">{key.name}</p>
-                          <code className="text-xs text-zinc-500 font-mono">{key.keyPrefix}...</code>
+                          <code className="text-xs text-zinc-500 font-mono">
+                            {key.keyPrefix}...
+                          </code>
                         </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {key.scopes.map((scope) => (
@@ -331,43 +333,45 @@ export default function McpSettings({ user, onUserUpdate }: Props) {
               </p>
 
               <div>
-                <p className="text-xs font-medium text-zinc-400 mb-2">Claude Desktop (claude_desktop_config.json)</p>
+                <p className="text-xs font-medium text-zinc-400 mb-2">
+                  Claude Desktop (claude_desktop_config.json)
+                </p>
                 <pre className="px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300 font-mono overflow-x-auto">
-{JSON.stringify(
-  {
-    mcpServers: {
-      reps: {
-        url: `${apiBaseUrl}/mcp`,
-        headers: {
-          Authorization: 'Bearer YOUR_MCP_KEY',
-        },
-      },
-    },
-  },
-  null,
-  2,
-)}
+                  {JSON.stringify(
+                    {
+                      mcpServers: {
+                        reps: {
+                          url: `${apiBaseUrl}/mcp`,
+                          headers: {
+                            Authorization: 'Bearer YOUR_MCP_KEY',
+                          },
+                        },
+                      },
+                    },
+                    null,
+                    2,
+                  )}
                 </pre>
               </div>
 
               <div>
                 <p className="text-xs font-medium text-zinc-400 mb-2">Claude Code (.mcp.json)</p>
                 <pre className="px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300 font-mono overflow-x-auto">
-{JSON.stringify(
-  {
-    mcpServers: {
-      reps: {
-        type: 'url',
-        url: `${apiBaseUrl}/mcp`,
-        headers: {
-          Authorization: 'Bearer YOUR_MCP_KEY',
-        },
-      },
-    },
-  },
-  null,
-  2,
-)}
+                  {JSON.stringify(
+                    {
+                      mcpServers: {
+                        reps: {
+                          type: 'url',
+                          url: `${apiBaseUrl}/mcp`,
+                          headers: {
+                            Authorization: 'Bearer YOUR_MCP_KEY',
+                          },
+                        },
+                      },
+                    },
+                    null,
+                    2,
+                  )}
                 </pre>
               </div>
             </div>

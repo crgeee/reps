@@ -1,0 +1,53 @@
+# Search engines — allow public pages, block API routes
+User-agent: *
+Allow: /
+Allow: /blog/
+Disallow: /tasks
+Disallow: /agent
+Disallow: /auth
+Disallow: /sync
+Disallow: /collections
+Disallow: /tags
+Disallow: /stats
+Disallow: /users
+Disallow: /export
+Disallow: /health
+
+Sitemap: https://reps-prep.duckdns.org/sitemap.xml
+
+# AI training bots — block entirely
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /

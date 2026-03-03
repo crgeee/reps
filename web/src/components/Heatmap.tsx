@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 
 interface HeatmapProps {
   data: Record<string, number>;
@@ -66,6 +66,23 @@ export default function Heatmap({ data, days = 365 }: HeatmapProps) {
     return d.toISOString().split('T')[0]!;
   }
 
+  const handleMouseOver = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      const dateStr = target.dataset.date;
+      if (!dateStr) return;
+      const rect = target.getBoundingClientRect();
+      const count = data[dateStr] ?? 0;
+      setTooltip({ date: dateStr, count, x: rect.left, y: rect.top });
+    },
+    [data],
+  );
+
+  const handleMouseOut = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.dataset.date) setTooltip(null);
+  }, []);
+
   return (
     <div className="relative select-none">
       {/* Month labels */}
@@ -82,7 +99,7 @@ export default function Heatmap({ data, days = 365 }: HeatmapProps) {
         })}
       </div>
 
-      <div className="flex gap-0.5">
+      <div className="flex gap-0.5" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
         {/* Day labels */}
         <div className="flex flex-col gap-0.5 mr-1">
           {DAYS.map((day, i) => (
@@ -108,12 +125,8 @@ export default function Heatmap({ data, days = 365 }: HeatmapProps) {
               return (
                 <div
                   key={rowIdx}
+                  data-date={dateStr}
                   className={`w-3 h-3 rounded-sm cursor-default transition-all duration-200 hover:ring-1 hover:ring-zinc-400 ${color}`}
-                  onMouseEnter={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setTooltip({ date: dateStr, count, x: rect.left, y: rect.top });
-                  }}
-                  onMouseLeave={() => setTooltip(null)}
                 />
               );
             })}

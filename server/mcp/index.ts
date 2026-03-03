@@ -45,11 +45,7 @@ mcp.post('/', async (c) => {
 });
 
 // GET and DELETE — not supported in stateless mode
-mcp.get('/', (c) =>
-  c.json({ error: 'Method not allowed. Use POST for MCP requests.' }, 405),
-);
-mcp.delete('/', (c) =>
-  c.json({ error: 'Method not allowed. Sessions not supported.' }, 405),
-);
+mcp.get('/', (c) => c.json({ error: 'Method not allowed. Use POST for MCP requests.' }, 405));
+mcp.delete('/', (c) => c.json({ error: 'Method not allowed. Sessions not supported.' }, 405));
 
 export default mcp;

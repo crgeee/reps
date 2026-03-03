@@ -140,7 +140,12 @@ function checkScope(scopes: string[], required: string) {
 
 // --- tool registration ---
 
-export function registerTaskTools(server: McpServer, userId: string, keyId: string, scopes: string[]): void {
+export function registerTaskTools(
+  server: McpServer,
+  userId: string,
+  keyId: string,
+  scopes: string[],
+): void {
   // 1. get-tasks
   server.tool(
     'get-tasks',
@@ -164,12 +169,16 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
 
         const where = filters.reduce((acc, f, i) => (i === 0 ? f : sql`${acc} AND ${f}`));
 
-        const rows = await sql<TaskRow[]>`SELECT * FROM tasks WHERE ${where} ORDER BY created_at DESC`;
+        const rows = await sql<
+          TaskRow[]
+        >`SELECT * FROM tasks WHERE ${where} ORDER BY created_at DESC`;
 
         const taskIds = rows.map((r) => r.id);
         const noteRows =
           taskIds.length > 0
-            ? await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
+            ? await sql<
+                NoteRow[]
+              >`SELECT * FROM notes WHERE task_id = ANY(${taskIds}) ORDER BY created_at ASC`
             : [];
 
         const notesByTask = groupNotes(noteRows);
@@ -199,10 +208,14 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       const denied = checkScope(scopes, 'read');
       if (denied) return denied;
       try {
-        const [row] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
+        const [row] = await sql<
+          TaskRow[]
+        >`SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
         if (!row) return error('Task not found');
 
-        const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
+        const noteRows = await sql<
+          NoteRow[]
+        >`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
         const tagsByTask = await fetchTagsByTaskIds([taskId]);
 
         await logMcpAudit(keyId, userId, 'get-task', true);
@@ -322,7 +335,9 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
 
         if (!row) return error('Task not found');
 
-        const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
+        const noteRows = await sql<
+          NoteRow[]
+        >`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
         const tagsByTask = await fetchTagsByTaskIds([taskId]);
 
         await logMcpAudit(keyId, userId, 'update-task', true);
@@ -345,7 +360,9 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       const denied = checkScope(scopes, 'write');
       if (denied) return denied;
       try {
-        const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${taskId} AND user_id = ${userId} RETURNING *`;
+        const [row] = await sql<
+          TaskRow[]
+        >`DELETE FROM tasks WHERE id = ${taskId} AND user_id = ${userId} RETURNING *`;
         if (!row) return error('Task not found');
 
         await logMcpAudit(keyId, userId, 'delete-task', true);
@@ -370,7 +387,9 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       if (denied) return denied;
       try {
         // Verify task exists and belongs to user
-        const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
+        const [task] = await sql<
+          TaskRow[]
+        >`SELECT id FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
         if (!task) return error('Task not found');
 
         const now = today();
@@ -395,16 +414,25 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
     'Submit an SM-2 spaced repetition review for a task',
     {
       taskId: z.string().regex(UUID_RE).describe('Task UUID'),
-      quality: z.number().int().min(0).max(5).describe('Review quality (0-5): 0=complete blackout, 5=perfect recall'),
+      quality: z
+        .number()
+        .int()
+        .min(0)
+        .max(5)
+        .describe('Review quality (0-5): 0=complete blackout, 5=perfect recall'),
     },
     async ({ taskId, quality }) => {
       const denied = checkScope(scopes, 'write');
       if (denied) return denied;
       try {
-        const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
+        const [taskRow] = await sql<
+          TaskRow[]
+        >`SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
         if (!taskRow) return error('Task not found');
 
-        const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
+        const noteRows = await sql<
+          NoteRow[]
+        >`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
         const currentTask = rowToTask(taskRow, noteRows.map(rowToNote)) as unknown as Task;
 
         const sm2 = calculateSM2(currentTask, quality as Quality);
@@ -432,7 +460,9 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
         return success(rowToTask(updated, noteRows.map(rowToNote), tagsByTask.get(taskId) ?? []));
       } catch (err) {
         await logMcpAudit(keyId, userId, 'submit-review', false, String(err));
-        return error(`Failed to submit review: ${err instanceof Error ? err.message : String(err)}`);
+        return error(
+          `Failed to submit review: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     },
   );

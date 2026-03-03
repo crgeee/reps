@@ -274,7 +274,10 @@ users.get('/admin/stats', async (c) => {
 
 const createMcpKeySchema = z.object({
   name: z.string().min(1).max(100),
-  scopes: z.array(z.enum(['read', 'write', 'ai'])).min(1).optional(),
+  scopes: z
+    .array(z.enum(['read', 'write', 'ai']))
+    .min(1)
+    .optional(),
   ttlDays: z.number().int().min(1).max(365).optional(),
 });
 
@@ -384,7 +387,8 @@ users.patch('/admin/users/:id/mcp', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
   }
 
-  const [updated] = await sql`UPDATE users SET mcp_enabled = ${parsed.data.enabled} WHERE id = ${targetId} RETURNING id`;
+  const [updated] =
+    await sql`UPDATE users SET mcp_enabled = ${parsed.data.enabled} WHERE id = ${targetId} RETURNING id`;
   if (!updated) return c.json({ error: 'User not found' }, 404);
 
   return c.json({ userId: targetId, mcpEnabled: parsed.data.enabled });

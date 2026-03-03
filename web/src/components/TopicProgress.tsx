@@ -1,16 +1,12 @@
-import { useState, useEffect } from 'react';
-import type { Task, StatsOverview } from '../types';
+import { useState, useEffect, useMemo } from 'react';
+import type { StatsOverview } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
 import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
-
-interface TopicProgressProps {
-  tasks: Task[];
-  activeCollectionId?: string | null;
-}
 
 interface TopicStat {
   topic: string;
@@ -40,7 +36,8 @@ function getTopicBarColor(topic: string): string {
   return map[topic] ?? 'bg-zinc-500';
 }
 
-export default function TopicProgress({ tasks, activeCollectionId }: TopicProgressProps) {
+export default function TopicProgress() {
+  const { filteredTasks: tasks, activeCollectionId } = useProtectedContext();
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
 
@@ -60,26 +57,30 @@ export default function TopicProgress({ tasks, activeCollectionId }: TopicProgre
   const today = new Date().toISOString().split('T')[0]!;
 
   const topicMap = useGroupedTasksByTopic(tasks);
-  const topicStats: TopicStat[] = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
-    const active = topicTasks.filter((t) => !t.completed);
-    const completed = topicTasks.filter((t) => t.completed);
-    const reviewed = topicTasks
-      .filter((t) => t.lastReviewed)
-      .sort((a, b) => (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? ''));
-    const avgEF =
-      active.length > 0 ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length : 0;
-    const dueCount = active.filter((t) => t.nextReview <= today).length;
+  const topicStats: TopicStat[] = useMemo(
+    () =>
+      Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
+        const active = topicTasks.filter((t) => !t.completed);
+        const completed = topicTasks.filter((t) => t.completed);
+        const reviewed = topicTasks
+          .filter((t) => t.lastReviewed)
+          .sort((a, b) => (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? ''));
+        const avgEF =
+          active.length > 0 ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length : 0;
+        const dueCount = active.filter((t) => t.nextReview <= today).length;
 
-    return {
-      topic,
-      total: topicTasks.length,
-      completed: completed.length,
-      active: active.length,
-      avgEaseFactor: avgEF,
-      lastReviewed: reviewed[0]?.lastReviewed ?? null,
-      dueCount,
-    };
-  });
+        return {
+          topic,
+          total: topicTasks.length,
+          completed: completed.length,
+          active: active.length,
+          avgEaseFactor: avgEF,
+          lastReviewed: reviewed[0]?.lastReviewed ?? null,
+          dueCount,
+        };
+      }),
+    [topicMap, today],
+  );
 
   const reviewsByTopicData: Record<string, number> = {};
   const reviewsByTopicColors: Record<string, string> = {};

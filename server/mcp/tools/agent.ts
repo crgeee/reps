@@ -15,7 +15,12 @@ function checkScope(scopes: string[], required: string) {
   return null;
 }
 
-export function registerAgentTools(server: McpServer, userId: string, keyId: string, scopes: string[]): void {
+export function registerAgentTools(
+  server: McpServer,
+  userId: string,
+  keyId: string,
+  scopes: string[],
+): void {
   // --- generate-question ---
   server.registerTool(
     'generate-question',

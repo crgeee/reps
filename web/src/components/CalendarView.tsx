@@ -2,11 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import type { Task } from '../types';
 import { getTopicLabel } from '../types';
-
-interface CalendarViewProps {
-  tasks: Task[];
-  onSelectDate?: (date: string) => void;
-}
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
@@ -41,7 +37,8 @@ function getTopicDotColor(topic: string): string {
   return TOPIC_DOT_COLORS[topic] ?? '#64748b';
 }
 
-export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps) {
+export default function CalendarView() {
+  const { filteredTasks: tasks } = useProtectedContext();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -99,13 +96,13 @@ export default function CalendarView({ tasks, onSelectDate }: CalendarViewProps)
   function handleDayClick(day: number) {
     const dateStr = toDateStr(year, month, day);
     setSelectedDate(selectedDate === dateStr ? null : dateStr);
-    onSelectDate?.(dateStr);
   }
 
   const selectedTasks = selectedDate ? (tasksByDate.get(selectedDate) ?? []) : [];
 
   return (
     <div className="space-y-4">
+      <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

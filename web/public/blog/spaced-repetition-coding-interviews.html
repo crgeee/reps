@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spaced Repetition for Coding Interviews: A Complete Guide | reps</title>
+  <meta name="description" content="Stop forgetting LeetCode solutions. Learn how spaced repetition and the SM-2 algorithm can transform your coding interview prep with a structured, science-backed approach." />
+  <link rel="canonical" href="https://reps-prep.duckdns.org/blog/spaced-repetition-coding-interviews" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Spaced Repetition for Coding Interviews: A Complete Guide" />
+  <meta property="og:description" content="Stop forgetting LeetCode solutions. Learn how spaced repetition and the SM-2 algorithm can transform your coding interview prep." />
+  <meta property="og:url" content="https://reps-prep.duckdns.org/blog/spaced-repetition-coding-interviews" />
+  <meta property="og:image" content="https://reps-prep.duckdns.org/og-image.png" />
+  <meta property="og:site_name" content="reps" />
+  <meta property="article:published_time" content="2026-03-02" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Spaced Repetition for Coding Interviews: A Complete Guide" />
+  <meta name="twitter:description" content="Stop forgetting LeetCode solutions. Learn how spaced repetition and the SM-2 algorithm can transform your coding interview prep." />
+  <meta name="twitter:image" content="https://reps-prep.duckdns.org/og-image.png" />
+
+  <!-- Fonts & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sora: ['Sora', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Spaced Repetition for Coding Interviews: A Complete Guide",
+    "description": "Stop forgetting LeetCode solutions. Learn how spaced repetition and the SM-2 algorithm can transform your coding interview prep with a structured, science-backed approach.",
+    "author": {
+      "@type": "Organization",
+      "name": "reps"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "reps",
+      "url": "https://reps-prep.duckdns.org"
+    },
+    "datePublished": "2026-03-02",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://reps-prep.duckdns.org/blog/spaced-repetition-coding-interviews"
+    },
+    "url": "https://reps-prep.duckdns.org/blog/spaced-repetition-coding-interviews",
+    "keywords": ["spaced repetition", "coding interviews", "SM-2 algorithm", "interview prep", "LeetCode"]
+  }
+  </script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sora antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800">
+    <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-xl font-bold text-white tracking-tight">reps</a>
+      <a href="/blog/" class="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">&larr; Back to blog</a>
+    </div>
+  </header>
+
+  <!-- Article -->
+  <main class="max-w-3xl mx-auto px-6 py-12">
+    <article>
+      <header class="mb-12">
+        <p class="text-sm text-emerald-400 font-medium mb-3">Interview Prep</p>
+        <h1 class="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">Spaced Repetition for Coding Interviews: A Complete Guide</h1>
+        <p class="text-zinc-400 text-sm">Published March 2, 2026 &middot; 12 min read</p>
+      </header>
+
+      <div class="prose prose-invert max-w-none space-y-6 text-zinc-300 leading-relaxed text-[16.5px]">
+
+        <!-- Section 1: The Problem -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">You solved 200 LeetCode problems and forgot most of them</h2>
+
+        <p>Here is a scenario that should feel familiar. You spend three months grinding LeetCode. You work through blind 75 lists, NeetCode roadmaps, and curated company-tagged problems. You solve 200+ problems. You feel prepared.</p>
+
+        <p>Then you sit down for your onsite at a top company, and the interviewer gives you a problem involving a monotonic stack. You solved three of those two months ago. You remember the concept vaguely. You cannot recall the implementation details. You spend 25 minutes floundering through a brute-force approach, and the interviewer moves on.</p>
+
+        <p>This is not a skill problem. It is a memory problem. And there is a well-studied, algorithmic solution for it.</p>
+
+        <p>The core issue is that most engineers treat interview prep like a checklist. Solve problem, check it off, move on. But solving a problem once does not mean you can solve it again two weeks later. Research on human memory has shown this consistently for over a century: without deliberate review, you forget roughly 70% of new material within 48 hours.</p>
+
+        <p>Spaced repetition for coding interviews fixes this by scheduling your reviews at the exact intervals where your memory is about to fade. Instead of re-solving 200 problems randomly, you review the 8 problems that are due today. The result is less total study time, higher retention, and the ability to recall patterns under pressure.</p>
+
+        <!-- Section 2: What Is Spaced Repetition -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">What is spaced repetition?</h2>
+
+        <p>In 1885, German psychologist Hermann Ebbinghaus ran memory experiments on himself and discovered what is now called the <strong class="text-white">forgetting curve</strong>. After learning something new, your memory of it decays exponentially. Within an hour you have lost about 50%. Within a day, 70%. Within a week, you are down to roughly 20% retention.</p>
+
+        <p>But Ebbinghaus also discovered something useful: each time you review material at the right moment (just before you would forget it), the forgetting curve flattens. The memory becomes more durable. After a few well-timed reviews, something you originally forgot in two days now sticks for two weeks. Then two months. Then it is effectively permanent.</p>
+
+        <p>Spaced repetition is the practical application of this principle. Instead of massed practice (cramming), you spread your reviews out over increasing intervals. The first review might happen after 1 day. If you remember it well, the next review is in 6 days. Then 15 days. Then 35 days. The intervals grow as your memory strengthens.</p>
+
+        <p>The key insight for coding interview prep is this: <strong class="text-white">you do not need to solve every problem again. You only need to solve the problems you are about to forget.</strong> A spaced repetition system tells you exactly which ones those are, every single day.</p>
+
+        <!-- Section 3: How SM-2 Works -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">How the SM-2 algorithm works</h2>
+
+        <p>SM-2 is the algorithm behind Anki and most modern spaced repetition systems. It was created by Piotr Wozniak in 1987, and despite being nearly four decades old, it remains remarkably effective. Here is how it works in plain terms.</p>
+
+        <p>Every item you are learning has three key values:</p>
+
+        <ul class="list-disc pl-6 space-y-2">
+          <li><strong class="text-white">Repetitions</strong> &mdash; how many times in a row you have successfully recalled it</li>
+          <li><strong class="text-white">Interval</strong> &mdash; the number of days until your next review</li>
+          <li><strong class="text-white">Ease factor</strong> &mdash; a multiplier (starting at 2.5) that controls how fast intervals grow. Higher ease means you find it easier, so reviews spread further apart</li>
+        </ul>
+
+        <p>After each review, you rate yourself on a 0-5 quality scale:</p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse my-6">
+            <thead>
+              <tr class="border-b border-zinc-700">
+                <th class="text-left py-2 pr-4 text-zinc-400 font-medium">Rating</th>
+                <th class="text-left py-2 text-zinc-400 font-medium">Meaning</th>
+              </tr>
+            </thead>
+            <tbody class="text-zinc-300">
+              <tr class="border-b border-zinc-800"><td class="py-2 pr-4 font-mono text-emerald-400">5</td><td class="py-2">Perfect response, no hesitation</td></tr>
+              <tr class="border-b border-zinc-800"><td class="py-2 pr-4 font-mono text-emerald-400">4</td><td class="py-2">Correct after brief hesitation</td></tr>
+              <tr class="border-b border-zinc-800"><td class="py-2 pr-4 font-mono text-yellow-400">3</td><td class="py-2">Correct but required significant effort to recall</td></tr>
+              <tr class="border-b border-zinc-800"><td class="py-2 pr-4 font-mono text-orange-400">2</td><td class="py-2">Incorrect, but the correct answer felt familiar</td></tr>
+              <tr class="border-b border-zinc-800"><td class="py-2 pr-4 font-mono text-red-400">1</td><td class="py-2">Incorrect, remembered after seeing the answer</td></tr>
+              <tr><td class="py-2 pr-4 font-mono text-red-400">0</td><td class="py-2">Complete blackout, no memory at all</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>The algorithm then updates the interval based on your rating:</p>
+
+        <ul class="list-disc pl-6 space-y-2">
+          <li>If you rated <strong class="text-white">3 or above</strong> (you got it right): your repetition count increases, and the interval grows by multiplying the current interval by your ease factor.</li>
+          <li>If you rated <strong class="text-white">below 3</strong> (you got it wrong): repetitions reset to 0 and the interval resets to 1 day. You start over for that problem.</li>
+        </ul>
+
+        <p>The ease factor also adjusts after every review, making future intervals longer for easy items and shorter for hard ones.</p>
+
+        <p>Here is a simplified TypeScript implementation of the core SM-2 calculation. This is essentially what powers <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a>, the interview prep tracker this blog is part of:</p>
+
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 overflow-x-auto text-sm my-6"><code class="text-zinc-300">type Quality = 0 | 1 | 2 | 3 | 4 | 5;
+
+function calculateSM2(
+  repetitions: number,
+  interval: number,
+  easeFactor: number,
+  quality: Quality
+) {
+  if (quality >= 3) {
+    // Correct response: increase interval
+    if (repetitions === 0) {
+      interval = 1;        // First success: review tomorrow
+    } else if (repetitions === 1) {
+      interval = 6;        // Second success: review in 6 days
+    } else {
+      interval = Math.round(interval * easeFactor);
+    }
+    repetitions += 1;
+  } else {
+    // Incorrect: reset and review tomorrow
+    repetitions = 0;
+    interval = 1;
+  }
+
+  // Adjust ease factor based on performance
+  easeFactor = Math.max(
+    1.3,
+    easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+  );
+
+  const nextReview = new Date();
+  nextReview.setDate(nextReview.getDate() + interval);
+
+  return { repetitions, interval, easeFactor, nextReview };
+}</code></pre>
+
+        <p>Let us trace through a concrete example. Say you solve "Merge Intervals" for the first time and rate yourself a 4 (correct with minor hesitation):</p>
+
+        <ul class="list-disc pl-6 space-y-2">
+          <li>Repetitions: 0 &rarr; 1. Interval: 1 day. Ease factor adjusts to 2.5.</li>
+          <li>You review it tomorrow and rate a 4 again. Repetitions: 2. Interval: 6 days.</li>
+          <li>Six days later you rate a 5. Repetitions: 3. Interval: 6 &times; 2.6 = 16 days.</li>
+          <li>Sixteen days later you rate a 3 (struggled but got it). Interval: 16 &times; 2.36 = 38 days.</li>
+        </ul>
+
+        <p>After four reviews spread over about three weeks of real time, you will not see this problem again for over a month. Compare that to mindlessly re-solving it every few days. Spaced repetition is efficient because it <em>respects your memory</em> rather than fighting it.</p>
+
+        <!-- Section 4: How to Apply It to Coding Interviews -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">How to apply spaced repetition to coding interview prep</h2>
+
+        <p>The theory is straightforward. The implementation details matter. Here is how to structure your prep using spaced repetition effectively.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Organize problems by pattern, not by difficulty</h3>
+
+        <p>The biggest mistake engineers make is sorting problems by difficulty (easy, medium, hard) and grinding through them sequentially. This teaches you to solve specific problems, not to recognize patterns.</p>
+
+        <p>Instead, organize your prep around algorithmic patterns:</p>
+
+        <ul class="list-disc pl-6 space-y-2">
+          <li><strong class="text-white">Two pointers</strong> &mdash; container with most water, 3Sum, trapping rain water</li>
+          <li><strong class="text-white">Sliding window</strong> &mdash; longest substring without repeating characters, minimum window substring</li>
+          <li><strong class="text-white">BFS/DFS</strong> &mdash; number of islands, word ladder, course schedule</li>
+          <li><strong class="text-white">Dynamic programming</strong> &mdash; coin change, longest increasing subsequence, edit distance</li>
+          <li><strong class="text-white">Binary search</strong> &mdash; search in rotated sorted array, find minimum in rotated sorted array</li>
+          <li><strong class="text-white">Monotonic stack</strong> &mdash; daily temperatures, largest rectangle in histogram</li>
+          <li><strong class="text-white">Graph algorithms</strong> &mdash; Dijkstra, topological sort, union-find</li>
+          <li><strong class="text-white">Tree traversals</strong> &mdash; serialize/deserialize, lowest common ancestor, path sum</li>
+          <li><strong class="text-white">Heap/Priority queue</strong> &mdash; merge k sorted lists, find median from data stream</li>
+          <li><strong class="text-white">Backtracking</strong> &mdash; permutations, subsets, N-Queens</li>
+        </ul>
+
+        <p>When you solve a problem tagged as "sliding window," you are not just learning one solution. You are reinforcing a template that applies to dozens of problems. When spaced repetition schedules a sliding window problem for review, you are reviewing the <em>pattern</em>, not just the specific problem.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Rate your understanding honestly after each problem</h3>
+
+        <p>The quality rating is the most important input to the SM-2 algorithm. It determines how soon you will see a problem again. Be ruthless with yourself:</p>
+
+        <ul class="list-disc pl-6 space-y-2">
+          <li><strong class="text-white">Rate 5</strong> only if you could solve it in an interview right now, under time pressure, while explaining your approach to someone.</li>
+          <li><strong class="text-white">Rate 4</strong> if you solved it correctly but had to pause and think about edge cases or time complexity.</li>
+          <li><strong class="text-white">Rate 3</strong> if you solved it but felt shaky. You would not be confident in an interview setting.</li>
+          <li><strong class="text-white">Rate 2 or below</strong> if you needed hints, looked at the solution, or could not finish within 30 minutes.</li>
+        </ul>
+
+        <p>The temptation is to rate yourself a 4 when it was really a 3, because seeing the problem again in 1 day feels annoying. Resist this. The algorithm is only as good as your honesty. A dishonest 4 means the problem disappears for two weeks, and you will have forgotten it completely by then.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Trust the schedule</h3>
+
+        <p>Once you have a spaced repetition system running, your daily workflow becomes simple: open the app, see what is due, work through those problems. That is it.</p>
+
+        <p>Do not review problems that are not due. If you solved "Two Sum" last week and rated it a 5, and it is not scheduled for review for another 20 days, leave it alone. Your brain is consolidating that memory. Reviewing it early is wasted time that could be spent on problems you are actually about to forget.</p>
+
+        <p>Do add new problems. A healthy prep routine mixes review of old problems (typically 20-40 minutes) with learning new ones (30-60 minutes). The spaced repetition system handles the old problems automatically. You just need to keep feeding it new ones.</p>
+
+        <!-- Section 5: Common Mistakes -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">Common mistakes with spaced repetition for coding interviews</h2>
+
+        <p>I have seen these mistakes repeatedly, both in my own prep and from engineers I have coached.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">1. Reviewing too often</h3>
+
+        <p>Some engineers set up a spaced repetition system and then continue to review problems daily regardless of what the schedule says. This defeats the entire purpose. The spaces between reviews are not wasted time. They are when the actual memory consolidation happens. If you review a problem every day, you never give your brain the chance to almost-forget it, which is the event that makes the memory stronger upon recall.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">2. Not rating honestly</h3>
+
+        <p>We covered this above, but it bears repeating because it is the single most common failure mode. If you rate every problem a 4 or 5, the algorithm thinks you are retaining everything and schedules reviews weeks apart. Then when you actually sit down for an interview, you cannot recall the approach for a problem you "solved" three times. The system works only when the inputs are accurate.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">3. Skipping the hard ones</h3>
+
+        <p>When you open your review queue and see an easy linked list problem and a hard dynamic programming problem, the temptation is to do the easy one first, spend too long on it, and "run out of time" for the hard one. This is exactly backwards. The hard problem is the one the algorithm is telling you to review because you are about to forget it. The easy one will take five minutes. Do the hard one first.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">4. Adding too many problems too fast</h3>
+
+        <p>If you add 20 new problems on day one, you will have 20 reviews due on day two, plus whatever new problems you want to learn. By day five, you could have 40+ reviews stacking up and the whole system collapses under its own weight. Start with 3-5 new problems per day maximum. Let the review queue stabilize before adding more.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">5. Only reviewing code, not the explanation</h3>
+
+        <p>Coding interviews are not just about writing correct code. You need to explain your approach, discuss time and space complexity, and walk through examples. When you review a problem, do not just re-code the solution silently. Practice saying out loud: "I would use a sliding window here because..." and "The time complexity is O(n) because each element is visited at most twice." This verbal component is critical and is also subject to the forgetting curve.</p>
+
+        <!-- Section 6: Tools -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">Tools for spaced repetition in coding interview prep</h2>
+
+        <p>You have several options, ranging from fully manual to purpose-built.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Anki</h3>
+
+        <p>Anki is the most well-known spaced repetition software. It is free, open source, and extremely flexible. You can create flashcards with code snippets, tag them by pattern, and Anki handles the scheduling. The downside is that Anki is designed for flashcard-style recall (read front, think of back), which is not quite the right model for coding problems. You want to actually solve the problem, not just recall the answer. Anki also requires significant setup time to create good cards.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Custom spreadsheets</h3>
+
+        <p>Some engineers track their problems in a Google Sheet with columns for problem name, pattern, last reviewed date, next review date, and ease factor. This works and gives you full control, but you have to manually calculate the SM-2 intervals (or use formulas). The main risk is that you stop updating the spreadsheet after a few weeks because it is friction-heavy.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">reps</h3>
+
+        <p><a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> is a purpose-built interview prep tracker with SM-2 spaced repetition at its core. It was designed specifically for the use case described in this article. Problems are organized by topic (coding, system design, behavioral), the SM-2 algorithm handles scheduling automatically, and an AI coach generates practice questions and evaluates your answers. It works as both a CLI and a web app, so you can track reviews from your terminal or your browser. If you want spaced repetition for coding interviews without the setup overhead of Anki or spreadsheets, this is the tool we built for exactly that purpose.</p>
+
+        <!-- Section 7: 8-Week Study Plan -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">An 8-week study plan using spaced repetition</h2>
+
+        <p>Here is a concrete plan that balances learning new patterns with reviewing old ones. Adjust the time commitment based on your schedule, but do not skip the daily reviews.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Weeks 1-2: Foundation patterns</h3>
+
+        <p><strong class="text-white">New problems per day:</strong> 2-3<br />
+        <strong class="text-white">Daily review time:</strong> 15-20 minutes<br />
+        <strong class="text-white">Focus areas:</strong> Arrays, strings, hash maps, two pointers, sliding window</p>
+
+        <p>Start with the most common patterns. These show up in nearly every interview loop. Solve each problem, rate yourself honestly, and let the SM-2 scheduler do its job. By the end of week two, you should have 25-35 problems in your system and a manageable daily review queue of 5-8 problems.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Weeks 3-4: Trees, graphs, and recursion</h3>
+
+        <p><strong class="text-white">New problems per day:</strong> 2-3<br />
+        <strong class="text-white">Daily review time:</strong> 20-30 minutes<br />
+        <strong class="text-white">Focus areas:</strong> Binary trees, BFS/DFS, graph traversal, backtracking</p>
+
+        <p>Your review queue now includes foundation problems from weeks 1-2 that are coming due. This is where spaced repetition proves its value. You will notice some problems feel easy on review (rate them 4-5 and move on quickly) while others have faded (rate them honestly and let the algorithm reschedule). Spend the remaining time learning tree and graph patterns.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Weeks 5-6: Advanced patterns</h3>
+
+        <p><strong class="text-white">New problems per day:</strong> 1-2<br />
+        <strong class="text-white">Daily review time:</strong> 30-40 minutes<br />
+        <strong class="text-white">Focus areas:</strong> Dynamic programming, monotonic stack, tries, advanced graph (shortest path, topological sort)</p>
+
+        <p>Slow down on new problems. Your review queue is growing and these are the problems that matter most. Dynamic programming in particular requires repeated exposure before the patterns click. Do not be discouraged if you rate DP problems as 2 or 3 several times. That is the system working correctly. It will keep scheduling them until you actually retain them.</p>
+
+        <h3 class="text-xl font-semibold text-white mt-8 mb-3">Weeks 7-8: System design and mock interviews</h3>
+
+        <p><strong class="text-white">New problems per day:</strong> 0-1<br />
+        <strong class="text-white">Daily review time:</strong> 30-40 minutes<br />
+        <strong class="text-white">Focus areas:</strong> System design practice, behavioral prep, mock interview simulation</p>
+
+        <p>Stop adding many new coding problems. Your review queue should now include 60-80 problems across all patterns, and the daily reviews will keep them fresh. Shift your new-problem time to system design (design a URL shortener, design a chat system, design a rate limiter) and behavioral questions. These also benefit from spaced repetition: add them to your system with the same quality ratings.</p>
+
+        <p>By the end of 8 weeks, here is what your system should look like:</p>
+
+        <ul class="list-disc pl-6 space-y-2">
+          <li>60-80 problems tracked with SM-2 data</li>
+          <li>Daily review queue of 5-10 problems (taking 20-30 minutes)</li>
+          <li>High-ease-factor problems (your strong patterns) appearing only every few weeks</li>
+          <li>Low-ease-factor problems (your weak areas) appearing every few days, which is exactly where you need the practice</li>
+          <li>5-8 system design scenarios in rotation</li>
+          <li>10-15 behavioral stories refined through repetition</li>
+        </ul>
+
+        <p>This is dramatically more effective than solving 300 LeetCode problems in random order and hoping for the best. You are not just solving problems. You are building durable, recallable knowledge of patterns that you can deploy under interview pressure.</p>
+
+        <!-- Section: Conclusion -->
+        <h2 class="text-2xl font-semibold text-white mt-12 mb-4">The bottom line</h2>
+
+        <p>Spaced repetition is not a hack or a shortcut. It is the application of memory science to a domain where memory matters. Coding interviews test your ability to recall and apply algorithmic patterns under time pressure. That is fundamentally a memory task, and spaced repetition is the most efficient tool we have for memory tasks.</p>
+
+        <p>The engineers who succeed in interview loops are not necessarily smarter or more experienced. They are the ones who can recall the right pattern at the right moment. Spaced repetition ensures that you can.</p>
+
+        <p>Start today. Pick 3 problems. Solve them. Rate yourself. Let the algorithm schedule your reviews. In two weeks, you will notice the difference. In eight weeks, you will walk into interviews knowing that every pattern you have studied is fresh in your memory, ready to deploy.</p>
+
+        <!-- CTA Box -->
+        <div class="mt-16 border border-emerald-500/30 bg-emerald-500/5 rounded-xl p-8 text-center">
+          <h2 class="text-xl font-bold text-white mb-3">Try reps free</h2>
+          <p class="text-zinc-400 mb-6 max-w-lg mx-auto">reps is a spaced repetition tracker built specifically for coding interview prep. SM-2 scheduling, AI-generated practice questions, and progress tracking by topic.</p>
+          <a href="https://reps-prep.duckdns.org" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-6 py-3 rounded-lg transition-colors">Start tracking your reps &rarr;</a>
+        </div>
+
+      </div>
+    </article>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-800 mt-16">
+    <div class="max-w-3xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
+      <p>&copy; 2026 <a href="https://reps-prep.duckdns.org" class="text-zinc-400 hover:text-zinc-200 transition-colors">reps</a>. All rights reserved.</p>
+      <a href="/" class="text-zinc-400 hover:text-zinc-200 transition-colors">Back to reps &rarr;</a>
+    </div>
+  </footer>
+
+</body>
+</html>

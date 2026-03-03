@@ -1,21 +1,15 @@
 import { useState, useEffect } from 'react';
-import type { CollectionTemplate, Collection, User } from '../types';
+import { useNavigate } from 'react-router';
+import type { CollectionTemplate, Collection } from '../types';
 import { getTemplates } from '../api';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import TemplateCard from './TemplateCard';
 import CreateFromTemplate from './CreateFromTemplate';
 import { Plus } from 'lucide-react';
 
-interface TemplateGalleryProps {
-  onCollectionCreated: (collection: Collection) => void;
-  onNavigate: (view: string) => void;
-  user: User;
-}
-
-export default function TemplateGallery({
-  onCollectionCreated,
-  onNavigate,
-  user,
-}: TemplateGalleryProps) {
+export default function TemplateGallery() {
+  const { user, handleCollectionCreated } = useProtectedContext();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<CollectionTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +27,8 @@ export default function TemplateGallery({
 
   function handleCreated(collection: Collection) {
     setSelectedTemplate(null);
-    onCollectionCreated(collection);
-    onNavigate('tasks');
+    handleCollectionCreated(collection);
+    navigate('/tasks');
   }
 
   if (loading) {
@@ -131,7 +125,7 @@ export default function TemplateGallery({
             />
           ))}
           <button
-            onClick={() => onNavigate('tasks')}
+            onClick={() => navigate('/tasks')}
             className="border-2 border-dashed border-zinc-700 rounded-xl p-5 flex flex-col items-center justify-center gap-3 text-zinc-500 hover:border-zinc-500 hover:text-zinc-400 transition-all cursor-pointer min-h-[160px]"
           >
             <Plus className="w-8 h-8" />

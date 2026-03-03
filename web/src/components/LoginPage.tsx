@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router';
 import { Brain, Sparkles, ListTodo, Plug } from 'lucide-react';
 import { sendMagicLink } from '../api';
+import { useAuth } from '../hooks/useAuth';
 import Footer from './Footer';
 
 /** Logo: three ascending bars — stacking reps, rising mastery */
@@ -40,10 +42,13 @@ const FEATURES = [
 ];
 
 export default function LoginPage() {
+  const { isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!loading && isAuthenticated) return <Navigate to="/" replace />;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
