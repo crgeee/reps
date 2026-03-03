@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import sql from '../../db/client.js';
 import { calculateSM2 } from '../../../src/spaced-repetition.js';
 import type { Task, Note, Quality } from '../../../src/types.js';
+import { logMcpAudit } from '../audit.js';
 
 // --- helpers ---
 
@@ -128,7 +129,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 // --- tool registration ---
 
-export function registerTaskTools(server: McpServer, userId: string): void {
+export function registerTaskTools(server: McpServer, userId: string, keyId: string): void {
   // 1. get-tasks
   server.tool(
     'get-tasks',
@@ -165,8 +166,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
           rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? []),
         );
 
+        await logMcpAudit(keyId, userId, 'get-tasks', true);
         return success(result);
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'get-tasks', false, String(err));
         return error(`Failed to list tasks: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
@@ -187,8 +190,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
         const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
         const tagsByTask = await fetchTagsByTaskIds([taskId]);
 
+        await logMcpAudit(keyId, userId, 'get-task', true);
         return success(rowToTask(row, noteRows.map(rowToNote), tagsByTask.get(taskId) ?? []));
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'get-task', false, String(err));
         return error(`Failed to get task: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
@@ -234,8 +239,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
           RETURNING *
         `;
 
+        await logMcpAudit(keyId, userId, 'create-task', true);
         return success(rowToTask(row, []));
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'create-task', false, String(err));
         return error(`Failed to create task: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
@@ -299,8 +306,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
         const noteRows = await sql<NoteRow[]>`SELECT * FROM notes WHERE task_id = ${taskId} ORDER BY created_at ASC`;
         const tagsByTask = await fetchTagsByTaskIds([taskId]);
 
+        await logMcpAudit(keyId, userId, 'update-task', true);
         return success(rowToTask(row, noteRows.map(rowToNote), tagsByTask.get(taskId) ?? []));
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'update-task', false, String(err));
         return error(`Failed to update task: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
@@ -318,8 +327,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
         const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${taskId} AND user_id = ${userId} RETURNING *`;
         if (!row) return error('Task not found');
 
+        await logMcpAudit(keyId, userId, 'delete-task', true);
         return success({ deleted: true, id: taskId });
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'delete-task', false, String(err));
         return error(`Failed to delete task: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
@@ -346,8 +357,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
           RETURNING *
         `;
 
+        await logMcpAudit(keyId, userId, 'add-note', true);
         return success(rowToNote(row));
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'add-note', false, String(err));
         return error(`Failed to add note: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
@@ -390,8 +403,10 @@ export function registerTaskTools(server: McpServer, userId: string): void {
 
         const tagsByTask = await fetchTagsByTaskIds([taskId]);
 
+        await logMcpAudit(keyId, userId, 'submit-review', true);
         return success(rowToTask(updated, noteRows.map(rowToNote), tagsByTask.get(taskId) ?? []));
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'submit-review', false, String(err));
         return error(`Failed to submit review: ${err instanceof Error ? err.message : String(err)}`);
       }
     },

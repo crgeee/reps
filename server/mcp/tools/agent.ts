@@ -5,8 +5,9 @@ import { generateQuestion } from '../../agent/questions.js';
 import { evaluateAnswer } from '../../agent/evaluator.js';
 import { dailyBriefing } from '../../agent/coach.js';
 import type { Task, Note, Topic } from '../../../src/types.js';
+import { logMcpAudit } from '../audit.js';
 
-export function registerAgentTools(server: McpServer, userId: string): void {
+export function registerAgentTools(server: McpServer, userId: string, keyId: string): void {
   // --- generate-question ---
   server.registerTool(
     'generate-question',
@@ -61,10 +62,12 @@ export function registerAgentTools(server: McpServer, userId: string): void {
 
         const question = await generateQuestion(task);
 
+        await logMcpAudit(keyId, userId, 'generate-question', true);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(question, null, 2) }],
         };
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'generate-question', false, String(err));
         const message = err instanceof Error ? err.message : 'Failed to generate question';
         return {
           isError: true as const,
@@ -93,10 +96,12 @@ export function registerAgentTools(server: McpServer, userId: string): void {
       try {
         const result = await evaluateAnswer(taskId, answer);
 
+        await logMcpAudit(keyId, userId, 'evaluate-answer', true);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         };
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'evaluate-answer', false, String(err));
         const message = err instanceof Error ? err.message : 'Failed to evaluate answer';
         return {
           isError: true as const,
@@ -121,10 +126,12 @@ export function registerAgentTools(server: McpServer, userId: string): void {
       try {
         const message = await dailyBriefing(userId);
 
+        await logMcpAudit(keyId, userId, 'get-daily-briefing', true);
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(message, null, 2) }],
         };
       } catch (err) {
+        await logMcpAudit(keyId, userId, 'get-daily-briefing', false, String(err));
         const errMessage = err instanceof Error ? err.message : 'Failed to generate briefing';
         return {
           isError: true as const,
