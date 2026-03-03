@@ -11,9 +11,6 @@ import {
   getApiConfig,
   saveApiConfig,
   loadTasksAsync,
-  saveTaskAsync,
-  deleteTaskAsync,
-  addNoteAsync,
   submitReview,
   syncTasks,
   getAgentQuestion,
@@ -202,7 +199,7 @@ program
         try {
           const updated = await submitReview(task.id, quality);
           console.log(chalk.green(`  Next review: ${updated.nextReview}`));
-        } catch (err) {
+        } catch (_err) {
           // Fall back to local SM-2 calculation
           const result = calculateSM2(task, quality);
           Object.assign(task, result, { lastReviewed: today });
