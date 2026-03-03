@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog — reps | Spaced Repetition, Interview Prep & Productivity</title>
+    <meta name="description" content="Articles on spaced repetition, the SM-2 algorithm, technical interview preparation, AI-powered coaching, and developer productivity." />
+    <link rel="canonical" href="https://reps-prep.duckdns.org/blog/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Blog — reps" />
+    <meta property="og:description" content="Articles on spaced repetition, interview prep, and developer productivity." />
+    <meta property="og:url" content="https://reps-prep.duckdns.org/blog/" />
+    <meta property="og:site_name" content="reps" />
+    <meta property="og:image" content="https://reps-prep.duckdns.org/og-image.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Blog — reps" />
+    <meta name="twitter:description" content="Articles on spaced repetition, interview prep, and developer productivity." />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Sora', 'system-ui', 'sans-serif'] },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-zinc-800">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <svg class="w-7 h-7" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#18181b"/>
+            <rect x="8" y="24" width="6" height="8" rx="1.5" fill="#f59e0b" opacity="0.4"/>
+            <rect x="17" y="18" width="6" height="14" rx="1.5" fill="#f59e0b" opacity="0.7"/>
+            <rect x="26" y="10" width="6" height="22" rx="1.5" fill="#f59e0b"/>
+          </svg>
+          <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">reps</span>
+        </a>
+        <a href="/" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Back to app &rarr;</a>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-12 w-full">
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Blog</h1>
+      <p class="text-zinc-500 mb-10">Spaced repetition, interview prep, and developer productivity.</p>
+
+      <div class="space-y-8">
+        <!-- Article 1 -->
+        <article class="group">
+          <a href="/blog/spaced-repetition-coding-interviews.html" class="block p-6 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
+            <div class="flex items-center gap-2 text-xs text-zinc-500 mb-3">
+              <time datetime="2026-03-02">March 2, 2026</time>
+              <span>&middot;</span>
+              <span>10 min read</span>
+              <span>&middot;</span>
+              <span class="text-amber-500/70">Spaced Repetition</span>
+            </div>
+            <h2 class="text-lg font-bold text-zinc-100 group-hover:text-amber-400 transition-colors mb-2">
+              Spaced Repetition for Coding Interviews: A Complete Guide
+            </h2>
+            <p class="text-sm text-zinc-400 leading-relaxed">
+              You solved 200 LeetCode problems but can't remember half of them. Here's how SM-2 spaced repetition fixes that — with a concrete 8-week study plan.
+            </p>
+          </a>
+        </article>
+
+        <!-- Article 2 -->
+        <article class="group">
+          <a href="/blog/sm2-algorithm-explained.html" class="block p-6 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
+            <div class="flex items-center gap-2 text-xs text-zinc-500 mb-3">
+              <time datetime="2026-03-02">March 2, 2026</time>
+              <span>&middot;</span>
+              <span>12 min read</span>
+              <span>&middot;</span>
+              <span class="text-amber-500/70">Algorithm Deep Dive</span>
+            </div>
+            <h2 class="text-lg font-bold text-zinc-100 group-hover:text-amber-400 transition-colors mb-2">
+              SM-2 Algorithm Explained: How Spaced Repetition Actually Works
+            </h2>
+            <p class="text-sm text-zinc-400 leading-relaxed">
+              The math behind spaced repetition, demystified. Full TypeScript implementation, worked examples, and why SM-2 is still the right choice in 2026.
+            </p>
+          </a>
+        </article>
+
+        <!-- Article 3 -->
+        <article class="group">
+          <a href="/blog/open-source-todoist-alternatives.html" class="block p-6 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
+            <div class="flex items-center gap-2 text-xs text-zinc-500 mb-3">
+              <time datetime="2026-03-02">March 2, 2026</time>
+              <span>&middot;</span>
+              <span>11 min read</span>
+              <span>&middot;</span>
+              <span class="text-amber-500/70">Tools</span>
+            </div>
+            <h2 class="text-lg font-bold text-zinc-100 group-hover:text-amber-400 transition-colors mb-2">
+              Best Open-Source Todoist Alternatives for Developers (2026)
+            </h2>
+            <p class="text-sm text-zinc-400 leading-relaxed">
+              Todoist is great but closed-source and not built for developers. Here are 7 open-source alternatives compared — including one with spaced repetition and AI coaching.
+            </p>
+          </a>
+        </article>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-zinc-800 mt-auto">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between text-xs text-zinc-600">
+        <span>&copy; 2026 reps</span>
+        <div class="flex items-center gap-3">
+          <a href="/" class="hover:text-zinc-400 transition-colors">Home</a>
+          <a href="https://github.com/crgeee/reps" class="hover:text-zinc-400 transition-colors" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

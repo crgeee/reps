@@ -1,6 +1,21 @@
+# Search engines — allow public pages, block API routes
 User-agent: *
-Disallow: /
+Allow: /
+Allow: /blog/
+Disallow: /tasks
+Disallow: /agent
+Disallow: /auth
+Disallow: /sync
+Disallow: /collections
+Disallow: /tags
+Disallow: /stats
+Disallow: /users
+Disallow: /export
+Disallow: /health
 
+Sitemap: https://reps-prep.duckdns.org/sitemap.xml
+
+# AI training bots — block entirely
 User-agent: GPTBot
 Disallow: /
 

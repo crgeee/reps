@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>SM-2 Algorithm Explained: How Spaced Repetition Actually Works</title>
+    <meta name="description" content="A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation. Understand how tools like Anki schedule your reviews." />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://reps-prep.duckdns.org/blog/sm2-algorithm-explained" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="SM-2 Algorithm Explained: How Spaced Repetition Actually Works" />
+    <meta property="og:description" content="A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation." />
+    <meta property="og:url" content="https://reps-prep.duckdns.org/blog/sm2-algorithm-explained" />
+    <meta property="og:site_name" content="reps" />
+    <meta property="og:image" content="https://reps-prep.duckdns.org/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SM-2 Algorithm Explained: How Spaced Repetition Actually Works" />
+    <meta name="twitter:description" content="A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation." />
+    <meta name="twitter:image" content="https://reps-prep.duckdns.org/og-image.png" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sora: ['Sora', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body { font-family: 'Sora', sans-serif; }
+      code, pre { font-family: 'JetBrains Mono', monospace; }
+      pre { overflow-x: auto; }
+      article h2 { scroll-margin-top: 2rem; }
+    </style>
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "SM-2 Algorithm Explained: How Spaced Repetition Actually Works",
+      "description": "A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation.",
+      "author": {
+        "@type": "Organization",
+        "name": "reps",
+        "url": "https://reps-prep.duckdns.org"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "reps",
+        "url": "https://reps-prep.duckdns.org"
+      },
+      "datePublished": "2026-03-02",
+      "dateModified": "2026-03-02",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://reps-prep.duckdns.org/blog/sm2-algorithm-explained"
+      },
+      "url": "https://reps-prep.duckdns.org/blog/sm2-algorithm-explained",
+      "image": "https://reps-prep.duckdns.org/og-image.png",
+      "keywords": ["SM-2 algorithm", "spaced repetition", "SuperMemo", "Anki", "TypeScript", "interview prep"]
+    }
+    </script>
+  </head>
+  <body class="bg-zinc-950 text-zinc-100 antialiased">
+    <!-- Header -->
+    <header class="border-b border-zinc-800">
+      <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+        <a href="/" class="text-xl font-bold text-white hover:text-emerald-400 transition-colors">reps</a>
+        <a href="/blog/" class="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">&larr; Back to blog</a>
+      </div>
+    </header>
+
+    <!-- Article -->
+    <main class="max-w-3xl mx-auto px-6 py-12">
+      <article>
+        <!-- Header -->
+        <header class="mb-12">
+          <p class="text-sm text-emerald-400 font-medium mb-3">Spaced Repetition</p>
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-4">SM-2 Algorithm Explained: How Spaced Repetition Actually Works</h1>
+          <p class="text-zinc-400 text-sm">Published March 2, 2026 &middot; 12 min read</p>
+        </header>
+
+        <!-- Introduction -->
+        <div class="prose prose-invert max-w-none">
+          <p class="text-lg text-zinc-300 leading-relaxed mb-6">
+            You have probably heard that spaced repetition is the most efficient way to memorize information long-term. Tools like Anki, SuperMemo, and <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> all use it. But when someone says "spaced repetition," what they usually mean is a specific algorithm running under the hood, deciding <em>when</em> you should see each card again.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            That algorithm, more often than not, is <strong class="text-white">SM-2</strong>.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            SM-2 is remarkably simple. The entire thing fits in about 30 lines of code. Yet it has powered billions of review sessions across millions of users for nearly four decades. In this article, we are going to break it down completely: the history, the math, the formulas, and a full working TypeScript implementation you can drop into your own projects.
+          </p>
+
+          <!-- History -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="history">A Brief History of SM-2</h2>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            In 1987, a Polish researcher named Piotr Wozniak was trying to solve a practical problem: he was learning English vocabulary and wanted to figure out the optimal time to review each word. Too soon and you waste time. Too late and you have already forgotten it.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Wozniak wrote a series of algorithms, each one refining the last. SM-0 and SM-1 were manual, table-based approaches. SM-2 was the breakthrough. It introduced the concept of an <strong class="text-white">ease factor</strong> &mdash; a per-item difficulty score that adjusts based on how well you recall the item. Easy items get reviewed less frequently. Hard items come back sooner.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            SM-2 became the engine behind SuperMemo 2, one of the first commercial spaced repetition programs. Wozniak went on to develop more sophisticated versions &mdash; SM-3 through SM-18 &mdash; but SM-2 was the one that escaped into the wild. When Damien Elmes created Anki in 2006, he chose SM-2 as its scheduling algorithm. Since Anki is open source, SM-2 became the de facto standard for spaced repetition worldwide.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Today, despite being nearly 40 years old, SM-2 remains the most widely deployed spaced repetition algorithm in existence. Anki alone has tens of millions of users. Countless other apps &mdash; including <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> &mdash; use it or a close variant.
+          </p>
+
+          <!-- The Algorithm -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="algorithm">The Algorithm, Step by Step</h2>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            SM-2 operates on a simple loop. Each time you review an item, you assign it a <strong class="text-white">quality rating</strong> from 0 to 5. The algorithm uses that rating to update three variables, which together determine when you will see the item again.
+          </p>
+
+          <!-- Quality Ratings -->
+          <h3 class="text-xl font-semibold text-white mt-8 mb-4" id="quality-ratings">Quality Ratings (0&ndash;5)</h3>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            The quality rating is your self-assessment of how well you recalled the item. Here is what each score means:
+          </p>
+
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm text-left">
+              <thead>
+                <tr class="bg-zinc-900 border-b border-zinc-700">
+                  <th class="px-4 py-3 font-semibold text-zinc-200">Rating</th>
+                  <th class="px-4 py-3 font-semibold text-zinc-200">Label</th>
+                  <th class="px-4 py-3 font-semibold text-zinc-200">Description</th>
+                </tr>
+              </thead>
+              <tbody class="bg-zinc-900/50">
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-red-400">0</td>
+                  <td class="px-4 py-3 text-zinc-300">Complete blackout</td>
+                  <td class="px-4 py-3 text-zinc-400">No memory of the item at all. Total failure.</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-red-400">1</td>
+                  <td class="px-4 py-3 text-zinc-300">Incorrect, remembered on reveal</td>
+                  <td class="px-4 py-3 text-zinc-400">You got it wrong but recognized the answer immediately when shown.</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-orange-400">2</td>
+                  <td class="px-4 py-3 text-zinc-300">Incorrect, easy on reveal</td>
+                  <td class="px-4 py-3 text-zinc-400">Wrong answer, but the correct one seemed easy once revealed.</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-yellow-400">3</td>
+                  <td class="px-4 py-3 text-zinc-300">Correct with serious difficulty</td>
+                  <td class="px-4 py-3 text-zinc-400">You recalled it, but it required significant effort.</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-emerald-400">4</td>
+                  <td class="px-4 py-3 text-zinc-300">Correct with hesitation</td>
+                  <td class="px-4 py-3 text-zinc-400">Correct recall after some thinking. The most common "good" rating.</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-mono text-emerald-400">5</td>
+                  <td class="px-4 py-3 text-zinc-300">Perfect response</td>
+                  <td class="px-4 py-3 text-zinc-400">Instant, effortless recall. You know this cold.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            The critical threshold is <strong class="text-white">3</strong>. A quality rating of 3 or above counts as a successful recall &mdash; the item's review streak continues. A rating below 3 is a failure &mdash; the streak resets and you start over from the beginning.
+          </p>
+
+          <!-- Three Key Variables -->
+          <h3 class="text-xl font-semibold text-white mt-8 mb-4" id="variables">The Three Key Variables</h3>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            SM-2 tracks three variables per item:
+          </p>
+          <ul class="list-disc list-inside text-zinc-300 space-y-3 mb-6 ml-2">
+            <li><strong class="text-white">repetitions</strong> &mdash; How many consecutive successful reviews the item has had. Resets to 0 on any failure (quality &lt; 3).</li>
+            <li><strong class="text-white">interval</strong> &mdash; The number of days until the next review. Starts at 1, jumps to 6 after the first success, then grows exponentially via the ease factor.</li>
+            <li><strong class="text-white">easeFactor</strong> &mdash; A floating-point multiplier (minimum 1.3) that controls how quickly intervals grow. Starts at 2.5 for all items. Items you consistently rate highly get a higher ease factor and grow to longer intervals faster. Items you struggle with get a lower ease factor, keeping intervals shorter.</li>
+          </ul>
+
+          <!-- The Formulas -->
+          <h3 class="text-xl font-semibold text-white mt-8 mb-4" id="formulas">The Formulas</h3>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            After each review, SM-2 updates the variables in two phases.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            <strong class="text-white">Phase 1: Update interval and repetitions</strong>
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            If the quality rating is 3 or higher (successful recall):
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-4 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>if repetitions == 0:  interval = 1
+if repetitions == 1:  interval = 6
+if repetitions >= 2:  interval = interval * easeFactor
+
+repetitions = repetitions + 1</code></pre>
+          </div>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            If the quality rating is below 3 (failed recall):
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-6 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>repetitions = 0
+interval = 1</code></pre>
+          </div>
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            <strong class="text-white">Phase 2: Update ease factor</strong>
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            Regardless of whether you passed or failed, the ease factor is adjusted using this formula:
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-6 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))</code></pre>
+          </div>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            Where <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-emerald-400 text-sm">EF</code> is the current ease factor and <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-emerald-400 text-sm">q</code> is the quality rating (0&ndash;5). The result is clamped to a minimum of 1.3 to prevent intervals from shrinking too aggressively.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            Let's look at what this formula produces for each quality rating:
+          </p>
+
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm text-left">
+              <thead>
+                <tr class="bg-zinc-900 border-b border-zinc-700">
+                  <th class="px-4 py-3 font-semibold text-zinc-200">Quality (q)</th>
+                  <th class="px-4 py-3 font-semibold text-zinc-200">EF Change</th>
+                  <th class="px-4 py-3 font-semibold text-zinc-200">Effect</th>
+                </tr>
+              </thead>
+              <tbody class="bg-zinc-900/50">
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-zinc-300">0</td>
+                  <td class="px-4 py-3 font-mono text-red-400">-0.80</td>
+                  <td class="px-4 py-3 text-zinc-400">Massive decrease &mdash; item is very hard</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-zinc-300">1</td>
+                  <td class="px-4 py-3 font-mono text-red-400">-0.54</td>
+                  <td class="px-4 py-3 text-zinc-400">Large decrease</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-zinc-300">2</td>
+                  <td class="px-4 py-3 font-mono text-orange-400">-0.32</td>
+                  <td class="px-4 py-3 text-zinc-400">Moderate decrease</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-zinc-300">3</td>
+                  <td class="px-4 py-3 font-mono text-yellow-400">-0.14</td>
+                  <td class="px-4 py-3 text-zinc-400">Small decrease &mdash; barely passed</td>
+                </tr>
+                <tr class="border-b border-zinc-800">
+                  <td class="px-4 py-3 font-mono text-zinc-300">4</td>
+                  <td class="px-4 py-3 font-mono text-emerald-400">+0.00</td>
+                  <td class="px-4 py-3 text-zinc-400">No change &mdash; item is at equilibrium</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-mono text-zinc-300">5</td>
+                  <td class="px-4 py-3 font-mono text-emerald-400">+0.10</td>
+                  <td class="px-4 py-3 text-zinc-400">Increase &mdash; item is becoming easier</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Notice that the algorithm is pessimistic by design. Only a perfect score of 5 increases the ease factor. A rating of 4 &mdash; which is "correct with some hesitation" &mdash; leaves the ease factor unchanged. Anything below 4 decreases it. This asymmetry means that items naturally trend toward harder scheduling over time unless you consistently nail them.
+          </p>
+
+          <!-- Worked Example -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="example">Worked Example: "Binary Search" Card</h2>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Let's walk through a concrete example. You have a task card called "Binary Search" and you are going to review it three times over the next few weeks. We will track every variable at each step.
+          </p>
+
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            <strong class="text-white">Initial state (before any review):</strong>
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-6 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>repetitions = 0
+interval    = 1
+easeFactor  = 2.50</code></pre>
+          </div>
+
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            <strong class="text-white">Review 1 &mdash; Quality: 4 (correct with hesitation)</strong>
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            You see the card "Binary Search." You remember the algorithm: pick the midpoint, compare, recurse on the correct half. You get the time complexity right (O(log n)) but hesitate on the edge case for an empty array. You rate yourself a 4.
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-2 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>Quality >= 3, so this is a success.
+repetitions was 0, so interval = 1 day.
+repetitions = 0 + 1 = 1
+
+EF' = 2.50 + (0.1 - (5-4) * (0.08 + (5-4) * 0.02))
+    = 2.50 + (0.1 - 1 * (0.08 + 1 * 0.02))
+    = 2.50 + (0.1 - 0.10)
+    = 2.50 + 0.00
+    = 2.50</code></pre>
+          </div>
+          <p class="text-zinc-400 text-sm mb-6">Result: review again in <strong class="text-white">1 day</strong>. Ease factor unchanged at <strong class="text-white">2.50</strong>.</p>
+
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            <strong class="text-white">Review 2 &mdash; Quality: 3 (correct with serious difficulty)</strong>
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            One day later. You remember binary search but struggle with the iterative implementation. You eventually get it right but it was a grind. Rating: 3.
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-2 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>Quality >= 3, so this is a success.
+repetitions was 1, so interval = 6 days.
+repetitions = 1 + 1 = 2
+
+EF' = 2.50 + (0.1 - (5-3) * (0.08 + (5-3) * 0.02))
+    = 2.50 + (0.1 - 2 * (0.08 + 2 * 0.02))
+    = 2.50 + (0.1 - 2 * 0.12)
+    = 2.50 + (0.1 - 0.24)
+    = 2.50 + (-0.14)
+    = 2.36</code></pre>
+          </div>
+          <p class="text-zinc-400 text-sm mb-6">Result: review again in <strong class="text-white">6 days</strong>. Ease factor dropped to <strong class="text-white">2.36</strong> because the recall was difficult.</p>
+
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            <strong class="text-white">Review 3 &mdash; Quality: 5 (perfect response)</strong>
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-2">
+            Six days later. This time binary search clicks instantly. You can write both recursive and iterative versions, handle edge cases, and explain the time complexity without thinking. Rating: 5.
+          </p>
+          <div class="bg-zinc-900 rounded-lg p-4 mb-2 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono"><code>Quality >= 3, so this is a success.
+repetitions was 2, so interval = round(6 * 2.36) = round(14.16) = 14 days.
+repetitions = 2 + 1 = 3
+
+EF' = 2.36 + (0.1 - (5-5) * (0.08 + (5-5) * 0.02))
+    = 2.36 + (0.1 - 0 * (0.08 + 0))
+    = 2.36 + 0.10
+    = 2.46</code></pre>
+          </div>
+          <p class="text-zinc-400 text-sm mb-6">Result: review again in <strong class="text-white">14 days</strong>. Ease factor recovered to <strong class="text-white">2.46</strong>.</p>
+
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            After three reviews, your binary search card is scheduled 14 days out and has an ease factor of 2.46. If you keep rating it 5, the next intervals would be roughly 34 days, then 84 days, then 207 days. The exponential growth is the whole point: items you know well quickly move to long intervals, freeing up your daily review time for items you actually need to practice.
+          </p>
+
+          <!-- TypeScript Implementation -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="implementation">Full TypeScript Implementation</h2>
+          <p class="text-zinc-300 leading-relaxed mb-4">
+            Here is a clean, complete implementation of SM-2 in TypeScript. This is the exact algorithm that <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> uses to schedule interview prep reviews.
+          </p>
+
+          <div class="bg-zinc-900 rounded-lg p-4 mb-6 overflow-x-auto">
+            <pre class="text-sm text-zinc-300 font-mono leading-relaxed"><code><span class="text-zinc-500">/** Quality rating from 0 (blackout) to 5 (perfect) */</span>
+<span class="text-blue-400">type</span> Quality = 0 | 1 | 2 | 3 | 4 | 5;
+
+<span class="text-blue-400">interface</span> SM2Result {
+  repetitions: <span class="text-emerald-400">number</span>;
+  interval: <span class="text-emerald-400">number</span>;
+  easeFactor: <span class="text-emerald-400">number</span>;
+}
+
+<span class="text-blue-400">function</span> <span class="text-yellow-300">sm2</span>(
+  quality: Quality,
+  repetitions: <span class="text-emerald-400">number</span>,
+  interval: <span class="text-emerald-400">number</span>,
+  easeFactor: <span class="text-emerald-400">number</span>
+): SM2Result {
+  <span class="text-zinc-500">// Phase 1: Update interval and repetitions</span>
+  <span class="text-blue-400">if</span> (quality >= 3) {
+    <span class="text-zinc-500">// Successful recall</span>
+    <span class="text-blue-400">if</span> (repetitions === 0) {
+      interval = 1;
+    } <span class="text-blue-400">else if</span> (repetitions === 1) {
+      interval = 6;
+    } <span class="text-blue-400">else</span> {
+      interval = Math.round(interval * easeFactor);
+    }
+    repetitions += 1;
+  } <span class="text-blue-400">else</span> {
+    <span class="text-zinc-500">// Failed recall — reset</span>
+    repetitions = 0;
+    interval = 1;
+  }
+
+  <span class="text-zinc-500">// Phase 2: Update ease factor (always runs)</span>
+  easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  easeFactor = Math.max(1.3, easeFactor);
+  easeFactor = Math.round(easeFactor * 100) / 100;
+
+  <span class="text-blue-400">return</span> { repetitions, interval, easeFactor };
+}</code></pre>
+          </div>
+
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            That is the entire algorithm. Thirty lines of logic. The only subtle detail is rounding the ease factor to two decimal places, which prevents floating-point drift from accumulating over hundreds of reviews. The <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-emerald-400 text-sm">Math.max(1.3, ...)</code> clamp ensures the ease factor never drops below 1.3, which would cause intervals to shrink on successful reviews.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            To use this in practice, you would store the three return values alongside each item and compute the next review date by adding <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-emerald-400 text-sm">interval</code> days to the current date. When querying for items to review, select everything where <code class="bg-zinc-900 px-1.5 py-0.5 rounded text-emerald-400 text-sm">nextReview &lt;= today</code>.
+          </p>
+
+          <!-- Strengths and Weaknesses -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="strengths-weaknesses">Strengths and Weaknesses of SM-2</h2>
+
+          <h3 class="text-xl font-semibold text-white mt-8 mb-4">Strengths</h3>
+          <ul class="list-disc list-inside text-zinc-300 space-y-3 mb-6 ml-2">
+            <li><strong class="text-white">Simplicity.</strong> The algorithm is trivial to implement, debug, and reason about. There is no machine learning model, no training data, no hidden state. You can trace through the math by hand.</li>
+            <li><strong class="text-white">Proven track record.</strong> SM-2 has been in production use since 1987. Medical students have passed board exams with it. Language learners have acquired fluency with it. The algorithm works.</li>
+            <li><strong class="text-white">Per-item adaptation.</strong> The ease factor adjusts independently for each item, so the algorithm naturally spends more time on things you find difficult and less time on things you find easy.</li>
+            <li><strong class="text-white">Predictable behavior.</strong> Because the algorithm is deterministic and stateless (no cross-item effects), it is easy to test and the user can develop an intuition for how their ratings affect scheduling.</li>
+            <li><strong class="text-white">Low overhead.</strong> Each item requires only three numbers to be stored. There is no need for a review history, no need for aggregate statistics. This makes SM-2 extremely efficient for both storage and computation.</li>
+          </ul>
+
+          <h3 class="text-xl font-semibold text-white mt-8 mb-4">Weaknesses</h3>
+          <ul class="list-disc list-inside text-zinc-300 space-y-3 mb-6 ml-2">
+            <li><strong class="text-white">The ease factor death spiral.</strong> This is the most well-known problem with SM-2. If you rate an item 3 several times in a row, the ease factor drops steadily (2.50 &rarr; 2.36 &rarr; 2.22 &rarr; 2.08 &rarr; 1.94). Lower ease factors mean shorter intervals, which means you see the item more often, which means you are more likely to give it a marginal rating, which drops the ease factor further. Once an item's ease factor hits the 1.3 floor, it is stuck there permanently unless you start rating it 5 consistently.</li>
+            <li><strong class="text-white">No leech detection.</strong> Some items are fundamentally hard and you keep failing them over and over. SM-2 just resets to interval=1 each time. It has no mechanism to flag these "leech" cards so you can rewrite or remove them.</li>
+            <li><strong class="text-white">No consideration of item difficulty.</strong> Every new item starts with the same ease factor of 2.5. SM-2 has no way to predict that "implement a red-black tree" will be harder than "implement a stack" before you have reviewed them.</li>
+            <li><strong class="text-white">Binary pass/fail threshold.</strong> The jump between quality 2 (fail) and quality 3 (pass) is enormous. Fail resets everything to day 1. Pass keeps the streak going. There is no middle ground.</li>
+            <li><strong class="text-white">No backlog handling.</strong> If you skip reviews for a month and come back with 200 overdue items, SM-2 has no opinion about how to prioritize them. It just says they are all due.</li>
+          </ul>
+
+          <!-- Modern Alternatives -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="modern-alternatives">Modern Alternatives</h2>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Wozniak himself moved far beyond SM-2. His latest algorithms (SM-17 and SM-18) use a complex model of memory based on two variables of memory stability and retrievability, with optimization across the user's entire review history. These algorithms power the commercial SuperMemo application but are not open source and are significantly more complex to implement.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            The most significant modern challenger is <strong class="text-white">FSRS (Free Spaced Repetition Scheduler)</strong>, developed by Jarrett Ye. FSRS uses a machine learning model with four parameters representing memory stability, difficulty, and retrievability. It was adopted by Anki as an alternative scheduler in 2023. Benchmarks show that FSRS achieves better review efficiency than SM-2 &mdash; users retain the same amount of information with fewer reviews. FSRS also handles the ease factor death spiral by design, since it does not use a single multiplicative ease factor at all.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Other alternatives include Leitner boxes (simpler than SM-2 but less efficient), Ebisu (a Bayesian approach), and various proprietary algorithms used by apps like Memrise and Duolingo. But none of these has achieved the combination of simplicity, openness, and proven effectiveness that keeps SM-2 in widespread use.
+          </p>
+
+          <!-- Why SM-2 for Interview Prep -->
+          <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="interview-prep">Why SM-2 Is Still the Right Choice for Interview Prep</h2>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            If FSRS is measurably better, why does <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> use SM-2? Context matters.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            FSRS shines when you have a large collection &mdash; thousands of flashcards &mdash; and you need to optimize for minimal daily review time while maintaining high retention across all of them. This is the language-learning scenario: 5,000 vocabulary words, 20 reviews a day, over multiple years.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            Interview prep is different. You are not memorizing 5,000 flashcards. You are deeply practicing 200 to 400 problems over a period of weeks or months. Each "review" is not a five-second recall check &mdash; it is a 20-minute problem-solving session or a mock behavioral answer. At this scale, the efficiency gains of FSRS over SM-2 are negligible. The difference between "review this problem in 12 days" versus "review this problem in 14 days" does not meaningfully affect your preparation.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            What matters for interview prep is:
+          </p>
+          <ul class="list-disc list-inside text-zinc-300 space-y-3 mb-6 ml-2">
+            <li><strong class="text-white">Predictability.</strong> You want to understand why a problem is being surfaced today. SM-2 makes this transparent: you rated it a 3 last time, so the ease factor dropped and the interval shortened.</li>
+            <li><strong class="text-white">Simplicity.</strong> You want to trust the system, not debug it. SM-2 is simple enough that you can verify it is doing the right thing.</li>
+            <li><strong class="text-white">The fail/reset mechanic actually helps.</strong> If you cannot solve a problem, you should see it again tomorrow. SM-2's aggressive reset on failure is a feature in this context, not a bug.</li>
+          </ul>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            The ease factor death spiral is the one legitimate concern, but it is manageable with a small deck. If you notice a problem's ease factor has bottomed out at 1.3, that is useful signal: either you need to break it into subproblems, add better notes, or change your approach to studying it entirely.
+          </p>
+          <p class="text-zinc-300 leading-relaxed mb-6">
+            SM-2 has been scheduling review sessions for nearly four decades. It is not the most sophisticated algorithm anymore, but it is the most battle-tested. For interview prep specifically &mdash; where your deck is small, your stakes are high, and your time horizon is weeks not years &mdash; it is still the right tool.
+          </p>
+
+        </div>
+
+        <!-- CTA Box -->
+        <div class="mt-12 bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+          <h2 class="text-xl font-bold text-white mb-2">Track your interview prep with SM-2</h2>
+          <p class="text-zinc-400 mb-6">reps uses the SM-2 algorithm to schedule your reviews, combined with AI-generated interview questions and answer evaluation.</p>
+          <a href="https://reps-prep.duckdns.org" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-6 py-3 rounded-lg transition-colors">
+            Try reps free
+          </a>
+        </div>
+
+      </article>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-zinc-800 mt-16">
+      <div class="max-w-3xl mx-auto px-6 py-8 flex items-center justify-between text-sm text-zinc-500">
+        <p>&copy; 2026 reps. All rights reserved.</p>
+        <a href="/" class="hover:text-zinc-300 transition-colors">reps-prep.duckdns.org</a>
+      </div>
+    </footer>
+  </body>
+</html>
