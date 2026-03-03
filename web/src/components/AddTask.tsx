@@ -34,7 +34,7 @@ export default function AddTask() {
 
   useEffect(() => {
     setTopic(activeCollection?.topics?.[0]?.name ?? 'coding');
-  }, [activeCollection?.id]);
+  }, [activeCollection?.id, activeCollection?.topics]);
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
