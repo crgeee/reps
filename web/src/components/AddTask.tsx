@@ -1,23 +1,27 @@
-import { useState, useEffect } from 'react';
-import type { Tag, Collection } from '../types';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
+import type { Tag } from '../types';
 import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask, createTag } from '../api';
 import { logger } from '../logger';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import TagPicker from './TagPicker';
 
-interface AddTaskProps {
-  onCreated: () => void;
-  availableTags?: Tag[];
-  onTagCreated?: (tag: Tag) => void;
-  activeCollection?: Collection | null;
-}
+export default function AddTask() {
+  const {
+    tags: availableTags,
+    handleTagCreated: onTagCreated,
+    activeCollectionId,
+    collections,
+    fetchData,
+  } = useProtectedContext();
+  const navigate = useNavigate();
 
-export default function AddTask({
-  onCreated,
-  availableTags = [],
-  onTagCreated,
-  activeCollection,
-}: AddTaskProps) {
+  const activeCollection = useMemo(
+    () => (activeCollectionId ? collections.find((c) => c.id === activeCollectionId) ?? null : null),
+    [activeCollectionId, collections],
+  );
+
   const collectionTopics = activeCollection?.topics ?? [];
   const useCollectionTopics = collectionTopics.length > 0;
   const topicOptions = useCollectionTopics
@@ -56,7 +60,8 @@ export default function AddTask({
         collectionId: activeCollection?.id ?? undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
-      onCreated();
+      await fetchData();
+      navigate('/tasks');
     } catch (err) {
       logger.error('Failed to create task', { topic, title, error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to create task');

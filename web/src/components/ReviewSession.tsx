@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import { Brain } from 'lucide-react';
 import type {
   Task,
@@ -18,24 +19,24 @@ import {
   respondToMock,
 } from '../api';
 import { logger } from '../logger';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import FocusTimer from './FocusTimer';
 import ScoreCard from './ScoreCard';
 
-interface ReviewSessionProps {
-  dueTasks: Task[];
-  onComplete: () => void;
-  mode?: 'review' | 'practice';
-}
+export default function ReviewSession() {
+  const { filteredDueTasks: dueTasks, fetchData } = useProtectedContext();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const mode: 'review' | 'practice' = location.pathname === '/practice' ? 'practice' : 'review';
 
-export default function ReviewSession({
-  dueTasks,
-  onComplete,
-  mode = 'review',
-}: ReviewSessionProps) {
+  function handleComplete() {
+    fetchData().then(() => navigate('/'));
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {mode === 'review' ? (
-        <SpacedReview dueTasks={dueTasks} onComplete={onComplete} />
+        <SpacedReview dueTasks={dueTasks} onComplete={handleComplete} />
       ) : (
         <PracticeMode />
       )}

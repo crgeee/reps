@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, memo, useCallback } from 'react';
+import { useSearchParams } from 'react-router';
 import { useTaskTopics } from '../hooks/useTaskTopics';
 import {
   DndContext,
@@ -13,7 +14,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Task, Topic, TaskStatus, Tag, Collection, CollectionStatus } from '../types';
+import type { Task, Topic, TaskStatus, Tag, CollectionStatus } from '../types';
 import {
   TOPICS,
   STATUSES,
@@ -23,6 +24,7 @@ import {
   getTopicColor,
 } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import FilterBar from './FilterBar';
 import TaskCard from './TaskCard';
 import TagBadge from './TagBadge';
@@ -32,19 +34,6 @@ import { logger } from '../logger';
 
 type LayoutMode = 'list' | 'board';
 
-interface TaskListProps {
-  tasks: Task[];
-  onRefresh: () => void;
-  availableTags?: Tag[];
-  collections?: Collection[];
-  onTagCreated?: (tag: Tag) => void;
-  statusOptions?: { value: string; label: string }[];
-  onOptimisticUpdate?: (taskId: string, updates: Partial<Task>) => void;
-  onBackgroundRefresh?: () => void;
-  collectionStatuses?: CollectionStatus[];
-  initialTopicFilter?: string | null;
-}
-
 const DEFAULT_STATUS_COLORS: Record<TaskStatus, string> = {
   todo: '#3f3f46',
   'in-progress': '#1e3a5f',
@@ -52,28 +41,35 @@ const DEFAULT_STATUS_COLORS: Record<TaskStatus, string> = {
   done: '#14532d',
 };
 
-export default function TaskList({
-  tasks,
-  onRefresh,
-  availableTags = [],
-  collections = [],
-  onTagCreated,
-  statusOptions,
-  onOptimisticUpdate,
-  onBackgroundRefresh,
-  collectionStatuses,
-  initialTopicFilter,
-}: TaskListProps) {
+export default function TaskList() {
+  const {
+    filteredTasks: tasks,
+    fetchData: onRefresh,
+    tags: availableTags,
+    collections,
+    handleTagCreated: onTagCreated,
+    activeStatusOptions: statusOptions,
+    optimisticUpdateTask: onOptimisticUpdate,
+    refreshQuietly: onBackgroundRefresh,
+    activeStatuses: collectionStatuses,
+    initialTopicFilter,
+  } = useProtectedContext();
+
+  const [searchParams] = useSearchParams();
+  const topicFromUrl = searchParams.get('topic');
+
+  const effectiveInitialTopicFilter = topicFromUrl ?? initialTopicFilter;
+
   const { filters, setFilter, resetFilters, filtered, grouped } = useFilteredTasks(tasks);
   const taskTopics = useTaskTopics(tasks);
   const [appliedInitialFilter, setAppliedInitialFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialTopicFilter && initialTopicFilter !== appliedInitialFilter) {
-      setFilter('topic', initialTopicFilter as Topic | 'all');
-      setAppliedInitialFilter(initialTopicFilter);
+    if (effectiveInitialTopicFilter && effectiveInitialTopicFilter !== appliedInitialFilter) {
+      setFilter('topic', effectiveInitialTopicFilter as Topic | 'all');
+      setAppliedInitialFilter(effectiveInitialTopicFilter);
     }
-  }, [initialTopicFilter, appliedInitialFilter, setFilter]);
+  }, [effectiveInitialTopicFilter, appliedInitialFilter, setFilter]);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [layout, setLayout] = useState<LayoutMode>(() => {

@@ -553,7 +553,7 @@ export default function ProtectedLayout() {
         )}
       </main>
       <FocusWidget />
-      <Footer onNavigate={(v) => navigate(`/${v}`)} />
+      <Footer />
 
       {/* Mobile bottom nav */}
       <nav

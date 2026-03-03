@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
-import type { Task, StatsOverview } from '../types';
+import type { StatsOverview } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
 import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
-
-interface TopicProgressProps {
-  tasks: Task[];
-  activeCollectionId?: string | null;
-}
 
 interface TopicStat {
   topic: string;
@@ -40,7 +36,8 @@ function getTopicBarColor(topic: string): string {
   return map[topic] ?? 'bg-zinc-500';
 }
 
-export default function TopicProgress({ tasks, activeCollectionId }: TopicProgressProps) {
+export default function TopicProgress() {
+  const { filteredTasks: tasks, activeCollectionId } = useProtectedContext();
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
 

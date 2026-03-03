@@ -25,14 +25,6 @@ function LazyFallback() {
   );
 }
 
-function ReviewSessionWrapper({ mode }: { mode: 'review' | 'practice' }) {
-  return (
-    <Suspense fallback={<LazyFallback />}>
-      <ReviewSession dueTasks={[]} onComplete={() => {}} mode={mode} />
-    </Suspense>
-  );
-}
-
 export const router = createBrowserRouter([
   // Public routes
   {
@@ -53,21 +45,26 @@ export const router = createBrowserRouter([
       { path: '/add', element: <AddTask /> },
       {
         path: '/review',
-        element: <ReviewSessionWrapper mode="review" />,
+        element: (
+          <Suspense fallback={<LazyFallback />}>
+            <ReviewSession />
+          </Suspense>
+        ),
       },
       {
         path: '/practice',
-        element: <ReviewSessionWrapper mode="practice" />,
+        element: (
+          <Suspense fallback={<LazyFallback />}>
+            <ReviewSession />
+          </Suspense>
+        ),
       },
       { path: '/progress', element: <TopicProgress /> },
       {
         path: '/calendar',
         element: (
           <Suspense fallback={<LazyFallback />}>
-            <div className="space-y-4">
-              <h1 className="text-lg font-bold tracking-tight">Calendar</h1>
-              <CalendarView />
-            </div>
+            <CalendarView />
           </Suspense>
         ),
       },
