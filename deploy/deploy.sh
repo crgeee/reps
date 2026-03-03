@@ -46,6 +46,11 @@ if ! sudo nginx -t; then
   sudo cp /etc/nginx/sites-available/reps.bak /etc/nginx/sites-available/reps
   exit 1
 fi
+# Re-apply SSL cert (Certbot modifies the config in-place)
+if command -v certbot &>/dev/null; then
+  echo "→ Re-applying SSL certificate..."
+  sudo certbot --nginx -d reps-prep.duckdns.org --non-interactive --agree-tos --email crgeee@gmail.com
+fi
 sudo systemctl reload nginx
 
 echo "→ Restarting reps with pm2..."
