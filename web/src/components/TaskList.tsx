@@ -96,13 +96,17 @@ export default function TaskList({
     return filtered.filter((t) => t.tags?.some((tag) => tag.id === tagFilter));
   }, [filtered, tagFilter]);
 
-  const topicGroups = TOPICS.reduce<Record<Topic, Task[]>>(
-    (acc, topic) => {
-      const topicTasks = tagFiltered.filter((t) => t.topic === topic);
-      if (topicTasks.length > 0) acc[topic] = topicTasks;
-      return acc;
-    },
-    {} as Record<Topic, Task[]>,
+  const topicGroups = useMemo(
+    () =>
+      TOPICS.reduce<Record<Topic, Task[]>>(
+        (acc, topic) => {
+          const topicTasks = tagFiltered.filter((t) => t.topic === topic);
+          if (topicTasks.length > 0) acc[topic] = topicTasks;
+          return acc;
+        },
+        {} as Record<Topic, Task[]>,
+      ),
+    [tagFiltered],
   );
 
   // Collect all unique tags used in tasks for the filter

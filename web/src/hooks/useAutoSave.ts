@@ -14,7 +14,17 @@ interface UseAutoSaveResult {
   error: string | null;
 }
 
-export function useAutoSave<T>({
+function shallowEqual<T extends Record<string, unknown>>(a: T, b: T): boolean {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+}
+
+export function useAutoSave<T extends Record<string, unknown>>({
   values,
   onSave,
   delay = 600,
@@ -22,17 +32,17 @@ export function useAutoSave<T>({
 }: UseAutoSaveOptions<T>): UseAutoSaveResult {
   const [status, setStatus] = useState<AutoSaveStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const initialRef = useRef<string | null>(null);
+  const initialRef = useRef<T | null>(null);
+  const prevRef = useRef<T>(values);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const generationRef = useRef(0);
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
-  const serialized = JSON.stringify(values);
-
   // Capture initial values on mount
   if (initialRef.current === null) {
-    initialRef.current = serialized;
+    initialRef.current = values;
   }
 
   const save = useCallback(
@@ -44,7 +54,8 @@ export function useAutoSave<T>({
         await onSaveRef.current(vals);
         if (gen === generationRef.current) {
           setStatus('saved');
-          setTimeout(() => {
+          clearTimeout(fadeTimerRef.current);
+          fadeTimerRef.current = setTimeout(() => {
             if (gen === generationRef.current) setStatus('idle');
           }, 2000);
         }
@@ -61,19 +72,28 @@ export function useAutoSave<T>({
   useEffect(() => {
     if (!enabled) return;
     // Skip if values haven't changed from initial
-    if (serialized === initialRef.current) return;
+    if (shallowEqual(values, initialRef.current!)) {
+      prevRef.current = values;
+      return;
+    }
+    // Skip if values haven't changed from previous render
+    if (shallowEqual(values, prevRef.current)) return;
+    prevRef.current = values;
 
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      save(JSON.parse(serialized) as T);
+      save(values);
     }, delay);
 
     return () => clearTimeout(timerRef.current);
-  }, [serialized, delay, enabled, save]);
+  }, [values, delay, enabled, save]);
 
-  // Cleanup on unmount
+  // Cleanup all timers on unmount
   useEffect(() => {
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(fadeTimerRef.current);
+    };
   }, []);
 
   return { status, error };

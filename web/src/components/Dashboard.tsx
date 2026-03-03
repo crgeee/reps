@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Task, Streaks } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
@@ -59,25 +59,26 @@ export default function Dashboard({
   const completedTasks = tasks.filter((t) => t.completed);
 
   const topicMap = useGroupedTasksByTopic(tasks);
-  const topicStats = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
-    const done = topicTasks.filter((t) => t.completed).length;
-    const due = topicTasks.filter(
-      (t) => !t.completed && new Date(t.nextReview) <= new Date(),
-    ).length;
-    const total = topicTasks.length;
-    const avgEF =
-      topicTasks.length > 0
-        ? topicTasks.reduce((s, t) => s + t.easeFactor, 0) / topicTasks.length
-        : 0;
-    return {
-      topic,
-      done,
-      due,
-      total,
-      pct: total > 0 ? Math.round((done / total) * 100) : 0,
-      avgEF,
-    };
-  });
+  const topicStats = useMemo(() => {
+    const now = new Date();
+    return Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
+      const done = topicTasks.filter((t) => t.completed).length;
+      const due = topicTasks.filter((t) => !t.completed && new Date(t.nextReview) <= now).length;
+      const total = topicTasks.length;
+      const avgEF =
+        topicTasks.length > 0
+          ? topicTasks.reduce((s, t) => s + t.easeFactor, 0) / topicTasks.length
+          : 0;
+      return {
+        topic,
+        done,
+        due,
+        total,
+        pct: total > 0 ? Math.round((done / total) * 100) : 0,
+        avgEF,
+      };
+    });
+  }, [topicMap]);
 
   const streakActive = streaks && streaks.currentStreak > 0;
 
