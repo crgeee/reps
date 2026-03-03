@@ -1,5 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTaskTools } from './tools/tasks.js';
+import { registerAgentTools } from './tools/agent.js';
+import { registerResources } from './resources.js';
 
 export function createMcpServer(userId: string): McpServer {
   const server = new McpServer({
@@ -8,8 +10,8 @@ export function createMcpServer(userId: string): McpServer {
   });
 
   registerTaskTools(server, userId);
-  // registerAgentTools(server, userId);  // Task 5
-  // registerResources(server, userId);    // Task 6
+  registerAgentTools(server, userId);
+  registerResources(server, userId);
 
   return server;
 }
