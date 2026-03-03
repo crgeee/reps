@@ -1,30 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import type { Task, Streaks } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStreaks } from '../api';
 import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
+import { useProtectedContext } from '../layouts/ProtectedLayout';
 import { Flame, Info, Brain } from 'lucide-react';
-
-type View =
-  | 'dashboard'
-  | 'tasks'
-  | 'review'
-  | 'practice'
-  | 'add'
-  | 'progress'
-  | 'calendar'
-  | 'export'
-  | 'settings';
-
-interface DashboardProps {
-  tasks: Task[];
-  dueTasks: Task[];
-  onStartReview: () => void;
-  onNavigate: (view: View) => void;
-  onTopicClick?: (topic: string) => void;
-  activeCollectionId?: string | null;
-}
 
 function isOverdue(task: Task): boolean {
   return new Date(task.nextReview) < new Date(new Date().toISOString().split('T')[0]!);
@@ -36,14 +18,13 @@ function daysUntil(dateStr: string): number {
   return Math.round((target.getTime() - today.getTime()) / 86400000);
 }
 
-export default function Dashboard({
-  tasks,
-  dueTasks,
-  onStartReview,
-  onNavigate,
-  onTopicClick,
-  activeCollectionId,
-}: DashboardProps) {
+export default function Dashboard() {
+  const {
+    filteredTasks: tasks,
+    filteredDueTasks: dueTasks,
+    activeCollectionId,
+  } = useProtectedContext();
+  const navigate = useNavigate();
   const [streaks, setStreaks] = useState<Streaks | null>(null);
 
   useEffect(() => {
@@ -54,9 +35,9 @@ export default function Dashboard({
       });
   }, [activeCollectionId]);
 
-  const overdueTasks = dueTasks.filter(isOverdue);
-  const activeTasks = tasks.filter((t) => !t.completed);
-  const completedTasks = tasks.filter((t) => t.completed);
+  const overdueTasks = useMemo(() => dueTasks.filter(isOverdue), [dueTasks]);
+  const activeTasks = useMemo(() => tasks.filter((t) => !t.completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter((t) => t.completed), [tasks]);
 
   const topicMap = useGroupedTasksByTopic(tasks);
   const topicStats = useMemo(() => {
@@ -123,7 +104,7 @@ export default function Dashboard({
             {overdueTasks.map((t) => t.title).join(' · ')}
           </span>
           <button
-            onClick={onStartReview}
+            onClick={() => navigate('/review')}
             className="text-xs text-red-300 hover:text-red-100 font-medium flex-shrink-0 underline decoration-red-800 hover:decoration-red-400 transition-colors"
           >
             Review now
@@ -134,7 +115,7 @@ export default function Dashboard({
       {/* ── Review CTA ── */}
       {dueTasks.length > 0 && (
         <button
-          onClick={onStartReview}
+          onClick={() => navigate('/review')}
           className="w-full flex items-center justify-between px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-lg hover:bg-amber-500/15 transition-all group"
         >
           <div className="flex items-center gap-3">
@@ -150,7 +131,7 @@ export default function Dashboard({
 
       {/* ── Practice CTA ── */}
       <button
-        onClick={() => onNavigate('practice' as View)}
+        onClick={() => navigate('/practice')}
         className="w-full flex items-center justify-between px-4 py-3 bg-purple-500/10 border border-purple-500/20 rounded-lg hover:bg-purple-500/15 transition-all group"
       >
         <div className="flex items-center gap-3">
@@ -177,7 +158,7 @@ export default function Dashboard({
             </span>
           </div>
           <button
-            onClick={() => onNavigate('progress')}
+            onClick={() => navigate('/progress')}
             className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-wider"
           >
             Details →
@@ -187,7 +168,7 @@ export default function Dashboard({
           {topicStats.map(({ topic, done, due, total, pct, avgEF }) => (
             <button
               key={topic}
-              onClick={() => onTopicClick?.(topic)}
+              onClick={() => navigate('/tasks?topic=' + encodeURIComponent(topic))}
               className="flex items-center gap-3 px-3 py-2 text-xs w-full text-left hover:bg-zinc-800/40 transition-colors cursor-pointer"
             >
               <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(topic)}`} />
@@ -226,7 +207,7 @@ export default function Dashboard({
             <div className="px-3 py-4 text-center text-zinc-500 text-xs">
               No tasks.{' '}
               <button
-                onClick={() => onNavigate('add')}
+                onClick={() => navigate('/add')}
                 className="text-zinc-300 underline hover:no-underline"
               >
                 Add one
