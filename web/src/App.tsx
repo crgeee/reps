@@ -301,35 +301,16 @@ export default function App() {
             onClick={() => setView('dashboard')}
             className="flex items-center gap-1.5 flex-shrink-0 transition-opacity hover:opacity-80"
           >
-            <svg className="w-7 h-7" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-              <rect width="32" height="32" rx="6" fill="#09090b" />
-              <text
-                x="16"
-                y="23"
-                fontFamily="system-ui"
-                fontWeight="800"
-                fontSize="22"
-                fill="#f59e0b"
-                textAnchor="middle"
-              >
-                r
-              </text>
-              <path
-                d="M24 8 C26 10, 26 13, 24 15"
-                stroke="#f59e0b"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                opacity="0.6"
-              />
-              <path
-                d="M26 7 C29 10, 29 14, 26 17"
-                stroke="#f59e0b"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                opacity="0.3"
-              />
+            <svg
+              className="w-7 h-7"
+              viewBox="0 0 40 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect width="40" height="40" rx="10" fill="#18181b" />
+              <rect x="8" y="24" width="6" height="8" rx="1.5" fill="#f59e0b" opacity="0.4" />
+              <rect x="17" y="18" width="6" height="14" rx="1.5" fill="#f59e0b" opacity="0.7" />
+              <rect x="26" y="10" width="6" height="22" rx="1.5" fill="#f59e0b" />
             </svg>
             <span className="text-2xl font-extrabold tracking-tight wordmark">reps</span>
           </button>
