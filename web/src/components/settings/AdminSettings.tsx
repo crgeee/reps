@@ -6,7 +6,12 @@ import {
   adminUpdateUser,
   getAdminTemplates,
   adminDeleteTemplate,
+  getAdminMcpSettings,
+  setAdminMcpSettings,
+  adminToggleUserMcp,
+  getAdminMcpAudit,
 } from '../../api';
+import type { McpAuditEntry } from '../../api';
 import { formatRelative } from '../../utils/format';
 import { SectionHeader } from './shared';
 import { logger } from '../../logger';
@@ -24,6 +29,10 @@ export default function AdminSettings({ user }: Props) {
     activeSessions: number;
     totalReviews: number;
   } | null>(null);
+  const [mcpEnabled, setMcpEnabled] = useState<boolean | null>(null);
+  const [mcpToggling, setMcpToggling] = useState(false);
+  const [mcpAudit, setMcpAudit] = useState<McpAuditEntry[]>([]);
+  const [mcpAuditOpen, setMcpAuditOpen] = useState(false);
 
   useEffect(() => {
     getAdminUsers()
@@ -41,7 +50,52 @@ export default function AdminSettings({ user }: Props) {
       .catch((e) => {
         logger.error('Failed to load admin templates', { error: String(e) });
       });
+    getAdminMcpSettings()
+      .then((s) => setMcpEnabled(s.enabled))
+      .catch((e) => {
+        logger.error('Failed to load MCP settings', { error: String(e) });
+      });
   }, []);
+
+  const handleMcpToggle = async () => {
+    if (mcpEnabled === null) return;
+    setMcpToggling(true);
+    try {
+      await setAdminMcpSettings(!mcpEnabled);
+      setMcpEnabled(!mcpEnabled);
+    } catch (err) {
+      logger.error('Failed to toggle MCP', { error: String(err) });
+    } finally {
+      setMcpToggling(false);
+    }
+  };
+
+  const handleUserMcpToggle = async (userId: string, currentlyEnabled: boolean) => {
+    try {
+      await adminToggleUserMcp(userId, !currentlyEnabled);
+      setAdminUsers((prev) =>
+        prev.map((au) =>
+          au.id === userId ? { ...au, mcpEnabled: !currentlyEnabled } : au,
+        ),
+      );
+    } catch (err) {
+      logger.error('Failed to toggle user MCP', { userId, error: String(err) });
+    }
+  };
+
+  const loadAudit = async () => {
+    if (mcpAuditOpen) {
+      setMcpAuditOpen(false);
+      return;
+    }
+    try {
+      const entries = await getAdminMcpAudit();
+      setMcpAudit(entries);
+      setMcpAuditOpen(true);
+    } catch (err) {
+      logger.error('Failed to load MCP audit log', { error: String(err) });
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -90,6 +144,11 @@ export default function AdminSettings({ user }: Props) {
                           BLOCKED
                         </span>
                       )}
+                      {u.mcpEnabled && (
+                        <span className="text-[10px] font-semibold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">
+                          MCP
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                       {u.displayName && <span>{u.displayName}</span>}
@@ -101,6 +160,29 @@ export default function AdminSettings({ user }: Props) {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      title={u.mcpEnabled ? 'Disable MCP' : 'Enable MCP'}
+                      onClick={() => handleUserMcpToggle(u.id, u.mcpEnabled)}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        u.mcpEnabled
+                          ? 'text-green-400 hover:bg-green-500/10'
+                          : 'text-zinc-600 hover:text-green-400 hover:bg-green-500/10'
+                      }`}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-3.061a4.5 4.5 0 00-6.364-6.364L4.5 8.257m9.86-3.061L18 8.84m-4.243 5.718L10.5 18"
+                        />
+                      </svg>
+                    </button>
                     <button
                       title={
                         isSelf
@@ -274,6 +356,107 @@ export default function AdminSettings({ user }: Props) {
           ))}
         </div>
       )}
+
+      {/* MCP Section */}
+      <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">MCP</h3>
+
+        {/* Global MCP Toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-zinc-200">Global MCP Access</p>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Enable or disable MCP server access for all users
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${
+                mcpEnabled === null
+                  ? 'bg-zinc-600'
+                  : mcpEnabled
+                    ? 'bg-green-600'
+                    : 'bg-red-400'
+              }`}
+            />
+            <button
+              disabled={mcpEnabled === null || mcpToggling}
+              onClick={handleMcpToggle}
+              className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                mcpEnabled === null || mcpToggling
+                  ? 'text-zinc-600 bg-zinc-800 cursor-not-allowed'
+                  : mcpEnabled
+                    ? 'text-green-400 bg-green-500/10 hover:bg-green-500/20'
+                    : 'text-red-400 bg-red-500/10 hover:bg-red-500/20'
+              }`}
+            >
+              {mcpEnabled === null ? 'Loading...' : mcpToggling ? 'Saving...' : mcpEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+        </div>
+
+        {/* MCP Audit Log */}
+        <div>
+          <button
+            onClick={loadAudit}
+            className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1"
+          >
+            <svg
+              className={`w-3 h-3 transition-transform ${mcpAuditOpen ? 'rotate-90' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            Audit Log
+          </button>
+
+          {mcpAuditOpen && (
+            <div className="mt-2 max-h-80 overflow-y-auto">
+              {mcpAudit.length === 0 ? (
+                <p className="text-xs text-zinc-600 py-2">No audit entries yet.</p>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-zinc-500 border-b border-zinc-800">
+                      <th className="text-left py-1.5 pr-2 font-medium">Time</th>
+                      <th className="text-left py-1.5 pr-2 font-medium">Key</th>
+                      <th className="text-left py-1.5 pr-2 font-medium">Tool</th>
+                      <th className="text-left py-1.5 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mcpAudit.map((entry) => (
+                      <tr key={entry.id} className="border-b border-zinc-800/50">
+                        <td className="py-1.5 pr-2 text-zinc-500 whitespace-nowrap">
+                          {formatRelative(entry.created_at)}
+                        </td>
+                        <td className="py-1.5 pr-2 text-zinc-400 truncate max-w-[120px]">
+                          {entry.key_name || '--'}
+                        </td>
+                        <td className="py-1.5 pr-2 text-zinc-300 font-mono">
+                          {entry.tool_name}
+                        </td>
+                        <td className="py-1.5">
+                          {entry.success ? (
+                            <span className="text-green-600">ok</span>
+                          ) : (
+                            <span className="text-red-400" title={entry.error || undefined}>
+                              err
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
