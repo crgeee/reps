@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Outlet, Navigate, useNavigate, useLocation, useOutletContext } from 'react-router';
+import { Outlet, Navigate, NavLink, Link, useOutletContext } from 'react-router';
 import type { Task, Collection, Tag, User, CollectionStatus } from '../types';
 import { formatStatusLabel } from '../types';
 import { getTasks, getCollections, getTags } from '../api';
@@ -40,15 +40,15 @@ export function useProtectedContext() {
   return useOutletContext<ProtectedContext>();
 }
 
-const NAV_ITEMS: { path: string; label: string }[] = [
-  { path: '/', label: 'Dashboard' },
+const NAV_ITEMS: { path: string; label: string; end?: boolean }[] = [
+  { path: '/', label: 'Dashboard', end: true },
   { path: '/tasks', label: 'Tasks' },
   { path: '/progress', label: 'Progress' },
   { path: '/calendar', label: 'Calendar' },
 ];
 
-const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home }[] = [
-  { path: '/', label: 'Home', Icon: Home },
+const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home; end?: boolean }[] = [
+  { path: '/', label: 'Home', Icon: Home, end: true },
   { path: '/tasks', label: 'Tasks', Icon: ListTodo },
   { path: '/add', label: 'Add', Icon: Plus },
   { path: '/progress', label: 'Progress', Icon: BarChart3 },
@@ -56,8 +56,6 @@ const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home }[] = [
 
 export default function ProtectedLayout() {
   const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -145,8 +143,8 @@ export default function ProtectedLayout() {
       if (stored && !cols.some((c) => c.id === stored)) {
         handleCollectionChange(null);
       }
-    } catch {
-      // Collections are optional -- silently fail
+    } catch (err) {
+      logger.warn('Failed to fetch collections', { error: String(err) });
     }
   }, [handleCollectionChange]);
 
@@ -154,8 +152,8 @@ export default function ProtectedLayout() {
     try {
       const t = await getTags();
       setTags(t);
-    } catch {
-      // Tags are optional -- silently fail
+    } catch (err) {
+      logger.warn('Failed to fetch tags', { error: String(err) });
     }
   }, []);
 
@@ -215,8 +213,8 @@ export default function ProtectedLayout() {
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated or user object missing
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -230,7 +228,7 @@ export default function ProtectedLayout() {
     activeCollectionId,
     activeStatuses,
     activeStatusOptions,
-    user: user!,
+    user,
     fetchData,
     refreshQuietly,
     optimisticUpdateTask,
@@ -258,8 +256,8 @@ export default function ProtectedLayout() {
       {/* Header */}
       <header className="border-b border-zinc-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
-          <button
-            onClick={() => navigate('/')}
+          <Link
+            to="/"
             className="flex items-center gap-1.5 flex-shrink-0 transition-opacity hover:opacity-80"
           >
             <svg
@@ -274,7 +272,7 @@ export default function ProtectedLayout() {
               <rect x="26" y="10" width="6" height="22" rx="1.5" fill="#f59e0b" />
             </svg>
             <span className="text-2xl font-extrabold tracking-tight wordmark">reps</span>
-          </button>
+          </Link>
 
           <CollectionSwitcher
             collections={collections}
@@ -290,51 +288,56 @@ export default function ProtectedLayout() {
             aria-label="Main navigation"
             className="hidden md:flex items-center gap-1 flex-1 justify-center"
           >
-            {NAV_ITEMS.map(({ path, label }) => (
-              <button
+            {NAV_ITEMS.map(({ path, label, end }) => (
+              <NavLink
                 key={path}
-                onClick={() => navigate(path)}
-                aria-current={location.pathname === path ? 'page' : undefined}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                  location.pathname === path
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                }`}
+                to={path}
+                end={end}
+                className={({ isActive }) =>
+                  `px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                  }`
+                }
               >
                 {label}
-              </button>
+              </NavLink>
             ))}
             {filteredDueTasks.length > 0 && (
-              <button
-                onClick={() => navigate('/review')}
-                aria-current={location.pathname === '/review' ? 'page' : undefined}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-                  location.pathname === '/review'
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-900'
-                }`}
+              <NavLink
+                to="/review"
+                className={({ isActive }) =>
+                  `px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-900'
+                  }`
+                }
               >
                 Review
                 <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">
                   {filteredDueTasks.length}
                 </span>
-              </button>
+              </NavLink>
             )}
           </nav>
 
           {/* Desktop add + settings + sign out */}
-          <button
-            onClick={() => navigate('/add')}
+          <NavLink
+            to="/add"
             aria-label="Add task"
-            className={`hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center text-lg font-light transition-colors ${
-              location.pathname === '/add'
-                ? 'bg-zinc-100 text-zinc-900'
-                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
-            }`}
+            className={({ isActive }) =>
+              `hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center text-lg font-light transition-colors ${
+                isActive
+                  ? 'bg-zinc-100 text-zinc-900'
+                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+              }`
+            }
             title="Add task"
           >
             +
-          </button>
+          </NavLink>
 
           <a
             href="https://github.com/crgeee/reps"
@@ -362,14 +365,16 @@ export default function ProtectedLayout() {
             </svg>
           </a>
 
-          <button
-            onClick={() => navigate('/settings')}
+          <NavLink
+            to="/settings"
             aria-label="Settings"
-            className={`hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center transition-colors ${
-              location.pathname === '/settings'
-                ? 'bg-zinc-100 text-zinc-900'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-            }`}
+            className={({ isActive }) =>
+              `hidden md:flex flex-shrink-0 w-8 h-8 rounded-lg items-center justify-center transition-colors ${
+                isActive
+                  ? 'bg-zinc-100 text-zinc-900'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+              }`
+            }
             title="Settings"
           >
             <svg
@@ -390,7 +395,7 @@ export default function ProtectedLayout() {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-          </button>
+          </NavLink>
 
           <button
             onClick={logout}
@@ -428,71 +433,68 @@ export default function ProtectedLayout() {
                 aria-label="Mobile navigation"
                 className="anim-slide-down absolute top-full right-0 mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50"
               >
-                {NAV_ITEMS.map(({ path, label }) => (
-                  <button
+                {NAV_ITEMS.map(({ path, label, end }) => (
+                  <NavLink
                     key={path}
-                    onClick={() => {
-                      navigate(path);
-                      setMobileMenuOpen(false);
-                    }}
-                    aria-current={location.pathname === path ? 'page' : undefined}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      location.pathname === path
-                        ? 'bg-zinc-800 text-zinc-100'
-                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                    }`}
+                    to={path}
+                    end={end}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `w-full text-left px-4 py-2.5 text-sm transition-colors block ${
+                        isActive
+                          ? 'bg-zinc-800 text-zinc-100'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                      }`
+                    }
                   >
                     {label}
-                  </button>
+                  </NavLink>
                 ))}
                 {filteredDueTasks.length > 0 && (
-                  <button
-                    onClick={() => {
-                      navigate('/review');
-                      setMobileMenuOpen(false);
-                    }}
-                    aria-current={location.pathname === '/review' ? 'page' : undefined}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
-                      location.pathname === '/review'
-                        ? 'bg-zinc-800 text-zinc-100'
-                        : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-800'
-                    }`}
+                  <NavLink
+                    to="/review"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
+                        isActive
+                          ? 'bg-zinc-800 text-zinc-100'
+                          : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-800'
+                      }`
+                    }
                   >
                     Review
                     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">
                       {filteredDueTasks.length}
                     </span>
-                  </button>
+                  </NavLink>
                 )}
                 <div className="border-t border-zinc-800 mt-1 pt-1">
-                  <button
-                    onClick={() => {
-                      navigate('/add');
-                      setMobileMenuOpen(false);
-                    }}
-                    aria-current={location.pathname === '/add' ? 'page' : undefined}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      location.pathname === '/add'
-                        ? 'bg-zinc-800 text-zinc-100'
-                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                    }`}
+                  <NavLink
+                    to="/add"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `w-full text-left px-4 py-2.5 text-sm transition-colors block ${
+                        isActive
+                          ? 'bg-zinc-800 text-zinc-100'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                      }`
+                    }
                   >
                     + Add Task
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/settings');
-                      setMobileMenuOpen(false);
-                    }}
-                    aria-current={location.pathname === '/settings' ? 'page' : undefined}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      location.pathname === '/settings'
-                        ? 'bg-zinc-800 text-zinc-100'
-                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                    }`}
+                  </NavLink>
+                  <NavLink
+                    to="/settings"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `w-full text-left px-4 py-2.5 text-sm transition-colors block ${
+                        isActive
+                          ? 'bg-zinc-800 text-zinc-100'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                      }`
+                    }
                   >
                     Settings
-                  </button>
+                  </NavLink>
                   <a
                     href="https://github.com/crgeee/reps"
                     target="_blank"
@@ -561,18 +563,20 @@ export default function ProtectedLayout() {
         className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-800 z-40 safe-area-bottom"
       >
         <div className="flex items-stretch justify-around">
-          {BOTTOM_NAV_ITEMS.map(({ path, label, Icon }) => (
-            <button
+          {BOTTOM_NAV_ITEMS.map(({ path, label, Icon, end }) => (
+            <NavLink
               key={path}
-              onClick={() => navigate(path)}
-              aria-current={location.pathname === path ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 pt-2.5 transition-colors ${
-                location.pathname === path ? 'text-amber-400' : 'text-zinc-500 active:text-zinc-300'
-              }`}
+              to={path}
+              end={end}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center gap-0.5 flex-1 py-2 pt-2.5 transition-colors ${
+                  isActive ? 'text-amber-400' : 'text-zinc-500 active:text-zinc-300'
+                }`
+              }
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{label}</span>
-            </button>
+            </NavLink>
           ))}
         </div>
       </nav>

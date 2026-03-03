@@ -1,7 +1,8 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { Suspense, lazy } from 'react';
 import PublicLayout from './layouts/PublicLayout';
 import ProtectedLayout from './layouts/ProtectedLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './components/LoginPage';
 import DeviceApproval from './components/DeviceApproval';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -25,6 +26,18 @@ function LazyFallback() {
   );
 }
 
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LazyFallback />}>{children}</Suspense>;
+}
+
+function RouteErrorFallback() {
+  return (
+    <ErrorBoundary>
+      <></>
+    </ErrorBoundary>
+  );
+}
+
 export const router = createBrowserRouter([
   // Standalone public routes (render their own layout)
   { path: '/login', element: <LoginPage /> },
@@ -40,55 +53,22 @@ export const router = createBrowserRouter([
   // Protected routes
   {
     element: <ProtectedLayout />,
+    errorElement: <RouteErrorFallback />,
     children: [
       { index: true, element: <Dashboard /> },
       { path: '/tasks', element: <TaskList /> },
       { path: '/add', element: <AddTask /> },
-      {
-        path: '/review',
-        element: (
-          <Suspense fallback={<LazyFallback />}>
-            <ReviewSession />
-          </Suspense>
-        ),
-      },
-      {
-        path: '/practice',
-        element: (
-          <Suspense fallback={<LazyFallback />}>
-            <ReviewSession />
-          </Suspense>
-        ),
-      },
+      { path: '/review', element: <Lazy><ReviewSession /></Lazy> },
+      { path: '/practice', element: <Lazy><ReviewSession /></Lazy> },
       { path: '/progress', element: <TopicProgress /> },
-      {
-        path: '/calendar',
-        element: (
-          <Suspense fallback={<LazyFallback />}>
-            <CalendarView />
-          </Suspense>
-        ),
-      },
-      {
-        path: '/export',
-        element: (
-          <Suspense fallback={<LazyFallback />}>
-            <ExportView />
-          </Suspense>
-        ),
-      },
-      {
-        path: '/settings',
-        element: <Settings />,
-      },
-      {
-        path: '/templates',
-        element: (
-          <Suspense fallback={<LazyFallback />}>
-            <TemplateGallery />
-          </Suspense>
-        ),
-      },
+      { path: '/calendar', element: <Lazy><CalendarView /></Lazy> },
+      { path: '/export', element: <Lazy><ExportView /></Lazy> },
+      { path: '/settings', element: <Settings /> },
+      { path: '/templates', element: <Lazy><TemplateGallery /></Lazy> },
+      // Catch-all: redirect unknown paths to dashboard
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
+  // Top-level catch-all for unmatched paths outside layouts
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);

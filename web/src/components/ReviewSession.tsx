@@ -30,7 +30,12 @@ export default function ReviewSession() {
   const mode: 'review' | 'practice' = location.pathname === '/practice' ? 'practice' : 'review';
 
   function handleComplete() {
-    fetchData().then(() => navigate('/'));
+    fetchData()
+      .then(() => navigate('/'))
+      .catch((err) => {
+        logger.error('Failed to refresh after review', { error: String(err) });
+        navigate('/');
+      });
   }
 
   return (
