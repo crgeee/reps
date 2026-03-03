@@ -228,6 +228,7 @@ export interface User {
   dateFormat: string;
   startOfWeek: number;
   language: string;
+  mcpEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }

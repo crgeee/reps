@@ -120,6 +120,46 @@ export async function deleteCustomTopic(id: string): Promise<void> {
   await request<unknown>(`/users/me/topics/${id}`, { method: 'DELETE' });
 }
 
+// MCP Keys
+
+export interface McpKey {
+  id: string;
+  userId: string;
+  name: string;
+  keyPrefix: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export async function listMcpKeys(): Promise<McpKey[]> {
+  return request<McpKey[]>('/users/me/mcp-keys');
+}
+
+export async function createMcpKey(
+  name: string,
+  scopes?: string[],
+  ttlDays?: number,
+): Promise<{ key: McpKey; rawKey: string }> {
+  return request<{ key: McpKey; rawKey: string }>('/users/me/mcp-keys', {
+    method: 'POST',
+    body: JSON.stringify({ name, scopes, ttlDays }),
+  });
+}
+
+export async function revokeMcpKey(keyId: string): Promise<void> {
+  await request<unknown>(`/users/me/mcp-keys/${keyId}`, { method: 'DELETE' });
+}
+
+export async function toggleMcp(enabled: boolean): Promise<void> {
+  await request<unknown>('/users/me/mcp', {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
 // Admin
 
 export async function getAdminUsers(): Promise<AdminUser[]> {
@@ -483,4 +523,39 @@ export async function getAdminTemplates(): Promise<CollectionTemplate[]> {
 
 export async function adminDeleteTemplate(id: string): Promise<void> {
   await request<unknown>(`/templates/${id}`, { method: 'DELETE' });
+}
+
+// Admin MCP
+
+export async function getAdminMcpSettings(): Promise<{ enabled: boolean }> {
+  return request<{ enabled: boolean }>('/users/admin/mcp/settings');
+}
+
+export async function setAdminMcpSettings(enabled: boolean): Promise<void> {
+  return request<void>('/users/admin/mcp/settings', {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function adminToggleUserMcp(userId: string, enabled: boolean): Promise<void> {
+  return request<void>(`/users/admin/users/${userId}/mcp`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export interface McpAuditEntry {
+  id: string;
+  key_id: string | null;
+  user_id: string | null;
+  tool_name: string;
+  success: boolean;
+  error: string | null;
+  created_at: string;
+  key_name: string | null;
+}
+
+export async function getAdminMcpAudit(): Promise<McpAuditEntry[]> {
+  return request<McpAuditEntry[]>('/users/admin/mcp/audit');
 }

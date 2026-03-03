@@ -17,6 +17,7 @@ import tags from './routes/tags.js';
 import statsRoutes from './routes/stats.js';
 import usersRoutes from './routes/users.js';
 import { calendarFeed, exportRoutes } from './routes/export.js';
+import mcpRoute from './mcp/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
@@ -70,6 +71,9 @@ app.route('/auth', authRoutes);
 
 // Calendar feed — token-based auth, no Bearer header (calendar apps can't send it)
 app.route('/export', calendarFeed);
+
+// MCP endpoint — own auth middleware, before REST auth middleware
+app.route('/mcp', mcpRoute);
 
 // Apply auth middleware to all protected routes
 app.use('/*', authMiddleware);

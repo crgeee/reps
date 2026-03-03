@@ -16,6 +16,7 @@ export interface User {
   dateFormat: string;
   startOfWeek: number;
   language: string;
+  mcpEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +37,7 @@ interface UserRow {
   date_format: string;
   start_of_week: number;
   language: string;
+  mcp_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +59,7 @@ function rowToUser(row: UserRow): User {
     dateFormat: row.date_format,
     startOfWeek: row.start_of_week,
     language: row.language,
+    mcpEnabled: row.mcp_enabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -136,11 +139,12 @@ export async function listUsers(): Promise<User[]> {
 
 export async function adminUpdateUser(
   id: string,
-  updates: { isAdmin?: boolean; isBlocked?: boolean },
+  updates: { isAdmin?: boolean; isBlocked?: boolean; mcpEnabled?: boolean },
 ): Promise<User | null> {
   const fieldMap: Record<string, string> = {
     isAdmin: 'is_admin',
     isBlocked: 'is_blocked',
+    mcpEnabled: 'mcp_enabled',
   };
 
   const dbUpdates: Record<string, unknown> = {};

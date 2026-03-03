@@ -4,6 +4,7 @@ import sql from '../db/client.js';
 import { getUserById, updateUserProfile, adminUpdateUser } from '../auth/users.js';
 import { getUserSessions, deleteSession } from '../auth/sessions.js';
 import { validateUuid } from '../validation.js';
+import { createMcpKey, listMcpKeys, revokeMcpKey } from '../mcp/keys.js';
 
 type AppEnv = { Variables: { userId: string } };
 const users = new Hono<AppEnv>();
@@ -267,6 +268,148 @@ users.get('/admin/stats', async (c) => {
     activeSessions: parseInt(counts.session_count, 10),
     totalReviews: parseInt(counts.review_count, 10),
   });
+});
+
+// --- MCP Key Management (user routes) ---
+
+const createMcpKeySchema = z.object({
+  name: z.string().min(1).max(100),
+  scopes: z
+    .array(z.enum(['read', 'write', 'ai']))
+    .min(1)
+    .optional(),
+  ttlDays: z.number().int().min(1).max(365).optional(),
+});
+
+const toggleMcpSchema = z.object({
+  enabled: z.boolean(),
+});
+
+// GET /users/me/mcp-keys — list user's MCP keys
+users.get('/me/mcp-keys', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const keys = await listMcpKeys(userId);
+  return c.json(keys);
+});
+
+// POST /users/me/mcp-keys — create a new MCP key
+users.post('/me/mcp-keys', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const raw = await c.req.json();
+  const parsed = createMcpKeySchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  const { name, scopes, ttlDays } = parsed.data;
+  const result = await createMcpKey(userId, name, scopes ?? ['read'], ttlDays);
+  return c.json(result, 201);
+});
+
+// DELETE /users/me/mcp-keys/:id — revoke an MCP key
+users.delete('/me/mcp-keys/:id', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const keyId = c.req.param('id');
+  if (!validateUuid(keyId)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  const revoked = await revokeMcpKey(userId, keyId);
+  if (!revoked) return c.json({ error: 'Key not found or already revoked' }, 404);
+  return c.json({ deleted: true, id: keyId });
+});
+
+// PATCH /users/me/mcp — toggle mcp_enabled for self
+users.patch('/me/mcp', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const raw = await c.req.json();
+  const parsed = toggleMcpSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  await sql`UPDATE users SET mcp_enabled = ${parsed.data.enabled} WHERE id = ${userId}`;
+  return c.json({ enabled: parsed.data.enabled });
+});
+
+// --- MCP Admin Routes ---
+
+// GET /users/admin/mcp/settings — get global MCP enabled status
+users.get('/admin/mcp/settings', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const user = await getUserById(userId);
+  if (!user?.isAdmin) return c.json({ error: 'Forbidden' }, 403);
+
+  const [row] = await sql`SELECT value FROM server_settings WHERE key = 'mcp_enabled'`;
+  return c.json({ enabled: row?.value === true });
+});
+
+// PATCH /users/admin/mcp/settings — toggle global MCP on/off
+users.patch('/admin/mcp/settings', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const user = await getUserById(userId);
+  if (!user?.isAdmin) return c.json({ error: 'Forbidden' }, 403);
+
+  const raw = await c.req.json();
+  const parsed = toggleMcpSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  await sql`UPDATE server_settings SET value = ${JSON.stringify(parsed.data.enabled)} WHERE key = 'mcp_enabled'`;
+  return c.json({ enabled: parsed.data.enabled });
+});
+
+// PATCH /users/admin/users/:id/mcp — toggle MCP for a specific user
+users.patch('/admin/users/:id/mcp', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const currentUser = await getUserById(userId);
+  if (!currentUser?.isAdmin) return c.json({ error: 'Forbidden' }, 403);
+
+  const targetId = c.req.param('id');
+  if (!validateUuid(targetId)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  const raw = await c.req.json();
+  const parsed = toggleMcpSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  const [updated] =
+    await sql`UPDATE users SET mcp_enabled = ${parsed.data.enabled} WHERE id = ${targetId} RETURNING id`;
+  if (!updated) return c.json({ error: 'User not found' }, 404);
+
+  return c.json({ userId: targetId, mcpEnabled: parsed.data.enabled });
+});
+
+// GET /users/admin/mcp/audit — list recent MCP audit log entries (last 100)
+users.get('/admin/mcp/audit', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const user = await getUserById(userId);
+  if (!user?.isAdmin) return c.json({ error: 'Forbidden' }, 403);
+
+  const rows = await sql`
+    SELECT al.*, mk.name as key_name
+    FROM mcp_audit_log al
+    LEFT JOIN mcp_keys mk ON mk.id = al.key_id
+    ORDER BY al.created_at DESC
+    LIMIT 100
+  `;
+  return c.json(rows);
 });
 
 export default users;

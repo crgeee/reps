@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router';
-import { Brain, Sparkles, ListTodo } from 'lucide-react';
+import { Brain, Sparkles, ListTodo, Plug } from 'lucide-react';
 import { sendMagicLink } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import Footer from './Footer';
@@ -32,6 +32,12 @@ const FEATURES = [
     icon: Sparkles,
     title: 'Practice',
     description: 'AI-generated interview questions with instant evaluation.',
+  },
+  {
+    icon: Plug,
+    title: 'Integrate',
+    description:
+      'Connect Claude Desktop, Claude Code, or any MCP client directly to your prep data.',
   },
 ];
 
@@ -149,7 +155,7 @@ export default function LoginPage() {
 
       {/* Features */}
       <section className="px-6 pb-20 relative z-10">
-        <div className="max-w-xl mx-auto grid gap-3 sm:grid-cols-3 anim-stagger">
+        <div className="max-w-2xl mx-auto grid gap-3 sm:grid-cols-2 lg:grid-cols-4 anim-stagger">
           {FEATURES.map((f) => (
             <div
               key={f.title}

@@ -5,9 +5,10 @@ import { useProtectedContext } from '../layouts/ProtectedLayout';
 import GeneralSettings from './settings/GeneralSettings';
 import NotificationSettings from './settings/NotificationSettings';
 import AccountSettings from './settings/AccountSettings';
+import McpSettings from './settings/McpSettings';
 import AdminSettings from './settings/AdminSettings';
 
-type SettingsTab = 'general' | 'notifications' | 'account' | 'admin';
+type SettingsTab = 'general' | 'notifications' | 'account' | 'integrations' | 'admin';
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
   {
@@ -68,6 +69,25 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; adminOnly?:
     ),
   },
   {
+    id: 'integrations',
+    label: 'Integrations',
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+        />
+      </svg>
+    ),
+  },
+  {
     id: 'admin',
     label: 'Admin',
     icon: (
@@ -114,6 +134,8 @@ export default function Settings() {
         return <NotificationSettings user={user} onProfileUpdate={handleProfileUpdate} />;
       case 'account':
         return <AccountSettings user={user} onProfileUpdate={handleProfileUpdate} />;
+      case 'integrations':
+        return <McpSettings user={user} onUserUpdate={onUserUpdate} />;
       case 'admin':
         return user.isAdmin ? <AdminSettings user={user} /> : null;
     }
