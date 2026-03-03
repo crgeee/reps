@@ -205,20 +205,6 @@ export default function ProtectedLayout() {
     return activeStatuses.map((s) => ({ value: s.name, label: formatStatusLabel(s.name) }));
   }, [activeStatuses]);
 
-  // Show loading spinner while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-        <Spinner size="lg" label="Loading..." />
-      </div>
-    );
-  }
-
-  // Redirect to login if not authenticated or user object missing
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
   const outletContext: ProtectedContext = useMemo(
     () => ({
       tasks,
@@ -230,7 +216,7 @@ export default function ProtectedLayout() {
       activeCollectionId,
       activeStatuses,
       activeStatusOptions,
-      user,
+      user: user!,
       fetchData,
       refreshQuietly,
       optimisticUpdateTask,
@@ -269,6 +255,20 @@ export default function ProtectedLayout() {
       setInitialTopicFilter,
     ],
   );
+
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+        <Spinner size="lg" label="Loading..." />
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated or user object missing
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
