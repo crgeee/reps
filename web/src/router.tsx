@@ -1,8 +1,7 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter, Navigate, useRouteError, isRouteErrorResponse } from 'react-router';
 import { Suspense, lazy } from 'react';
 import PublicLayout from './layouts/PublicLayout';
 import ProtectedLayout from './layouts/ProtectedLayout';
-import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './components/LoginPage';
 import DeviceApproval from './components/DeviceApproval';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -31,10 +30,23 @@ function Lazy({ children }: { children: React.ReactNode }) {
 }
 
 function RouteErrorFallback() {
+  const error = useRouteError();
+  let message = 'Something went wrong.';
+  if (isRouteErrorResponse(error)) {
+    message = `${error.status} — ${error.statusText}`;
+  } else if (error instanceof Error) {
+    message = error.message;
+  }
   return (
-    <ErrorBoundary>
-      <></>
-    </ErrorBoundary>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-8">
+      <div className="max-w-md text-center space-y-4">
+        <h1 className="text-xl font-bold text-red-400">Error</h1>
+        <p className="text-zinc-400">{message}</p>
+        <a href="/" className="inline-block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+          Go to dashboard
+        </a>
+      </div>
+    </div>
   );
 }
 

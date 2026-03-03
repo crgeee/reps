@@ -96,7 +96,6 @@ export default function CalendarView() {
   function handleDayClick(day: number) {
     const dateStr = toDateStr(year, month, day);
     setSelectedDate(selectedDate === dateStr ? null : dateStr);
-    // date selected
   }
 
   const selectedTasks = selectedDate ? (tasksByDate.get(selectedDate) ?? []) : [];
