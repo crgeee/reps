@@ -26,12 +26,13 @@ function LazyFallback() {
 }
 
 export const router = createBrowserRouter([
-  // Public routes
+  // Standalone public routes (render their own layout)
+  { path: '/login', element: <LoginPage /> },
+  { path: '/device-approve', element: <DeviceApproval /> },
+  // Public routes with back-link layout
   {
     element: <PublicLayout />,
     children: [
-      { path: '/login', element: <LoginPage /> },
-      { path: '/device-approve', element: <DeviceApproval /> },
       { path: '/privacy', element: <PrivacyPolicy /> },
       { path: '/terms', element: <TermsOfService /> },
     ],
