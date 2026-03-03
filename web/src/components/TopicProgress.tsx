@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { StatsOverview } from '../types';
 import { getTopicLabel, getTopicColor } from '../types';
 import { getStatsOverview, getHeatmap } from '../api';
@@ -57,26 +57,30 @@ export default function TopicProgress() {
   const today = new Date().toISOString().split('T')[0]!;
 
   const topicMap = useGroupedTasksByTopic(tasks);
-  const topicStats: TopicStat[] = Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
-    const active = topicTasks.filter((t) => !t.completed);
-    const completed = topicTasks.filter((t) => t.completed);
-    const reviewed = topicTasks
-      .filter((t) => t.lastReviewed)
-      .sort((a, b) => (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? ''));
-    const avgEF =
-      active.length > 0 ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length : 0;
-    const dueCount = active.filter((t) => t.nextReview <= today).length;
+  const topicStats: TopicStat[] = useMemo(
+    () =>
+      Array.from(topicMap.entries()).map(([topic, topicTasks]) => {
+        const active = topicTasks.filter((t) => !t.completed);
+        const completed = topicTasks.filter((t) => t.completed);
+        const reviewed = topicTasks
+          .filter((t) => t.lastReviewed)
+          .sort((a, b) => (b.lastReviewed ?? '').localeCompare(a.lastReviewed ?? ''));
+        const avgEF =
+          active.length > 0 ? active.reduce((sum, t) => sum + t.easeFactor, 0) / active.length : 0;
+        const dueCount = active.filter((t) => t.nextReview <= today).length;
 
-    return {
-      topic,
-      total: topicTasks.length,
-      completed: completed.length,
-      active: active.length,
-      avgEaseFactor: avgEF,
-      lastReviewed: reviewed[0]?.lastReviewed ?? null,
-      dueCount,
-    };
-  });
+        return {
+          topic,
+          total: topicTasks.length,
+          completed: completed.length,
+          active: active.length,
+          avgEaseFactor: avgEF,
+          lastReviewed: reviewed[0]?.lastReviewed ?? null,
+          dueCount,
+        };
+      }),
+    [topicMap, today],
+  );
 
   const reviewsByTopicData: Record<string, number> = {};
   const reviewsByTopicColors: Record<string, string> = {};

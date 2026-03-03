@@ -31,9 +31,9 @@ export default function Dashboard() {
       });
   }, [activeCollectionId]);
 
-  const overdueTasks = dueTasks.filter(isOverdue);
-  const activeTasks = tasks.filter((t) => !t.completed);
-  const completedTasks = tasks.filter((t) => t.completed);
+  const overdueTasks = useMemo(() => dueTasks.filter(isOverdue), [dueTasks]);
+  const activeTasks = useMemo(() => tasks.filter((t) => !t.completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter((t) => t.completed), [tasks]);
 
   const topicMap = useGroupedTasksByTopic(tasks);
   const topicStats = useMemo(() => {
