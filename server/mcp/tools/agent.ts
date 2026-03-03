@@ -7,7 +7,15 @@ import { dailyBriefing } from '../../agent/coach.js';
 import type { Task, Note, Topic } from '../../../src/types.js';
 import { logMcpAudit } from '../audit.js';
 
-export function registerAgentTools(server: McpServer, userId: string, keyId: string): void {
+function checkScope(scopes: string[], required: string) {
+  const msg = `MCP key missing required scope: ${required}`;
+  if (!scopes.includes(required)) {
+    return { isError: true as const, content: [{ type: 'text' as const, text: msg }] };
+  }
+  return null;
+}
+
+export function registerAgentTools(server: McpServer, userId: string, keyId: string, scopes: string[]): void {
   // --- generate-question ---
   server.registerTool(
     'generate-question',
@@ -23,6 +31,8 @@ export function registerAgentTools(server: McpServer, userId: string, keyId: str
       },
     },
     async ({ taskId }) => {
+      const denied = checkScope(scopes, 'ai');
+      if (denied) return denied;
       try {
         const [taskRow] = await sql`
           SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}
@@ -93,7 +103,20 @@ export function registerAgentTools(server: McpServer, userId: string, keyId: str
       },
     },
     async ({ taskId, answer }) => {
+      const denied = checkScope(scopes, 'ai');
+      if (denied) return denied;
       try {
+        // Verify task belongs to user before evaluating
+        const [taskRow] = await sql`
+          SELECT id FROM tasks WHERE id = ${taskId} AND user_id = ${userId}
+        `;
+        if (!taskRow) {
+          return {
+            isError: true as const,
+            content: [{ type: 'text' as const, text: 'Task not found' }],
+          };
+        }
+
         const result = await evaluateAnswer(taskId, answer);
 
         await logMcpAudit(keyId, userId, 'evaluate-answer', true);
@@ -123,6 +146,8 @@ export function registerAgentTools(server: McpServer, userId: string, keyId: str
       },
     },
     async () => {
+      const denied = checkScope(scopes, 'ai');
+      if (denied) return denied;
       try {
         const message = await dailyBriefing(userId);
 

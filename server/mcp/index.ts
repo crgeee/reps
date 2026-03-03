@@ -20,7 +20,8 @@ mcp.use('/*', rateLimiter(60, 60_000)); // 60 req/min
 mcp.post('/', async (c) => {
   const userId = c.get('userId');
   const keyId = c.get('mcpKeyId');
-  const server = createMcpServer(userId, keyId);
+  const scopes = c.get('mcpScopes');
+  const server = createMcpServer(userId, keyId, scopes);
 
   // Stateless mode: no session IDs, JSON responses
   const transport = new StreamableHTTPTransport({
@@ -28,12 +29,18 @@ mcp.post('/', async (c) => {
     enableJsonResponse: true,
   });
 
-  await server.connect(transport);
-
   try {
+    await server.connect(transport);
     return await transport.handleRequest(c);
+  } catch (err) {
+    console.error('[mcp] Request handling error:', err);
+    return c.json({ error: 'Internal MCP error' }, 500);
   } finally {
-    await server.close();
+    try {
+      await server.close();
+    } catch {
+      // server may already be closed
+    }
   }
 });
 

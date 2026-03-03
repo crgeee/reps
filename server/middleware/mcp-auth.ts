@@ -3,10 +3,11 @@ import sql from '../db/client.js';
 import { validateMcpKey } from '../mcp/keys.js';
 
 async function isMcpGloballyEnabled(): Promise<boolean> {
-  const [row] = await sql<[{ value: boolean }?]>`
+  const [row] = await sql<[{ value: unknown }?]>`
     SELECT value FROM server_settings WHERE key = 'mcp_enabled'
   `;
-  return row?.value === true;
+  // value is JSONB — postgres.js may return it as a boolean or as a JSON value
+  return row?.value === true || row?.value === 'true';
 }
 
 async function isMcpEnabledForUser(userId: string): Promise<boolean> {
@@ -19,34 +20,39 @@ async function isMcpEnabledForUser(userId: string): Promise<boolean> {
 export const mcpAuthMiddleware: MiddlewareHandler<{
   Variables: { userId: string; mcpKeyId: string; mcpScopes: string[] };
 }> = async (c, next) => {
-  if (c.req.header('origin')) {
-    return c.json({ error: 'Browser requests not permitted on MCP endpoint' }, 403);
+  try {
+    if (c.req.header('origin')) {
+      return c.json({ error: 'Browser requests not permitted on MCP endpoint' }, 403);
+    }
+
+    if (!(await isMcpGloballyEnabled())) {
+      return c.json({ error: 'MCP is currently disabled' }, 503);
+    }
+
+    const header = c.req.header('Authorization');
+    if (!header?.startsWith('Bearer ')) {
+      return c.json({ error: 'Missing or invalid Authorization header' }, 401);
+    }
+
+    const token = header.slice(7);
+    const result = await validateMcpKey(token);
+    if (!result) {
+      return c.json({ error: 'Invalid or expired MCP key' }, 401);
+    }
+
+    if (!(await isMcpEnabledForUser(result.userId))) {
+      return c.json({ error: 'MCP is not enabled for your account' }, 403);
+    }
+
+    c.set('userId', result.userId);
+    c.set('mcpKeyId', result.keyId);
+    c.set('mcpScopes', result.scopes);
+
+    return next();
+  } catch (err) {
+    console.error('[mcp-auth] Middleware error:', err);
+    return c.json({ error: 'Authentication service unavailable' }, 503);
   }
-
-  if (!(await isMcpGloballyEnabled())) {
-    return c.json({ error: 'MCP is currently disabled' }, 503);
-  }
-
-  const header = c.req.header('Authorization');
-  if (!header?.startsWith('Bearer ')) {
-    return c.json({ error: 'Missing or invalid Authorization header' }, 401);
-  }
-
-  const token = header.slice(7);
-  const result = await validateMcpKey(token);
-  if (!result) {
-    return c.json({ error: 'Invalid or expired MCP key' }, 401);
-  }
-
-  if (!(await isMcpEnabledForUser(result.userId))) {
-    return c.json({ error: 'MCP is not enabled for your account' }, 403);
-  }
-
-  c.set('userId', result.userId);
-  c.set('mcpKeyId', result.keyId);
-  c.set('mcpScopes', result.scopes);
-
-  return next();
 };
 
 export function requireScope(

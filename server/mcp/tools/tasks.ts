@@ -126,21 +126,34 @@ function error(message: string) {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_TOPICS = ['coding', 'system-design', 'behavioral', 'papers', 'custom'] as const;
+const VALID_STATUSES = ['todo', 'in-progress', 'done'] as const;
+
+// --- scope enforcement ---
+
+function checkScope(scopes: string[], required: string) {
+  if (!scopes.includes(required)) {
+    return error(`MCP key missing required scope: ${required}`);
+  }
+  return null;
+}
 
 // --- tool registration ---
 
-export function registerTaskTools(server: McpServer, userId: string, keyId: string): void {
+export function registerTaskTools(server: McpServer, userId: string, keyId: string, scopes: string[]): void {
   // 1. get-tasks
   server.tool(
     'get-tasks',
     'List tasks with optional filters',
     {
-      topic: z.string().optional().describe('Filter by topic'),
+      topic: z.enum(VALID_TOPICS).optional().describe('Filter by topic'),
       collectionId: z.string().regex(UUID_RE).optional().describe('Filter by collection ID'),
       dueOnly: z.boolean().optional().describe('Only return tasks due for review'),
-      status: z.string().optional().describe('Filter by status'),
+      status: z.enum(VALID_STATUSES).optional().describe('Filter by status'),
     },
     async ({ topic, collectionId, dueOnly, status }) => {
+      const denied = checkScope(scopes, 'read');
+      if (denied) return denied;
       try {
         const filters = [sql`user_id = ${userId}`];
 
@@ -183,6 +196,8 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       taskId: z.string().regex(UUID_RE).describe('Task UUID'),
     },
     async ({ taskId }) => {
+      const denied = checkScope(scopes, 'read');
+      if (denied) return denied;
       try {
         const [row] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
         if (!row) return error('Task not found');
@@ -204,7 +219,7 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
     'create-task',
     'Create a new task',
     {
-      topic: z.string().describe('Task topic (e.g. coding, system-design, behavioral, papers, custom)'),
+      topic: z.enum(VALID_TOPICS).describe('Task topic'),
       title: z.string().describe('Task title'),
       deadline: z.string().optional().describe('Deadline date (YYYY-MM-DD)'),
       description: z.string().optional().describe('Task description'),
@@ -212,6 +227,8 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       collectionId: z.string().regex(UUID_RE).optional().describe('Collection UUID'),
     },
     async ({ topic, title, deadline, description, priority, collectionId }) => {
+      const denied = checkScope(scopes, 'write');
+      if (denied) return denied;
       try {
         const id = uuidv4();
         const now = today();
@@ -254,16 +271,18 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
     'Update an existing task',
     {
       taskId: z.string().regex(UUID_RE).describe('Task UUID'),
-      topic: z.string().optional().describe('Task topic'),
+      topic: z.enum(VALID_TOPICS).optional().describe('Task topic'),
       title: z.string().optional().describe('Task title'),
       completed: z.boolean().optional().describe('Completion status'),
-      status: z.string().optional().describe('Task status'),
+      status: z.enum(VALID_STATUSES).optional().describe('Task status'),
       deadline: z.string().nullable().optional().describe('Deadline date (YYYY-MM-DD)'),
       description: z.string().nullable().optional().describe('Task description'),
       priority: z.enum(['none', 'low', 'medium', 'high']).optional().describe('Task priority'),
       collectionId: z.string().regex(UUID_RE).nullable().optional().describe('Collection UUID'),
     },
     async ({ taskId, ...fields }) => {
+      const denied = checkScope(scopes, 'write');
+      if (denied) return denied;
       try {
         const fieldMap: Record<string, string> = {
           topic: 'topic',
@@ -323,6 +342,8 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       taskId: z.string().regex(UUID_RE).describe('Task UUID'),
     },
     async ({ taskId }) => {
+      const denied = checkScope(scopes, 'write');
+      if (denied) return denied;
       try {
         const [row] = await sql<TaskRow[]>`DELETE FROM tasks WHERE id = ${taskId} AND user_id = ${userId} RETURNING *`;
         if (!row) return error('Task not found');
@@ -345,6 +366,8 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       text: z.string().describe('Note text'),
     },
     async ({ taskId, text }) => {
+      const denied = checkScope(scopes, 'write');
+      if (denied) return denied;
       try {
         // Verify task exists and belongs to user
         const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
@@ -375,6 +398,8 @@ export function registerTaskTools(server: McpServer, userId: string, keyId: stri
       quality: z.number().int().min(0).max(5).describe('Review quality (0-5): 0=complete blackout, 5=perfect recall'),
     },
     async ({ taskId, quality }) => {
+      const denied = checkScope(scopes, 'write');
+      if (denied) return denied;
       try {
         const [taskRow] = await sql<TaskRow[]>`SELECT * FROM tasks WHERE id = ${taskId} AND user_id = ${userId}`;
         if (!taskRow) return error('Task not found');
