@@ -12,18 +12,18 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Spinner from './components/Spinner';
 import CollectionSwitcher from './components/CollectionSwitcher';
 import FocusWidget from './components/FocusWidget';
-import LoginPage from './components/LoginPage';
-import Settings from './components/Settings';
-import DeviceApproval from './components/DeviceApproval';
 import Footer from './components/Footer';
-import PrivacyPolicy from './components/PrivacyPolicy';
-import TermsOfService from './components/TermsOfService';
 import { Home, ListTodo, Plus, BarChart3 } from 'lucide-react';
 
 const ReviewSession = lazy(() => import('./components/ReviewSession'));
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const ExportView = lazy(() => import('./components/ExportView'));
 const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
+const LoginPage = lazy(() => import('./components/LoginPage'));
+const Settings = lazy(() => import('./components/Settings'));
+const DeviceApproval = lazy(() => import('./components/DeviceApproval'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./components/TermsOfService'));
 
 type View =
   | 'dashboard'
@@ -86,7 +86,7 @@ const NAV_ITEMS: { view: View; label: string }[] = [
 ];
 
 export default function App() {
-  const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
+  const { user, loading: authLoading, isAuthenticated, logout, setUser } = useAuth();
   const [view, setViewState] = useState<View>(getViewFromHash);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -209,8 +209,8 @@ export default function App() {
     }
   }, [isAuthenticated, fetchData, fetchCollections, fetchTags]);
 
-  function handleUserUpdate(_updated: User) {
-    refreshAuth();
+  function handleUserUpdate(updated: User) {
+    setUser(updated);
   }
 
   function handleTagCreated(tag: Tag) {
@@ -218,7 +218,7 @@ export default function App() {
   }
 
   // Derive due tasks client-side — only from SR-enabled collections
-  const today = new Date().toISOString().split('T')[0]!;
+  const today = useMemo(() => new Date().toISOString().split('T')[0]!, []);
   const dueTasks = useMemo(() => {
     const srIds = new Set(collections.filter((c) => c.srEnabled).map((c) => c.id));
     return tasks.filter(
@@ -263,7 +263,9 @@ export default function App() {
           >
             ← Back
           </button>
-          <PageComponent />
+          <Suspense fallback={<Spinner size="lg" />}>
+            <PageComponent />
+          </Suspense>
         </div>
         <Footer onNavigate={(v) => setView(v as View)} />
       </div>
@@ -281,7 +283,17 @@ export default function App() {
 
   // Show login page if not authenticated
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
+        <LoginPage />
+      </Suspense>
+    );
   }
 
   return (
@@ -706,9 +718,15 @@ export default function App() {
                 </Suspense>
               )}
               {view === 'settings' && user && (
-                <Settings user={user} onUserUpdate={handleUserUpdate} />
+                <Suspense fallback={<Spinner size="lg" />}>
+                  <Settings user={user} onUserUpdate={handleUserUpdate} />
+                </Suspense>
               )}
-              {view === 'device-approve' && <DeviceApproval />}
+              {view === 'device-approve' && (
+                <Suspense fallback={<Spinner size="lg" />}>
+                  <DeviceApproval />
+                </Suspense>
+              )}
             </div>
           </ErrorBoundary>
         )}

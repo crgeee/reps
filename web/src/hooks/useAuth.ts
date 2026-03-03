@@ -54,6 +54,10 @@ export function useAuth() {
     setState({ user: null, loading: false, error: null });
   }, []);
 
+  const setUser = useCallback((user: User) => {
+    setState({ user, loading: false, error: null });
+  }, []);
+
   return {
     user: state.user,
     loading: state.loading,
@@ -61,5 +65,6 @@ export function useAuth() {
     isAuthenticated: !!state.user,
     logout,
     refresh: checkAuth,
+    setUser,
   };
 }
