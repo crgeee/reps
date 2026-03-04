@@ -8,6 +8,8 @@ export interface PaperSummary {
   summary: string;
   talkingPoints: string[];
   keyTerms: string[];
+  parsingFailed?: boolean;
+  noteSaveFailed?: boolean;
 }
 
 interface NoteRow {
@@ -63,17 +65,17 @@ export async function summarizePaper(taskId: string): Promise<PaperSummary> {
   }
 
   // SSRF protection: only allow HTTPS to public hosts
+  let parsedUrl: URL;
   try {
-    const parsed = new URL(paperUrl);
-    if (parsed.protocol !== 'https:') {
-      throw new Error('Only HTTPS URLs are allowed');
-    }
-    if (isBlockedHost(parsed.hostname)) {
-      throw new Error('Private/internal URLs are not allowed');
-    }
-  } catch (err) {
-    if (err instanceof Error && err.message.includes('not allowed')) throw err;
-    throw new Error('Invalid URL');
+    parsedUrl = new URL(paperUrl);
+  } catch {
+    throw new Error(`Invalid URL: ${paperUrl}`);
+  }
+  if (parsedUrl.protocol !== 'https:') {
+    throw new Error('Only HTTPS URLs are allowed');
+  }
+  if (isBlockedHost(parsedUrl.hostname)) {
+    throw new Error('Private/internal URLs are not allowed');
   }
 
   // Fetch the URL content
@@ -112,7 +114,8 @@ Do not include any text outside the JSON object.`;
       messages: [{ role: 'user', content: userPrompt }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const firstBlock = response.content[0];
+    const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -129,9 +132,12 @@ Do not include any text outside the JSON object.`;
     } catch (parseErr) {
       console.error('[papers] JSON parse error:', parseErr);
       result = {
-        summary: text || 'Summary generation failed to produce structured output.',
-        talkingPoints: [],
+        summary: text
+          ? `[Structured parsing failed — raw summary below]\n\n${text}`
+          : 'Summary generation failed to produce structured output.',
+        talkingPoints: ['Parsing failed — talking points unavailable'],
         keyTerms: [],
+        parsingFailed: true,
       };
     }
   } catch (err) {
@@ -150,6 +156,7 @@ Do not include any text outside the JSON object.`;
     `;
   } catch (err) {
     console.error('[papers] Failed to save summary note:', err);
+    result.noteSaveFailed = true;
   }
 
   // Log to agent_logs
