@@ -16,8 +16,8 @@ import {
   recurrenceDay,
 } from '../validation.js';
 import type { Task, Note, Quality } from '../../src/types.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string } };
 const tasks = new Hono<AppEnv>();
 
 // --- validation schemas ---

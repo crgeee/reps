@@ -5,8 +5,8 @@ import { getUserById, updateUserProfile, adminUpdateUser } from '../auth/users.j
 import { getUserSessions, deleteSession } from '../auth/sessions.js';
 import { validateUuid } from '../validation.js';
 import { createMcpKey, listMcpKeys, revokeMcpKey } from '../mcp/keys.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string } };
 const users = new Hono<AppEnv>();
 
 // --- Validation ---

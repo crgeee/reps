@@ -356,7 +356,6 @@ export interface LogsResponse {
   entries: LogEntry[];
   page: number;
   limit: number;
-  total: number;
   hasMore: boolean;
 }
 

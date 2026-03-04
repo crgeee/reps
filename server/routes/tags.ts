@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import sql from '../db/client.js';
 import { validateUuid, tagSchema, patchTagSchema } from '../validation.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string } };
 const tags = new Hono<AppEnv>();
 
 interface TagRow {
