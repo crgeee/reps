@@ -34,16 +34,14 @@ logs.get('/', async (c) => {
 
   try {
     const { page, limit, search, ...filters } = parsed.data;
-    const allEntries = await searchLogs({ ...filters, query: search, limit: page * limit });
-    const start = (page - 1) * limit;
-    const entries = allEntries.slice(start, start + limit);
+    const offset = (page - 1) * limit;
+    const result = await searchLogs({ ...filters, query: search, limit, offset });
 
     return c.json({
-      entries,
+      entries: result.entries,
       page,
       limit,
-      total: allEntries.length,
-      hasMore: allEntries.length >= page * limit,
+      hasMore: result.totalMatched > offset + result.entries.length,
     });
   } catch (err) {
     c.get('logger').error({ err }, 'Failed to search logs');

@@ -135,7 +135,7 @@ export async function tailLogs(lines = 50, level?: string): Promise<LogEntry[]> 
   return allEntries.sort((a, b) => a.time - b.time).slice(-lines);
 }
 
-/** Search logs across files with filters */
+/** Search logs across files with filters, supporting offset for pagination */
 export async function searchLogs(opts: {
   query?: string;
   level?: string;
@@ -143,11 +143,20 @@ export async function searchLogs(opts: {
   from?: string;
   to?: string;
   limit?: number;
-}): Promise<LogEntry[]> {
+  offset?: number;
+}): Promise<{ entries: LogEntry[]; totalMatched: number }> {
   const files = getLogFiles();
   const limit = opts.limit ?? 200;
+  const offset = opts.offset ?? 0;
   const from = opts.from ? new Date(opts.from).getTime() : undefined;
   const to = opts.to ? new Date(opts.to).getTime() : undefined;
+
+  if (from !== undefined && Number.isNaN(from)) {
+    throw new Error('Invalid "from" date');
+  }
+  if (to !== undefined && Number.isNaN(to)) {
+    throw new Error('Invalid "to" date');
+  }
 
   const allEntries: LogEntry[] = [];
   for (const file of files) {
@@ -159,23 +168,28 @@ export async function searchLogs(opts: {
       to,
     });
     allEntries.push(...entries);
-    if (allEntries.length >= limit) break;
+    if (allEntries.length >= offset + limit) break;
   }
 
-  return allEntries.slice(0, limit);
+  return {
+    entries: allEntries.slice(offset, offset + limit),
+    totalMatched: allEntries.length,
+  };
 }
 
-/** Get all log entries for a specific request ID */
+/** Get all log entries for a specific request ID (capped at 500) */
 export async function getRequestTrace(requestId: string): Promise<LogEntry[]> {
   const files = getLogFiles();
   const allEntries: LogEntry[] = [];
+  const limit = 500;
 
   for (const file of files) {
     const entries = await readLogFile(file, { reqId: requestId });
     allEntries.push(...entries);
+    if (allEntries.length >= limit) break;
   }
 
-  return allEntries.sort((a, b) => a.time - b.time);
+  return allEntries.sort((a, b) => a.time - b.time).slice(0, limit);
 }
 
 /** Aggregate error counts by message over the last N hours */

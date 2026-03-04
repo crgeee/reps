@@ -9,8 +9,8 @@ import {
   patchTemplateTaskSchema,
 } from '../validation.js';
 import { getUserById } from '../auth/users.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string } };
 const templates = new Hono<AppEnv>();
 
 interface TemplateRow {
