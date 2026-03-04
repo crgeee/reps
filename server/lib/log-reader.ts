@@ -4,6 +4,7 @@ import { createInterface } from 'readline';
 import { logger } from '../logger.js';
 
 const LOG_DIR = process.env.LOG_DIR ?? '/var/log/reps';
+const NGINX_LOG_DIR = process.env.NGINX_LOG_DIR ?? '/var/log/nginx';
 
 export interface LogEntry {
   level: number;
@@ -236,6 +237,114 @@ export async function getSlowRequests(thresholdMs = 1000, limit = 50): Promise<L
   }
 
   return slow.sort((a, b) => (b.latency ?? 0) - (a.latency ?? 0)).slice(0, limit);
+}
+
+// --- Nginx error log parsing ---
+
+export interface NginxErrorEntry {
+  time: number;
+  level: string;
+  message: string;
+  client?: string;
+  server?: string;
+  request?: string;
+  upstream?: string;
+  host?: string;
+}
+
+// Matches: 2026/03/04 04:07:27 [error] 197321#197321: *1511 <message>
+const NGINX_LINE_RE = /^(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)] \d+#\d+: (?:\*\d+ )?(.+)$/;
+
+const NGINX_FIELD_RE = /(\w+): (.+?)(?=, \w+:|$)/g;
+
+function parseNginxLine(line: string): NginxErrorEntry | null {
+  const m = line.match(NGINX_LINE_RE);
+  if (!m) return null;
+
+  const time = new Date(m[1].replace(/\//g, '-')).getTime();
+  if (Number.isNaN(time)) return null;
+
+  const rawMsg = m[3];
+  const entry: NginxErrorEntry = { time, level: m[2], message: rawMsg };
+
+  // Extract structured fields from the message tail
+  for (const match of rawMsg.matchAll(NGINX_FIELD_RE)) {
+    const key = match[1];
+    const val = match[2].trim().replace(/^"|"$/g, '');
+    if (key === 'client') entry.client = val;
+    else if (key === 'server') entry.server = val;
+    else if (key === 'request') entry.request = val;
+    else if (key === 'upstream') entry.upstream = val;
+    else if (key === 'host') entry.host = val;
+  }
+
+  return entry;
+}
+
+function getNginxLogFiles(): string[] {
+  try {
+    const files = readdirSync(NGINX_LOG_DIR)
+      .filter((f) => f.startsWith('error') && f.endsWith('.log'))
+      .map((f) => ({
+        name: f,
+        path: join(NGINX_LOG_DIR, f),
+        mtime: statSync(join(NGINX_LOG_DIR, f)).mtimeMs,
+      }))
+      .sort((a, b) => b.mtime - a.mtime);
+    return files.map((f) => f.path);
+  } catch (err) {
+    logger.error({ err, dir: NGINX_LOG_DIR }, 'Failed to read nginx log directory');
+    return [];
+  }
+}
+
+async function readNginxLogFile(
+  filePath: string,
+  filter?: { from?: number; to?: number; search?: string },
+): Promise<NginxErrorEntry[]> {
+  const entries: NginxErrorEntry[] = [];
+  const searchLower = filter?.search?.toLowerCase();
+
+  try {
+    const rl = createInterface({
+      input: createReadStream(filePath),
+      crlfDelay: Infinity,
+    });
+
+    for await (const line of rl) {
+      const entry = parseNginxLine(line);
+      if (!entry) continue;
+      if (filter?.from && entry.time < filter.from) continue;
+      if (filter?.to && entry.time > filter.to) continue;
+      if (searchLower && !entry.message.toLowerCase().includes(searchLower)) continue;
+      entries.push(entry);
+    }
+  } catch (err) {
+    logger.error({ err, filePath }, 'Failed to read nginx log file');
+  }
+
+  return entries;
+}
+
+/** Get nginx error log entries for the last N hours */
+export async function getNginxErrors(opts?: {
+  hours?: number;
+  search?: string;
+  limit?: number;
+}): Promise<NginxErrorEntry[]> {
+  const hours = opts?.hours ?? 24;
+  const limit = opts?.limit ?? 200;
+  const from = Date.now() - hours * 60 * 60 * 1000;
+  const files = getNginxLogFiles();
+  const allEntries: NginxErrorEntry[] = [];
+
+  for (const file of files) {
+    const entries = await readNginxLogFile(file, { from, search: opts?.search });
+    allEntries.push(...entries);
+    if (allEntries.length >= limit) break;
+  }
+
+  return allEntries.sort((a, b) => b.time - a.time).slice(0, limit);
 }
 
 /** Get stats: counts by level and hour */

@@ -25,6 +25,7 @@ import type {
   LogsResponse,
   LogStats,
   LogErrorSummary,
+  NginxErrorEntry,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -592,4 +593,13 @@ export function getLogErrors(hours = 24): Promise<{ errors: LogErrorSummary[] }>
 
 export function getLogRequestTrace(requestId: string): Promise<{ entries: LogEntry[] }> {
   return request<{ entries: LogEntry[] }>(`/logs/request/${requestId}`);
+}
+
+export function getNginxErrors(
+  hours = 24,
+  search?: string,
+): Promise<{ entries: NginxErrorEntry[] }> {
+  const query = new URLSearchParams({ hours: String(hours) });
+  if (search) query.set('search', search);
+  return request<{ entries: NginxErrorEntry[] }>(`/logs/nginx-errors?${query}`);
 }

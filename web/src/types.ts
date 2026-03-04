@@ -372,3 +372,14 @@ export interface LogErrorSummary {
   count: number;
   lastSeen: number;
 }
+
+export interface NginxErrorEntry {
+  time: number;
+  level: string;
+  message: string;
+  client?: string;
+  server?: string;
+  request?: string;
+  upstream?: string;
+  host?: string;
+}
