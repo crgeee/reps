@@ -15,6 +15,9 @@ echo "→ Switching to main and pulling latest..."
 git checkout main
 git pull origin main
 
+echo "→ Stopping reps before dependency install..."
+pm2 stop reps || true
+
 echo "→ Installing root dependencies..."
 npm ci
 
@@ -38,8 +41,8 @@ cp package.json dist/package.json
 echo "→ Building web..."
 npm run build:web
 
-echo "→ Restarting reps with pm2..."
-pm2 restart reps --update-env
+echo "→ Starting reps with pm2..."
+pm2 start reps --update-env
 
 echo "→ Waiting for backend to be ready..."
 for i in $(seq 1 30); do
