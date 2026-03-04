@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { Logger } from 'pino';
 import { sendMagicLink, verifyMagicLink } from '../auth/magic-link.js';
 import { deleteSessionByToken } from '../auth/sessions.js';
 import {
@@ -13,8 +12,8 @@ import { getUserById } from '../auth/users.js';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { authMiddleware } from '../middleware/auth.js';
 import { logger } from '../logger.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const auth = new Hono<AppEnv>();
 
 const SESSION_COOKIE = 'reps_session';
@@ -45,8 +44,9 @@ auth.post('/magic-link', async (c) => {
   try {
     await sendMagicLink(parsed.data.email);
   } catch (err) {
+    // Log at fatal — auth flow is broken for the user but we must return 200 to prevent email enumeration
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'sendMagicLink error');
+    log.fatal({ err }, 'sendMagicLink failed — user will not receive login email');
   }
 
   return c.json({ message: 'If an account exists, a magic link has been sent.' });

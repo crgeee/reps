@@ -58,8 +58,10 @@ server.tool(
   },
   async (opts) => {
     try {
-      const entries = await searchLogs(opts);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+      const result = await searchLogs(opts);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result.entries, null, 2) }],
+      };
     } catch (err) {
       return {
         content: [
@@ -155,10 +157,11 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  // Use console.error intentionally — stdout is reserved for MCP protocol messages
   console.error('reps-logs MCP server running on stdio');
 }
 
 main().catch((err) => {
-  console.error('Fatal MCP server error:', err);
+  console.error('Fatal MCP server error:', err); // stderr intentional — see above
   process.exit(1);
 });
