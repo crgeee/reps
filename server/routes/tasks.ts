@@ -129,7 +129,7 @@ export function toDateStr(val: string | Date | null | undefined): string | undef
   return val.slice(0, 10);
 }
 
-function rowToTask(
+export function rowToTask(
   row: TaskRow,
   notes: Note[],
   tags: { id: string; name: string; color: string | null }[] = [],
@@ -176,6 +176,15 @@ export function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
     notesByTask.set(nr.task_id, arr);
   }
   return notesByTask;
+}
+
+export function syncStatusCompleted(updates: Record<string, unknown>): void {
+  if ('status' in updates && !('completed' in updates)) {
+    updates['completed'] = updates['status'] === 'done';
+  }
+  if ('completed' in updates && !('status' in updates)) {
+    updates['status'] = updates['completed'] ? 'done' : 'todo';
+  }
 }
 
 function today(): string {
@@ -373,13 +382,7 @@ tasks.patch('/:id', async (c) => {
     priority: 'priority',
   });
 
-  // Keep completed and status in sync
-  if ('status' in updates && !('completed' in updates)) {
-    updates['completed'] = updates['status'] === 'done';
-  }
-  if ('completed' in updates && !('status' in updates)) {
-    updates['status'] = updates['completed'] ? 'done' : 'todo';
-  }
+  syncStatusCompleted(updates);
 
   // Only run UPDATE if there are scalar fields to update
   let row: TaskRow | undefined;
