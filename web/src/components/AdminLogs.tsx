@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Navigate } from 'react-router';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Navigate, useNavigate } from 'react-router';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import { getLogs, getLogStats, getLogRequestTrace } from '../api';
 import type { LogEntry, LogStats } from '../types';
 
 type AutoRefresh = 0 | 5 | 15;
+type SortColumn = 'time' | 'level' | 'status' | 'latency';
+type SortDirection = 'asc' | 'desc';
+type StatusFilter = '' | '2xx' | '3xx' | '4xx' | '5xx';
 
 interface Filters {
   level: string;
@@ -58,7 +61,11 @@ export default function AdminLogs() {
   const [traceRequestId, setTraceRequestId] = useState<string | null>(null);
   const [traceEntries, setTraceEntries] = useState<LogEntry[]>([]);
   const [traceLoading, setTraceLoading] = useState(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
 
+  const navigate = useNavigate();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchEntries = useCallback(
@@ -146,6 +153,36 @@ export default function AdminLogs() {
     };
   }, [traceRequestId]);
 
+  const displayEntries = useMemo(() => {
+    let filtered = entries;
+    if (statusFilter) {
+      const base = parseInt(statusFilter.charAt(0), 10) * 100;
+      filtered = filtered.filter(
+        (e) => e.status != null && e.status >= base && e.status < base + 100,
+      );
+    }
+    if (!sortColumn || !sortDirection) return filtered;
+    const col = sortColumn;
+    const dir = sortDirection === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const av = a[col] ?? -Infinity;
+      const bv = b[col] ?? -Infinity;
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+  }, [entries, sortColumn, sortDirection, statusFilter]);
+
+  function handleSort(col: SortColumn) {
+    if (sortColumn !== col) {
+      setSortColumn(col);
+      setSortDirection('asc');
+    } else if (sortDirection === 'asc') {
+      setSortDirection('desc');
+    } else {
+      setSortColumn(null);
+      setSortDirection(null);
+    }
+  }
+
   if (!user.isAdmin) {
     return <Navigate to="/" replace />;
   }
@@ -184,7 +221,24 @@ export default function AdminLogs() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-zinc-100">Logs</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/settings')}
+            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Settings
+          </button>
+          <h1 className="text-xl font-bold text-zinc-100">Logs</h1>
+        </div>
         <div className="flex items-center gap-1">
           <span className="text-xs text-zinc-500 mr-1">Auto-refresh:</span>
           {refreshOptions.map((opt) => (
@@ -259,6 +313,20 @@ export default function AdminLogs() {
             onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
             className="bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 outline-none focus:border-zinc-600"
           />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-zinc-500">Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 outline-none focus:border-zinc-600"
+          >
+            <option value="">All</option>
+            <option value="2xx">2xx</option>
+            <option value="3xx">3xx</option>
+            <option value="4xx">4xx</option>
+            <option value="5xx">5xx</option>
+          </select>
         </div>
         <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
           <label className="text-xs text-zinc-500">Search</label>
@@ -345,17 +413,41 @@ export default function AdminLogs() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 text-xs text-zinc-500">
-                  <th className="text-left px-3 py-2.5 font-medium">Time</th>
-                  <th className="text-left px-3 py-2.5 font-medium">Level</th>
+                  <SortableHeader
+                    column="time"
+                    label="Time"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    column="level"
+                    label="Level"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  />
                   <th className="text-left px-3 py-2.5 font-medium">Method</th>
                   <th className="text-left px-3 py-2.5 font-medium">Path</th>
-                  <th className="text-left px-3 py-2.5 font-medium">Status</th>
-                  <th className="text-left px-3 py-2.5 font-medium">Latency</th>
+                  <SortableHeader
+                    column="status"
+                    label="Status"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    column="latency"
+                    label="Latency"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  />
                   <th className="text-left px-3 py-2.5 font-medium">Message</th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, i) => (
+                {displayEntries.map((entry, i) => (
                   <LogRow
                     key={`${entry.time}-${i}`}
                     entry={entry}
@@ -398,6 +490,34 @@ function StatCard({
       <p className="text-xs text-zinc-500 mb-1">{label}</p>
       <p className={`text-lg font-semibold ${valueClass ?? 'text-zinc-100'}`}>{value}</p>
     </div>
+  );
+}
+
+function SortableHeader({
+  column,
+  label,
+  sortColumn,
+  sortDirection,
+  onSort,
+}: {
+  column: SortColumn;
+  label: string;
+  sortColumn: SortColumn | null;
+  sortDirection: SortDirection | null;
+  onSort: (col: SortColumn) => void;
+}) {
+  const active = sortColumn === column;
+  return (
+    <th
+      className="text-left px-3 py-2.5 font-medium cursor-pointer select-none hover:text-zinc-300 transition-colors"
+      onClick={() => onSort(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active && sortDirection === 'asc' && <span className="text-amber-400">&#9650;</span>}
+        {active && sortDirection === 'desc' && <span className="text-amber-400">&#9660;</span>}
+      </span>
+    </th>
   );
 }
 
