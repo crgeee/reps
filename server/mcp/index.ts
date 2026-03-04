@@ -4,6 +4,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { createMcpServer } from './server.js';
 import { mcpAuthMiddleware } from '../middleware/mcp-auth.js';
 import { rateLimiter } from '../middleware/rate-limit.js';
+import { logger } from '../logger.js';
 
 type McpEnv = {
   Variables: { userId: string; mcpKeyId: string; mcpScopes: string[] };
@@ -33,7 +34,7 @@ mcp.post('/', async (c) => {
     await server.connect(transport);
     return await transport.handleRequest(c);
   } catch (err) {
-    console.error('[mcp] Request handling error:', err);
+    logger.error({ err }, 'MCP request handling error');
     return c.json({ error: 'Internal MCP error' }, 500);
   } finally {
     try {

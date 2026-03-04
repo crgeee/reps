@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import type { Logger } from 'pino';
 import sql from '../db/client.js';
 import { evaluateAnswer } from '../agent/evaluator.js';
 import { generateQuestion } from '../agent/questions.js';
@@ -14,8 +15,9 @@ import {
 } from '../agent/mock.js';
 import { validateUuid, uuidStr, mockStartSchema, mockRespondSchema } from '../validation.js';
 import type { Task, Note } from '../../src/types.js';
+import { logger } from '../logger.js';
 
-type AppEnv = { Variables: { userId: string } };
+type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const agent = new Hono<AppEnv>();
 
 const evaluateSchema = z.object({
@@ -78,7 +80,8 @@ agent.post('/evaluate', async (c) => {
     const result = await evaluateAnswer(parsed.data.taskId, parsed.data.answer);
     return c.json(result);
   } catch (err) {
-    console.error('[agent/evaluate]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Evaluation failed');
     return c.json({ error: 'Evaluation failed' }, 500);
   }
 });
@@ -109,7 +112,8 @@ agent.get('/question/:taskId', async (c) => {
 
     return c.json({ question });
   } catch (err) {
-    console.error('[agent/question]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Question generation failed');
     return c.json({ error: 'Question generation failed' }, 500);
   }
 });
@@ -121,7 +125,8 @@ agent.post('/summarize/:taskId', async (c) => {
     const summary = await summarizePaper(taskId);
     return c.json(summary);
   } catch (err) {
-    console.error('[agent/summarize]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Summarization failed');
     return c.json({ error: 'Summarization failed' }, 500);
   }
 });
@@ -132,7 +137,8 @@ agent.post('/briefing', async (c) => {
     const message = await dailyBriefing(userId);
     return c.json({ message });
   } catch (err) {
-    console.error('[agent/briefing]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Briefing failed');
     return c.json({ error: 'Briefing failed' }, 500);
   }
 });
@@ -157,7 +163,8 @@ agent.post('/mock/start', async (c) => {
     const result = await startMockInterview(topic, difficulty, parsed.data.collectionId, userId);
     return c.json(result, 201);
   } catch (err) {
-    console.error('[agent/mock/start]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Failed to start mock interview');
     return c.json({ error: 'Failed to start mock interview' }, 500);
   }
 });
@@ -174,7 +181,8 @@ agent.post('/mock/respond', async (c) => {
     const result = await respondToMock(parsed.data.sessionId, parsed.data.answer);
     return c.json(result);
   } catch (err) {
-    console.error('[agent/mock/respond]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Failed to process mock response');
     return c.json({ error: 'Failed to process response' }, 500);
   }
 });
@@ -190,7 +198,8 @@ agent.get('/mock', async (c) => {
     const sessions = await listMockSessions(collectionId, userId);
     return c.json(sessions);
   } catch (err) {
-    console.error('[agent/mock list]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Failed to list mock sessions');
     return c.json({ error: 'Failed to list mock sessions' }, 500);
   }
 });
@@ -207,7 +216,8 @@ agent.get('/mock/:id', async (c) => {
 
     return c.json(session);
   } catch (err) {
-    console.error('[agent/mock/:id]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Failed to get mock session');
     return c.json({ error: 'Failed to get mock session' }, 500);
   }
 });

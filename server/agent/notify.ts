@@ -1,3 +1,5 @@
+import { logger } from '../logger.js';
+
 const PUSHOVER_API = 'https://api.pushover.net/1/messages.json';
 
 export async function send(title: string, message: string): Promise<void> {
@@ -5,7 +7,7 @@ export async function send(title: string, message: string): Promise<void> {
   const apiToken = process.env.PUSHOVER_API_TOKEN;
 
   if (!userKey || !apiToken) {
-    console.log(`[notify fallback] ${title}: ${message}`);
+    logger.info({ title, message }, 'Notification fallback (no Pushover configured)');
     return;
   }
 
@@ -23,9 +25,9 @@ export async function send(title: string, message: string): Promise<void> {
 
     if (!res.ok) {
       const body = await res.text();
-      console.error(`[notify] Pushover error ${res.status}: ${body}`);
+      logger.error({ status: res.status, body }, 'Pushover error');
     }
   } catch (err) {
-    console.error('[notify] Failed to send Pushover notification:', err);
+    logger.error({ err }, 'Failed to send Pushover notification');
   }
 }

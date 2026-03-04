@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
+import { logger } from '../logger.js';
 
 const anthropic = new Anthropic();
 const MODEL = 'claude-sonnet-4-6';
@@ -92,7 +93,7 @@ Do not include any text outside the JSON object.`;
         suggestedImprovement: String(parsed.suggestedImprovement || 'No suggestion provided.'),
       };
     } catch (parseErr) {
-      console.error('[evaluator] JSON parse error:', parseErr);
+      logger.error({ err: parseErr }, 'Evaluation JSON parse error');
       result = {
         clarity: 0,
         specificity: 0,
@@ -104,7 +105,7 @@ Do not include any text outside the JSON object.`;
       };
     }
   } catch (err) {
-    console.error('[evaluator] Claude error:', err);
+    logger.error({ err }, 'Evaluation Claude error');
     throw new Error('Failed to evaluate answer');
   }
 
@@ -118,7 +119,7 @@ Do not include any text outside the JSON object.`;
       VALUES (${taskId}, ${feedbackText}, ${today})
     `;
   } catch (err) {
-    console.error('[evaluator] Failed to save feedback note:', err);
+    logger.error({ err, taskId }, 'Failed to save feedback note');
     result.noteSaveFailed = true;
   }
 
@@ -129,7 +130,7 @@ Do not include any text outside the JSON object.`;
       VALUES ('evaluation', ${taskId}, ${userPrompt}, ${JSON.stringify(result)})
     `;
   } catch (err) {
-    console.error('[evaluator] Failed to log evaluation:', err);
+    logger.error({ err, taskId }, 'Failed to log evaluation');
   }
 
   return result;

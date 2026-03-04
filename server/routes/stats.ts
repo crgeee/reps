@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
+import type { Logger } from 'pino';
 import sql from '../db/client.js';
 import { validateUuid } from '../validation.js';
+import { logger } from '../logger.js';
 
-type AppEnv = { Variables: { userId: string } };
+type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const stats = new Hono<AppEnv>();
 
 // GET /stats/overview?collection=uuid
@@ -55,7 +57,8 @@ stats.get('/overview', async (c) => {
       averageEaseByTopic,
     });
   } catch (err) {
-    console.error('[stats/overview]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Stats overview failed');
     return c.json({
       totalReviews: 0,
       reviewsLast30Days: 0,
@@ -92,7 +95,8 @@ stats.get('/heatmap', async (c) => {
     for (const r of rows) heatmap[r.date] = parseInt(r.count, 10);
     return c.json(heatmap);
   } catch (err) {
-    console.error('[stats/heatmap]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Stats heatmap failed');
     return c.json({});
   }
 });
@@ -170,7 +174,8 @@ stats.get('/streaks', async (c) => {
       lastReviewDate: dates[0],
     });
   } catch (err) {
-    console.error('[stats/streaks]', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'Stats streaks failed');
     return c.json({ currentStreak: 0, longestStreak: 0, lastReviewDate: null });
   }
 });

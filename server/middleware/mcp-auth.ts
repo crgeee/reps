@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from 'hono';
 import sql from '../db/client.js';
 import { validateMcpKey } from '../mcp/keys.js';
+import { logger } from '../logger.js';
 
 async function isMcpGloballyEnabled(): Promise<boolean> {
   const [row] = await sql<[{ value: unknown }?]>`
@@ -50,7 +51,7 @@ export const mcpAuthMiddleware: MiddlewareHandler<{
 
     return next();
   } catch (err) {
-    console.error('[mcp-auth] Middleware error:', err);
+    logger.error({ err }, 'MCP auth middleware error');
     return c.json({ error: 'Authentication service unavailable' }, 503);
   }
 };

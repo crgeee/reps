@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
 import type { Task, Topic } from '../../src/types.js';
+import { logger } from '../logger.js';
 
 const anthropic = new Anthropic();
 const MODEL = 'claude-sonnet-4-6';
@@ -47,12 +48,12 @@ export async function generateQuestion(task: Task): Promise<string> {
         VALUES ('question', ${task.id}, ${userPrompt}, ${question})
       `;
     } catch (err) {
-      console.error('[questions] Failed to log question generation:', err);
+      logger.error({ err }, 'Failed to log question generation');
     }
 
     return question;
   } catch (err) {
-    console.error('[questions] Claude error:', err);
+    logger.error({ err }, 'Question generation Claude error');
     throw new Error('Failed to generate question');
   }
 }

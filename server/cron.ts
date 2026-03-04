@@ -4,6 +4,7 @@ import { dailyBriefing, weeklyInsight } from './agent/coach.js';
 import { sendDailyDigest } from './agent/email.js';
 import { cleanExpiredSessions } from './auth/sessions.js';
 import { cleanExpiredDeviceCodes } from './auth/device-flow.js';
+import { logger } from './logger.js';
 
 interface NotifiableUser {
   id: string;
@@ -24,7 +25,7 @@ async function getNotifiableUsers(
 export function startCronJobs(): void {
   // Daily briefing + email digest at 8:00 AM every day
   cron.schedule('0 8 * * *', async () => {
-    console.log('[cron] Running daily briefings...');
+    logger.info('Running daily briefings');
     try {
       const users = await getNotifiableUsers('notify_daily');
       for (const user of users) {
@@ -32,30 +33,30 @@ export function startCronJobs(): void {
           await dailyBriefing(user.id);
           await sendDailyDigest(user.id, user.email);
         } catch (err) {
-          console.error(`[cron] Daily briefing failed for user ${user.id}:`, err);
+          logger.error({ err, userId: user.id }, 'Daily briefing failed for user');
         }
       }
-      console.log(`[cron] Daily briefings complete for ${users.length} user(s).`);
+      logger.info({ count: users.length }, 'Daily briefings complete');
     } catch (err) {
-      console.error('[cron] Daily briefing batch failed:', err);
+      logger.error({ err }, 'Daily briefing batch failed');
     }
   });
 
   // Weekly insight at 8:00 PM every Sunday
   cron.schedule('0 20 * * 0', async () => {
-    console.log('[cron] Running weekly insights...');
+    logger.info('Running weekly insights');
     try {
       const users = await getNotifiableUsers('notify_weekly');
       for (const user of users) {
         try {
           await weeklyInsight(user.id);
         } catch (err) {
-          console.error(`[cron] Weekly insight failed for user ${user.id}:`, err);
+          logger.error({ err, userId: user.id }, 'Weekly insight failed for user');
         }
       }
-      console.log(`[cron] Weekly insights complete for ${users.length} user(s).`);
+      logger.info({ count: users.length }, 'Weekly insights complete');
     } catch (err) {
-      console.error('[cron] Weekly insight batch failed:', err);
+      logger.error({ err }, 'Weekly insight batch failed');
     }
   });
 
@@ -64,15 +65,11 @@ export function startCronJobs(): void {
     try {
       const sessionCount = await cleanExpiredSessions();
       const deviceCount = await cleanExpiredDeviceCodes();
-      console.log(
-        `[cron] Cleaned ${sessionCount} expired sessions, ${deviceCount} expired device codes.`,
-      );
+      logger.info({ sessionCount, deviceCount }, 'Cleaned expired sessions and device codes');
     } catch (err) {
-      console.error('[cron] Session cleanup failed:', err);
+      logger.error({ err }, 'Session cleanup failed');
     }
   });
 
-  console.log(
-    '[cron] Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM)',
-  );
+  logger.info('Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM)');
 }

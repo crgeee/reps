@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
+import { logger } from '../logger.js';
 
 const anthropic = new Anthropic();
 const MODEL = 'claude-sonnet-4-6';
@@ -91,7 +92,7 @@ export async function summarizePaper(taskId: string): Promise<PaperSummary> {
       content = content.substring(0, 50000) + '\n\n[Content truncated]';
     }
   } catch (err) {
-    console.error('[papers] Failed to fetch URL:', err);
+    logger.error({ err, url: paperUrl }, 'Failed to fetch URL');
     throw new Error(`Failed to fetch paper from ${paperUrl}`);
   }
 
@@ -130,7 +131,7 @@ Do not include any text outside the JSON object.`;
         keyTerms: Array.isArray(parsed.keyTerms) ? parsed.keyTerms.map(String) : [],
       };
     } catch (parseErr) {
-      console.error('[papers] JSON parse error:', parseErr);
+      logger.error({ err: parseErr }, 'Paper summary JSON parse error');
       result = {
         summary: text
           ? `[Structured parsing failed — raw summary below]\n\n${text}`
@@ -141,7 +142,7 @@ Do not include any text outside the JSON object.`;
       };
     }
   } catch (err) {
-    console.error('[papers] Claude error:', err);
+    logger.error({ err }, 'Paper summary Claude error');
     throw new Error('Failed to summarize paper');
   }
 
@@ -155,7 +156,7 @@ Do not include any text outside the JSON object.`;
       VALUES (${taskId}, ${noteText}, ${today})
     `;
   } catch (err) {
-    console.error('[papers] Failed to save summary note:', err);
+    logger.error({ err, taskId }, 'Failed to save summary note');
     result.noteSaveFailed = true;
   }
 
@@ -166,7 +167,7 @@ Do not include any text outside the JSON object.`;
       VALUES ('paper_summary', ${taskId}, ${paperUrl}, ${JSON.stringify(result)})
     `;
   } catch (err) {
-    console.error('[papers] Failed to log paper summary:', err);
+    logger.error({ err, taskId }, 'Failed to log paper summary');
   }
 
   return result;

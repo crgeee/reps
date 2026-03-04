@@ -1,5 +1,6 @@
 import sql from '../db/client.js';
 import type { Task } from '../../src/types.js';
+import { logger } from '../logger.js';
 
 interface TaskRow {
   id: string;
@@ -80,7 +81,7 @@ export async function getDailyBriefingData(
     `;
     streakCount = parseInt(streakRow?.cnt ?? '0', 10);
   } catch (err) {
-    console.warn('[shared] streak query failed:', err);
+    logger.warn({ err }, 'Streak query failed');
     streakCount = 0;
   }
 
