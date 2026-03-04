@@ -5,9 +5,12 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
+import type { Logger } from 'pino';
+import { logger } from './logger.js';
 import { authMiddleware } from './middleware/auth.js';
 import { rateLimiter } from './middleware/rate-limit.js';
 import { etag } from './middleware/etag.js';
+import { requestLogger } from './middleware/logger.js';
 import authRoutes from './routes/auth.js';
 import tasks from './routes/tasks.js';
 import agent from './routes/agent.js';
@@ -26,7 +29,7 @@ const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-
 import { startCronJobs } from './cron.js';
 startCronJobs();
 
-type AppEnv = { Variables: { userId: string } };
+type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const app = new Hono<AppEnv>();
 
 // CORS — restrict to configured domain, enable credentials for cookies
@@ -47,18 +50,23 @@ app.onError((err, c) => {
   if (err instanceof SyntaxError && err.message.includes('JSON')) {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
-  console.error('Unhandled error:', {
-    method: c.req.method,
-    path: c.req.path,
-    userId: c.get('userId') ?? 'anonymous',
-    error: err.message,
-    stack: err.stack,
-  });
+  const log = c.get('logger') ?? logger;
+  log.error(
+    {
+      userId: c.get('userId') ?? 'anonymous',
+      error: err.message,
+      stack: err.stack,
+    },
+    'Unhandled error',
+  );
   return c.json({ error: 'Internal server error' }, 500);
 });
 
 // Body size limit — 1MB default
 app.use('/*', bodyLimit({ maxSize: 1024 * 1024 }));
+
+// Structured request logging
+app.use('/*', requestLogger);
 
 // Global rate limit — 100 req/min
 app.use('/*', rateLimiter(100, 60_000));
@@ -97,7 +105,7 @@ app.route('/export', exportRoutes);
 const port = parseInt(process.env.PORT || '3000', 10);
 
 serve({ fetch: app.fetch, port }, () => {
-  console.log(`reps server listening on port ${port}`);
+  logger.info({ port }, 'reps server listening');
 });
 
 export default app;
