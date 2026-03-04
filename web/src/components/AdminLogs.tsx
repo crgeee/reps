@@ -418,7 +418,12 @@ export default function AdminLogs() {
                   <th className="text-left px-3 py-2.5 font-medium">Method</th>
                   <th className="text-left px-3 py-2.5 font-medium">Path</th>
                   <SortableHeader column="status" label="Status" sort={sort} onSort={handleSort} />
-                  <SortableHeader column="latency" label="Latency" sort={sort} onSort={handleSort} />
+                  <SortableHeader
+                    column="latency"
+                    label="Latency"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
                   <th className="text-left px-3 py-2.5 font-medium">Message</th>
                 </tr>
               </thead>
@@ -489,9 +494,7 @@ function SortableHeader({
       <span className="inline-flex items-center gap-1">
         {label}
         {active && (
-          <span className="text-amber-400">
-            {sort.direction === 'asc' ? '\u25B2' : '\u25BC'}
-          </span>
+          <span className="text-amber-400">{sort.direction === 'asc' ? '\u25B2' : '\u25BC'}</span>
         )}
       </span>
     </th>
