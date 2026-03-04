@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import type { Tag, RecurrenceUnit } from '../types';
+import { X } from 'lucide-react';
 import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask, createTag } from '../api';
 import { logger } from '../logger';
@@ -88,7 +89,16 @@ export default function AddTask() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h1 className="text-lg font-bold tracking-tight">Add Task</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight">Add Task</h1>
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Close"
+          className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
       {error && (
         <div
