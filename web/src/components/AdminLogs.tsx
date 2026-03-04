@@ -7,6 +7,7 @@ import type { LogEntry, LogStats } from '../types';
 type AutoRefresh = 0 | 5 | 15;
 type SortColumn = 'time' | 'level' | 'status' | 'latency';
 type SortDirection = 'asc' | 'desc';
+type SortState = { column: SortColumn; direction: SortDirection } | null;
 type StatusFilter = '' | '2xx' | '3xx' | '4xx' | '5xx';
 
 interface Filters {
@@ -61,8 +62,7 @@ export default function AdminLogs() {
   const [traceRequestId, setTraceRequestId] = useState<string | null>(null);
   const [traceEntries, setTraceEntries] = useState<LogEntry[]>([]);
   const [traceLoading, setTraceLoading] = useState(false);
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection | null>(null);
+  const [sort, setSort] = useState<SortState>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
 
   const navigate = useNavigate();
@@ -161,25 +161,25 @@ export default function AdminLogs() {
         (e) => e.status != null && e.status >= base && e.status < base + 100,
       );
     }
-    if (!sortColumn || !sortDirection) return filtered;
-    const col = sortColumn;
-    const dir = sortDirection === 'asc' ? 1 : -1;
+    if (!sort) return filtered;
+    const { column, direction } = sort;
+    const dir = direction === 'asc' ? 1 : -1;
     return [...filtered].sort((a, b) => {
-      const av = a[col] ?? -Infinity;
-      const bv = b[col] ?? -Infinity;
-      return av < bv ? -dir : av > bv ? dir : 0;
+      const av = a[column] ?? -Infinity;
+      const bv = b[column] ?? -Infinity;
+      if (av < bv) return -dir;
+      if (av > bv) return dir;
+      return 0;
     });
-  }, [entries, sortColumn, sortDirection, statusFilter]);
+  }, [entries, sort, statusFilter]);
 
   function handleSort(col: SortColumn) {
-    if (sortColumn !== col) {
-      setSortColumn(col);
-      setSortDirection('asc');
-    } else if (sortDirection === 'asc') {
-      setSortDirection('desc');
+    if (sort?.column !== col) {
+      setSort({ column: col, direction: 'asc' });
+    } else if (sort.direction === 'asc') {
+      setSort({ column: col, direction: 'desc' });
     } else {
-      setSortColumn(null);
-      setSortDirection(null);
+      setSort(null);
     }
   }
 
@@ -413,34 +413,15 @@ export default function AdminLogs() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 text-xs text-zinc-500">
-                  <SortableHeader
-                    column="time"
-                    label="Time"
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  />
-                  <SortableHeader
-                    column="level"
-                    label="Level"
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  />
+                  <SortableHeader column="time" label="Time" sort={sort} onSort={handleSort} />
+                  <SortableHeader column="level" label="Level" sort={sort} onSort={handleSort} />
                   <th className="text-left px-3 py-2.5 font-medium">Method</th>
                   <th className="text-left px-3 py-2.5 font-medium">Path</th>
-                  <SortableHeader
-                    column="status"
-                    label="Status"
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  />
+                  <SortableHeader column="status" label="Status" sort={sort} onSort={handleSort} />
                   <SortableHeader
                     column="latency"
                     label="Latency"
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
+                    sort={sort}
                     onSort={handleSort}
                   />
                   <th className="text-left px-3 py-2.5 font-medium">Message</th>
@@ -496,17 +477,15 @@ function StatCard({
 function SortableHeader({
   column,
   label,
-  sortColumn,
-  sortDirection,
+  sort,
   onSort,
 }: {
   column: SortColumn;
   label: string;
-  sortColumn: SortColumn | null;
-  sortDirection: SortDirection | null;
+  sort: SortState;
   onSort: (col: SortColumn) => void;
 }) {
-  const active = sortColumn === column;
+  const active = sort?.column === column;
   return (
     <th
       className="text-left px-3 py-2.5 font-medium cursor-pointer select-none hover:text-zinc-300 transition-colors"
@@ -514,8 +493,9 @@ function SortableHeader({
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        {active && sortDirection === 'asc' && <span className="text-amber-400">&#9650;</span>}
-        {active && sortDirection === 'desc' && <span className="text-amber-400">&#9660;</span>}
+        {active && (
+          <span className="text-amber-400">{sort.direction === 'asc' ? '\u25B2' : '\u25BC'}</span>
+        )}
       </span>
     </th>
   );

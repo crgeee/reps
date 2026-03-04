@@ -388,6 +388,19 @@ PORT=3000
 5. **Switch back to main** — `git checkout main && git pull`
 6. **Never push directly to main** — even for small fixes
 
+### Pre-push checks
+
+**Before every push**, run these checks locally — especially in worktrees where husky pre-commit hooks do not execute:
+
+```bash
+npm run format:check   # Prettier
+npm run lint           # ESLint
+npx tsc --noEmit       # TypeScript (server)
+npx tsc --noEmit --project web/tsconfig.json  # TypeScript (web)
+```
+
+If `format:check` fails, fix with `npx prettier --write <file>`.
+
 ---
 
 ## Agent Team Setup
