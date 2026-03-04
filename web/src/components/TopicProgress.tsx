@@ -26,14 +26,7 @@ function getConfidenceLevel(ef: number): { label: string; color: string } {
 }
 
 function getTopicBarColor(topic: string): string {
-  const map: Record<string, string> = {
-    coding: 'bg-blue-500',
-    'system-design': 'bg-purple-500',
-    behavioral: 'bg-green-500',
-    papers: 'bg-amber-500',
-    custom: 'bg-slate-500',
-  };
-  return map[topic] ?? 'bg-zinc-500';
+  return getTopicColor(topic);
 }
 
 export default function TopicProgress() {
