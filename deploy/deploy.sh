@@ -15,6 +15,19 @@ echo "→ Switching to main and pulling latest..."
 git checkout main
 git pull origin main
 
+echo "→ Stopping reps before dependency install..."
+pm2 stop reps || true
+
+# If deploy fails after pm2 stop, try to restart the previous version
+trap '
+  echo "!! Deploy failed — attempting to restart previous version..."
+  if pm2 start reps --update-env; then
+    echo "!! Previous version restarted — app should be available"
+  else
+    echo "!! CRITICAL: Recovery failed — app is DOWN. Manual intervention required."
+  fi
+' ERR
+
 echo "→ Installing root dependencies..."
 npm ci
 
@@ -38,8 +51,9 @@ cp package.json dist/package.json
 echo "→ Building web..."
 npm run build:web
 
-echo "→ Restarting reps with pm2..."
-pm2 restart reps --update-env
+trap - ERR
+echo "→ Starting reps with pm2..."
+pm2 start reps --update-env
 
 echo "→ Waiting for backend to be ready..."
 for i in $(seq 1 30); do

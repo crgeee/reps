@@ -9,3 +9,5 @@ web/dist/
 .worktrees/
 node_modules
 .claude/worktrees/
+.playwright-mcp/
+seo-crawl/
