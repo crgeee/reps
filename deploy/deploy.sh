@@ -19,7 +19,14 @@ echo "→ Stopping reps before dependency install..."
 pm2 stop reps || true
 
 # If deploy fails after pm2 stop, try to restart the previous version
-trap 'echo "!! Deploy failed — restarting previous version"; pm2 start reps --update-env || true' ERR
+trap '
+  echo "!! Deploy failed — attempting to restart previous version..."
+  if pm2 start reps --update-env; then
+    echo "!! Previous version restarted — app should be available"
+  else
+    echo "!! CRITICAL: Recovery failed — app is DOWN. Manual intervention required."
+  fi
+' ERR
 
 echo "→ Installing root dependencies..."
 npm ci
