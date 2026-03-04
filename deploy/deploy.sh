@@ -18,6 +18,9 @@ git pull origin main
 echo "→ Stopping reps before dependency install..."
 pm2 stop reps || true
 
+# If deploy fails after pm2 stop, try to restart the previous version
+trap 'echo "!! Deploy failed — restarting previous version"; pm2 start reps --update-env || true' ERR
+
 echo "→ Installing root dependencies..."
 npm ci
 
@@ -41,6 +44,7 @@ cp package.json dist/package.json
 echo "→ Building web..."
 npm run build:web
 
+trap - ERR
 echo "→ Starting reps with pm2..."
 pm2 start reps --update-env
 
