@@ -28,6 +28,7 @@ trap '
   fi
 ' ERR
 
+
 echo "→ Installing root dependencies..."
 npm ci
 
@@ -52,6 +53,7 @@ echo "→ Building web..."
 npm run build:web
 
 trap - ERR
+
 echo "→ Starting reps with pm2..."
 pm2 start reps --update-env
 
