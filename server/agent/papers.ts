@@ -23,7 +23,7 @@ const BLOCKED_HOSTS = new Set(['localhost', '[::1]', '0.0.0.0', 'metadata.google
 const BLOCKED_PREFIXES = ['127.', '10.', '192.168.', '169.254.', '0.', 'fc00:', 'fe80:', 'fd00:'];
 const BLOCKED_SUFFIXES = ['.local', '.localhost', '.internal'];
 
-function isBlockedHost(host: string): boolean {
+export function isBlockedHost(host: string): boolean {
   if (BLOCKED_HOSTS.has(host)) return true;
   if (BLOCKED_PREFIXES.some((p) => host.startsWith(p))) return true;
   if (BLOCKED_SUFFIXES.some((s) => host.endsWith(s))) return true;

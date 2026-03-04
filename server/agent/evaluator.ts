@@ -129,7 +129,7 @@ Do not include any text outside the JSON object.`;
   return result;
 }
 
-function clampScore(value: unknown): number {
+export function clampScore(value: unknown): number {
   const num = Number(value);
   if (isNaN(num)) return 3;
   return Math.max(1, Math.min(5, Math.round(num)));
