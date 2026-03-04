@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { Task, Collection, Tag, Priority, RecurrenceType, CollectionStatus } from '../types';
+import type { Task, Collection, Tag, Priority, RecurrenceUnit, CollectionStatus } from '../types';
 import {
   TOPICS,
   getTopicLabel,
   PRIORITIES,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
-  RECURRENCE_OPTIONS,
   formatStatusLabel,
 } from '../types';
 import { updateTask, deleteTask, addNote, createTag } from '../api';
 import { logger } from '../logger';
 import TagPicker from './TagPicker';
+import RecurrencePicker from './RecurrencePicker';
 import NotesList from './NotesList';
 import ButtonSpinner from './ButtonSpinner';
 
@@ -42,7 +42,13 @@ export default function TaskEditModal({
   const [deadline, setDeadline] = useState(task.deadline ?? '');
   const [collectionId, setCollectionId] = useState<string>(task.collectionId ?? '');
   const [description, setDescription] = useState(task.description ?? '');
-  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(task.recurrenceType ?? 'none');
+  const [recurrenceInterval, setRecurrenceInterval] = useState<number | null>(
+    task.recurrenceInterval ?? null,
+  );
+  const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit | null>(
+    task.recurrenceUnit ?? null,
+  );
+  const [recurrenceDay, setRecurrenceDay] = useState<number | null>(task.recurrenceDay ?? null);
   const [recurrenceEnd, setRecurrenceEnd] = useState(task.recurrenceEnd ?? '');
   const [tagIds, setTagIds] = useState<string[]>(task.tags?.map((t) => t.id) ?? []);
   const [notes, setNotes] = useState(task.notes);
@@ -77,7 +83,9 @@ export default function TaskEditModal({
         deadline: deadline || undefined,
         collectionId: collectionId || undefined,
         description: description || undefined,
-        recurrenceType,
+        recurrenceInterval: recurrenceInterval ?? undefined,
+        recurrenceUnit: recurrenceUnit ?? undefined,
+        recurrenceDay: recurrenceDay ?? undefined,
         recurrenceEnd: recurrenceEnd || undefined,
         tagIds,
       } as Partial<Task> & { tagIds?: string[] });
@@ -249,36 +257,22 @@ export default function TaskEditModal({
         </div>
 
         {/* Recurrence */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
-              Recurrence
-            </label>
-            <select
-              value={recurrenceType}
-              onChange={(e) => setRecurrenceType(e.target.value as RecurrenceType)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
-            >
-              {RECURRENCE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {recurrenceType !== 'none' && (
-            <div>
-              <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
-                Recurrence End
-              </label>
-              <input
-                type="date"
-                value={recurrenceEnd}
-                onChange={(e) => setRecurrenceEnd(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
-              />
-            </div>
-          )}
+        <div>
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+            Recurrence
+          </label>
+          <RecurrencePicker
+            interval={recurrenceInterval}
+            unit={recurrenceUnit}
+            day={recurrenceDay}
+            endDate={recurrenceEnd}
+            onChange={({ interval, unit, day, endDate }) => {
+              setRecurrenceInterval(interval);
+              setRecurrenceUnit(unit);
+              setRecurrenceDay(day);
+              setRecurrenceEnd(endDate);
+            }}
+          />
         </div>
 
         {/* Tags */}

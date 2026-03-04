@@ -32,7 +32,9 @@ export interface Task {
   tags?: Tag[];
   description?: string;
   priority: Priority;
-  recurrenceType?: RecurrenceType;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
+  recurrenceDay?: number;
   recurrenceEnd?: string;
   recurrenceParentId?: string;
 }
@@ -149,7 +151,9 @@ export interface CreateTaskInput {
   tagIds?: string[];
   description?: string;
   priority?: Priority;
-  recurrenceType?: RecurrenceType;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
+  recurrenceDay?: number;
   recurrenceEnd?: string;
 }
 
@@ -268,28 +272,24 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
   done: 'Done',
 };
 
-export type RecurrenceType =
-  | 'none'
-  | 'daily'
-  | 'every-2-days'
-  | 'every-3-days'
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'semi-annually';
+export type RecurrenceUnit = 'day' | 'week' | 'month';
 
-export const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
-  { value: 'none', label: 'None' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'every-2-days', label: 'Every 2 days' },
-  { value: 'every-3-days', label: 'Every 3 days' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'biweekly', label: 'Biweekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'semi-annually', label: 'Every 6 months' },
+export const RECURRENCE_UNITS: { value: RecurrenceUnit; label: string }[] = [
+  { value: 'day', label: 'Day(s)' },
+  { value: 'week', label: 'Week(s)' },
+  { value: 'month', label: 'Month(s)' },
 ];
+
+export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export function formatRecurrence(interval?: number, unit?: RecurrenceUnit, day?: number): string {
+  if (!interval || !unit) return '';
+  let label = `Every ${interval}${unit[0]}`;
+  if (unit === 'week' && day != null) {
+    label = interval === 1 ? `${DAY_LABELS[day]} weekly` : `Every ${interval}w ${DAY_LABELS[day]}`;
+  }
+  return label;
+}
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 

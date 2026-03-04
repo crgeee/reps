@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import type { Tag, RecurrenceType } from '../types';
-import { TOPICS, TOPIC_LABELS, RECURRENCE_OPTIONS } from '../types';
+import type { Tag, RecurrenceUnit } from '../types';
+import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask, createTag } from '../api';
 import { logger } from '../logger';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import TagPicker from './TagPicker';
+import RecurrencePicker from './RecurrencePicker';
 
 export default function AddTask() {
   const {
@@ -39,7 +40,9 @@ export default function AddTask() {
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
+  const [recurrenceInterval, setRecurrenceInterval] = useState<number | null>(null);
+  const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit | null>(null);
+  const [recurrenceDay, setRecurrenceDay] = useState<number | null>(null);
   const [recurrenceEnd, setRecurrenceEnd] = useState('');
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomTopic, setShowCustomTopic] = useState(false);
@@ -62,7 +65,9 @@ export default function AddTask() {
         note: note.trim() || undefined,
         collectionId: activeCollection?.id ?? undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-        recurrenceType: recurrenceType !== 'none' ? recurrenceType : undefined,
+        recurrenceInterval: recurrenceInterval ?? undefined,
+        recurrenceUnit: recurrenceUnit ?? undefined,
+        recurrenceDay: recurrenceDay ?? undefined,
         recurrenceEnd: recurrenceEnd || undefined,
       });
       await fetchData();
@@ -175,38 +180,21 @@ export default function AddTask() {
 
         {/* Recurrence */}
         <div>
-          <label htmlFor="recurrence" className="block text-sm font-medium text-zinc-400 mb-2">
+          <label className="block text-sm font-medium text-zinc-400 mb-2">
             Recurrence (optional)
           </label>
-          <select
-            id="recurrence"
-            value={recurrenceType}
-            onChange={(e) => setRecurrenceType(e.target.value as RecurrenceType)}
-            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all duration-200"
-          >
-            {RECURRENCE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          {recurrenceType !== 'none' && (
-            <div className="mt-2">
-              <label
-                htmlFor="recurrenceEnd"
-                className="block text-xs text-zinc-500 mb-1"
-              >
-                End date (optional)
-              </label>
-              <input
-                id="recurrenceEnd"
-                type="date"
-                value={recurrenceEnd}
-                onChange={(e) => setRecurrenceEnd(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 [color-scheme:dark] transition-all duration-200"
-              />
-            </div>
-          )}
+          <RecurrencePicker
+            interval={recurrenceInterval}
+            unit={recurrenceUnit}
+            day={recurrenceDay}
+            endDate={recurrenceEnd}
+            onChange={({ interval, unit, day, endDate }) => {
+              setRecurrenceInterval(interval);
+              setRecurrenceUnit(unit);
+              setRecurrenceDay(day);
+              setRecurrenceEnd(endDate);
+            }}
+          />
         </div>
 
         {/* Tags */}
