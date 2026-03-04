@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import type { Tag, RecurrenceUnit } from '../types';
 import { X } from 'lucide-react';
 import { TOPICS, TOPIC_LABELS } from '../types';
-import { createTask, createTag } from '../api';
+import { createTask, createTag, createCustomTopic } from '../api';
 import { logger } from '../logger';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import TagPicker from './TagPicker';
@@ -13,6 +13,8 @@ export default function AddTask() {
   const {
     tags: availableTags,
     handleTagCreated: onTagCreated,
+    handleCustomTopicCreated: onCustomTopicCreated,
+    customTopics,
     activeCollectionId,
     collections,
     fetchData,
@@ -29,7 +31,12 @@ export default function AddTask() {
   const useCollectionTopics = collectionTopics.length > 0;
   const topicOptions = useCollectionTopics
     ? collectionTopics.map((t) => ({ value: t.name, label: t.name, color: t.color }))
-    : TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null }));
+    : [
+        ...TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null as string | null })),
+        ...customTopics
+          .filter((ct) => !TOPICS.includes(ct.name as (typeof TOPICS)[number]))
+          .map((ct) => ({ value: ct.name, label: ct.name, color: ct.color })),
+      ];
 
   const defaultTopic = activeCollection?.topics?.[0]?.name ?? 'coding';
   const [topic, setTopic] = useState<string>(defaultTopic);
@@ -71,6 +78,21 @@ export default function AddTask() {
         recurrenceDay: recurrenceDay ?? undefined,
         recurrenceEnd: recurrenceEnd || undefined,
       });
+      // Auto-save custom topic if it's new and not a predefined/collection topic
+      const isCustom =
+        showCustomTopic &&
+        topic.trim() &&
+        !TOPICS.includes(topic as (typeof TOPICS)[number]) &&
+        !customTopics.some((ct) => ct.name === topic) &&
+        !useCollectionTopics;
+      if (isCustom) {
+        try {
+          const saved = await createCustomTopic({ name: topic.trim() });
+          onCustomTopicCreated(saved);
+        } catch {
+          // Non-blocking — topic already used on the task, just didn't persist to custom_topics
+        }
+      }
       await fetchData();
       navigate('/tasks');
     } catch (err) {

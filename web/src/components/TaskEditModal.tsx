@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { Task, Collection, Tag, Priority, RecurrenceUnit, CollectionStatus } from '../types';
+import type {
+  Task,
+  Collection,
+  Tag,
+  Priority,
+  RecurrenceUnit,
+  CollectionStatus,
+  CustomTopic,
+} from '../types';
 import {
   TOPICS,
   getTopicLabel,
@@ -9,7 +17,7 @@ import {
   PRIORITY_COLORS,
   formatStatusLabel,
 } from '../types';
-import { updateTask, deleteTask, addNote, createTag } from '../api';
+import { updateTask, deleteTask, addNote, createTag, createCustomTopic } from '../api';
 import { logger } from '../logger';
 import TagPicker from './TagPicker';
 import RecurrencePicker from './RecurrencePicker';
@@ -20,9 +28,11 @@ interface TaskEditModalProps {
   task: Task;
   collections: Collection[];
   availableTags: Tag[];
+  customTopics?: CustomTopic[];
   onSaved: () => void;
   onClose: () => void;
   onTagCreated?: (tag: Tag) => void;
+  onCustomTopicCreated?: (topic: CustomTopic) => void;
 }
 
 const DEFAULT_STATUSES = ['todo', 'in-progress', 'review', 'done'];
@@ -31,9 +41,11 @@ export default function TaskEditModal({
   task,
   collections,
   availableTags,
+  customTopics = [],
   onSaved,
   onClose,
   onTagCreated,
+  onCustomTopicCreated,
 }: TaskEditModalProps) {
   const [title, setTitle] = useState(task.title);
   const [topic, setTopic] = useState<string>(task.topic);
@@ -66,9 +78,17 @@ export default function TaskEditModal({
           .map((s: CollectionStatus) => s.name)
       : DEFAULT_STATUSES;
 
-  // Derive topic options from collection, with current topic always included
-  const collectionTopics = activeCollection?.topics?.map((t) => t.name) ?? [];
-  const topicList = collectionTopics.length > 0 ? collectionTopics : TOPICS;
+  // Derive topic options from collection + user custom topics, with current topic always included
+  const collectionTopicNames = activeCollection?.topics?.map((t) => t.name) ?? [];
+  const useCollectionTopics = collectionTopicNames.length > 0;
+  const topicList: string[] = useCollectionTopics
+    ? collectionTopicNames
+    : [
+        ...(TOPICS as readonly string[]),
+        ...customTopics
+          .filter((ct) => !(TOPICS as readonly string[]).includes(ct.name))
+          .map((ct) => ct.name),
+      ];
   const topicOptions = topicList.includes(topic) ? topicList : [topic, ...topicList];
 
   async function handleSave() {
@@ -90,6 +110,21 @@ export default function TaskEditModal({
         recurrenceEnd: recurrenceEnd || undefined,
         tagIds,
       } as Partial<Task> & { tagIds?: string[] });
+      // Auto-save custom topic if new
+      const isCustom =
+        showCustomTopic &&
+        topic.trim() &&
+        !(TOPICS as readonly string[]).includes(topic) &&
+        !customTopics.some((ct) => ct.name === topic) &&
+        !useCollectionTopics;
+      if (isCustom && onCustomTopicCreated) {
+        try {
+          const saved = await createCustomTopic({ name: topic.trim() });
+          onCustomTopicCreated(saved);
+        } catch {
+          // Non-blocking
+        }
+      }
       onSaved();
       onClose();
     } catch (err) {
