@@ -17,8 +17,9 @@ import {
   PRIORITY_COLORS,
   formatStatusLabel,
 } from '../types';
-import { updateTask, deleteTask, addNote, createTag, createCustomTopic } from '../api';
+import { updateTask, deleteTask, addNote, createTag } from '../api';
 import { logger } from '../logger';
+import { maybeCreateCustomTopic } from '../lib/custom-topics';
 import TagPicker from './TagPicker';
 import RecurrencePicker from './RecurrencePicker';
 import NotesList from './NotesList';
@@ -84,9 +85,9 @@ export default function TaskEditModal({
   const topicList: string[] = useCollectionTopics
     ? collectionTopicNames
     : [
-        ...(TOPICS as readonly string[]),
+        ...TOPICS,
         ...customTopics
-          .filter((ct) => !(TOPICS as readonly string[]).includes(ct.name))
+          .filter((ct) => !TOPICS.includes(ct.name as (typeof TOPICS)[number]))
           .map((ct) => ct.name),
       ];
   const topicOptions = topicList.includes(topic) ? topicList : [topic, ...topicList];
@@ -110,21 +111,13 @@ export default function TaskEditModal({
         recurrenceEnd: recurrenceEnd || undefined,
         tagIds,
       } as Partial<Task> & { tagIds?: string[] });
-      // Auto-save custom topic if new
-      const isCustom =
-        showCustomTopic &&
-        topic.trim() &&
-        !(TOPICS as readonly string[]).includes(topic) &&
-        !customTopics.some((ct) => ct.name === topic) &&
-        !useCollectionTopics;
-      if (isCustom && onCustomTopicCreated) {
-        try {
-          const saved = await createCustomTopic({ name: topic.trim() });
-          onCustomTopicCreated(saved);
-        } catch {
-          // Non-blocking
-        }
-      }
+      maybeCreateCustomTopic({
+        topic,
+        showCustomTopic,
+        customTopics,
+        useCollectionTopics,
+        onCreated: onCustomTopicCreated,
+      });
       onSaved();
       onClose();
     } catch (err) {

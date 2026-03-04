@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router';
 import type { Tag, RecurrenceUnit } from '../types';
 import { X } from 'lucide-react';
 import { TOPICS, TOPIC_LABELS } from '../types';
-import { createTask, createTag, createCustomTopic } from '../api';
+import { createTask, createTag } from '../api';
 import { logger } from '../logger';
+import { maybeCreateCustomTopic } from '../lib/custom-topics';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import TagPicker from './TagPicker';
 import RecurrencePicker from './RecurrencePicker';
@@ -78,21 +79,13 @@ export default function AddTask() {
         recurrenceDay: recurrenceDay ?? undefined,
         recurrenceEnd: recurrenceEnd || undefined,
       });
-      // Auto-save custom topic if it's new and not a predefined/collection topic
-      const isCustom =
-        showCustomTopic &&
-        topic.trim() &&
-        !TOPICS.includes(topic as (typeof TOPICS)[number]) &&
-        !customTopics.some((ct) => ct.name === topic) &&
-        !useCollectionTopics;
-      if (isCustom) {
-        try {
-          const saved = await createCustomTopic({ name: topic.trim() });
-          onCustomTopicCreated(saved);
-        } catch {
-          // Non-blocking — topic already used on the task, just didn't persist to custom_topics
-        }
-      }
+      maybeCreateCustomTopic({
+        topic,
+        showCustomTopic,
+        customTopics,
+        useCollectionTopics,
+        onCreated: onCustomTopicCreated,
+      });
       await fetchData();
       navigate('/tasks');
     } catch (err) {
@@ -142,6 +135,7 @@ export default function AddTask() {
                 type="button"
                 onClick={() => {
                   setTopic(t.value);
+                  setCustomTopic('');
                   setShowCustomTopic(false);
                 }}
                 className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
