@@ -37,6 +37,7 @@ export default function TaskEditModal({
 }: TaskEditModalProps) {
   const [title, setTitle] = useState(task.title);
   const [topic, setTopic] = useState<string>(task.topic);
+  const [showCustomTopic, setShowCustomTopic] = useState(false);
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState<Priority>(task.priority);
   const [deadline, setDeadline] = useState(task.deadline ?? '');
@@ -172,9 +173,12 @@ export default function TaskEditModal({
           {topicOptions.map((t) => (
             <button
               key={t}
-              onClick={() => setTopic(t)}
+              onClick={() => {
+                setTopic(t);
+                setShowCustomTopic(false);
+              }}
               className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                topic === t
+                topic === t && !showCustomTopic
                   ? 'bg-zinc-700 text-zinc-100'
                   : 'text-zinc-500 hover:text-zinc-300 bg-zinc-800/50'
               }`}
@@ -182,7 +186,27 @@ export default function TaskEditModal({
               {getTopicLabel(t)}
             </button>
           ))}
+          <button
+            onClick={() => setShowCustomTopic(true)}
+            className={`px-3 py-1 text-xs rounded-full transition-colors ${
+              showCustomTopic
+                ? 'bg-zinc-700 text-zinc-100'
+                : 'text-zinc-500 hover:text-zinc-300 bg-zinc-800/50'
+            }`}
+          >
+            + Custom
+          </button>
         </div>
+        {showCustomTopic && (
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Enter custom topic name"
+            autoFocus
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+          />
+        )}
 
         {/* Metadata grid */}
         <div className="grid grid-cols-2 gap-3">
