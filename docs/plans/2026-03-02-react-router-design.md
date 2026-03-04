@@ -6,22 +6,22 @@ Replace hash-based routing with React Router v7 (`createBrowserRouter`). Two lay
 
 ## Route Map
 
-| Path | Component | Layout |
-|------|-----------|--------|
-| `/` | Dashboard | Protected |
-| `/tasks` | TaskList | Protected |
-| `/add` | AddTask | Protected |
-| `/review` | ReviewSession (review) | Protected |
-| `/practice` | ReviewSession (practice) | Protected |
-| `/progress` | TopicProgress | Protected |
-| `/calendar` | CalendarView | Protected |
-| `/export` | ExportView | Protected |
-| `/settings` | Settings | Protected |
-| `/templates` | TemplateGallery | Protected |
-| `/login` | LoginPage | Public |
-| `/device-approve` | DeviceApproval | Public |
-| `/privacy` | PrivacyPolicy | Public |
-| `/terms` | TermsOfService | Public |
+| Path              | Component                | Layout    |
+| ----------------- | ------------------------ | --------- |
+| `/`               | Dashboard                | Protected |
+| `/tasks`          | TaskList                 | Protected |
+| `/add`            | AddTask                  | Protected |
+| `/review`         | ReviewSession (review)   | Protected |
+| `/practice`       | ReviewSession (practice) | Protected |
+| `/progress`       | TopicProgress            | Protected |
+| `/calendar`       | CalendarView             | Protected |
+| `/export`         | ExportView               | Protected |
+| `/settings`       | Settings                 | Protected |
+| `/templates`      | TemplateGallery          | Protected |
+| `/login`          | LoginPage                | Public    |
+| `/device-approve` | DeviceApproval           | Public    |
+| `/privacy`        | PrivacyPolicy            | Public    |
+| `/terms`          | TermsOfService           | Public    |
 
 ## Layout Nesting
 

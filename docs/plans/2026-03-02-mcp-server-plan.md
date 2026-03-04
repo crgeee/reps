@@ -13,12 +13,14 @@
 ### Task 1: Install dependencies and create migration
 
 **Files:**
+
 - Modify: `package.json`
 - Create: `db/012-mcp-support.sql`
 
 **Step 1: Install MCP SDK and bcryptjs**
 
 Run:
+
 ```bash
 npm install @modelcontextprotocol/sdk @modelcontextprotocol/hono bcryptjs
 npm install -D @types/bcryptjs
@@ -89,6 +91,7 @@ git commit -m "feat(mcp): add dependencies and DB migration for MCP support"
 ### Task 2: MCP key management (crypto + CRUD)
 
 **Files:**
+
 - Create: `server/mcp/keys.ts`
 
 **Step 1: Create key management module**
@@ -222,6 +225,7 @@ git commit -m "feat(mcp): add MCP key management module with bcrypt hashing"
 ### Task 3: MCP auth middleware and feature toggles
 
 **Files:**
+
 - Create: `server/middleware/mcp-auth.ts`
 
 **Step 1: Create MCP auth middleware**
@@ -316,6 +320,7 @@ git commit -m "feat(mcp): add MCP auth middleware with global/user toggles"
 ### Task 4: MCP server with task tools
 
 **Files:**
+
 - Create: `server/mcp/tools/tasks.ts`
 - Create: `server/mcp/server.ts`
 
@@ -324,6 +329,7 @@ git commit -m "feat(mcp): add MCP auth middleware with global/user toggles"
 Create `server/mcp/tools/tasks.ts`. This module exports functions that register task-related tools on an McpServer. Each handler receives `userId` and calls the DB directly (same queries as `server/routes/tasks.ts`, but extracted for reuse).
 
 Tools to register:
+
 - `get-tasks` (scope: read) — list with optional `topic`, `collectionId`, `dueOnly`, `status` filters
 - `get-task` (scope: read) — single task by ID with notes and tags
 - `create-task` (scope: write) — create with `topic`, `title`, `deadline?`, `description?`, `priority?`, `collectionId?`
@@ -333,6 +339,7 @@ Tools to register:
 - `submit-review` (scope: write) — SM-2 review by `taskId` + `quality` (0-5)
 
 Each tool handler:
+
 1. Uses Zod for `inputSchema`
 2. Wraps logic in try/catch
 3. Returns `{ content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }` on success
@@ -350,8 +357,8 @@ Create `server/mcp/server.ts`:
 ```typescript
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTaskTools } from './tools/tasks.js';
-import { registerAgentTools } from './tools/agent.js';  // Task 5
-import { registerResources } from './resources.js';       // Task 6
+import { registerAgentTools } from './tools/agent.js'; // Task 5
+import { registerResources } from './resources.js'; // Task 6
 
 export function createMcpServer(): McpServer {
   const server = new McpServer({
@@ -381,6 +388,7 @@ git commit -m "feat(mcp): add task CRUD and review MCP tools"
 ### Task 5: MCP agent tools (AI features)
 
 **Files:**
+
 - Create: `server/mcp/tools/agent.ts`
 - Modify: `server/mcp/server.ts` (uncomment registerAgentTools)
 
@@ -410,6 +418,7 @@ git commit -m "feat(mcp): add AI agent MCP tools (question, evaluate, briefing)"
 ### Task 6: MCP resources
 
 **Files:**
+
 - Create: `server/mcp/resources.ts`
 - Modify: `server/mcp/server.ts` (uncomment registerResources)
 
@@ -421,6 +430,7 @@ Create `server/mcp/resources.ts`. Register two resources:
 - `reps://stats` — returns user-scoped stats. Query: count tasks by topic, count due today, count overdue, average ease factor. Same queries as `server/routes/stats.ts` uses.
 
 Note: Resources in MCP don't have auth context by default in the same way tools do. Since we're in stateless mode, the resource handler won't have `userId`. Two options:
+
 - Make topics a static resource (no userId needed) and skip stats as a resource (expose it as a read-only tool `get-stats` instead).
 - Or use a parameterized resource URI like `reps://users/{userId}/stats`.
 
@@ -440,6 +450,7 @@ git commit -m "feat(mcp): add MCP resources (topics) and get-stats tool"
 ### Task 7: MCP route handler and Hono integration
 
 **Files:**
+
 - Create: `server/mcp/index.ts`
 - Modify: `server/index.ts` (mount MCP route)
 
@@ -454,6 +465,7 @@ Create `server/mcp/index.ts`. This mounts the MCP transport at `/mcp`:
 - Handle DELETE `/mcp` — return 405 (no sessions to teardown)
 
 Wrap the route in a Hono sub-app that applies:
+
 1. `mcpAuthMiddleware` (from Task 3)
 2. Body size limit of 100KB
 3. Rate limiting: 60 req/min for general tools, 10 req/hour for AI tools
@@ -461,6 +473,7 @@ Wrap the route in a Hono sub-app that applies:
 For the rate limiting on AI tools, the simplest approach is to check the tool name in the MCP audit log middleware and enforce a separate counter for `generate-question`, `evaluate-answer`, and `get-daily-briefing`.
 
 **Implementation approach:** Since MCP SDK handles the tool dispatch internally, we can't easily apply per-tool rate limits at the Hono middleware level. Instead:
+
 1. Apply a general 60 req/min rate limit on the `/mcp` route
 2. Inside each AI tool handler (Task 5), check a rate limit counter before calling Claude. Use the same in-memory rate limiter pattern from `server/middleware/rate-limit.ts`, keyed by `${keyId}:ai`.
 
@@ -494,6 +507,7 @@ git commit -m "feat(mcp): mount MCP Streamable HTTP route at /mcp"
 ### Task 8: MCP audit logging
 
 **Files:**
+
 - Create: `server/mcp/audit.ts`
 - Modify: `server/mcp/tools/tasks.ts` (add audit calls)
 - Modify: `server/mcp/tools/agent.ts` (add audit calls)
@@ -541,6 +555,7 @@ git commit -m "feat(mcp): add audit logging for all MCP tool invocations"
 ### Task 9: MCP key management API routes
 
 **Files:**
+
 - Modify: `server/routes/users.ts` (add MCP key CRUD endpoints)
 
 **Step 1: Add MCP key routes to users.ts**
@@ -570,7 +585,10 @@ All follow existing patterns in `server/routes/users.ts`: Zod validation, userId
 ```typescript
 const createMcpKeySchema = z.object({
   name: z.string().min(1).max(100),
-  scopes: z.array(z.enum(['read', 'write', 'ai'])).min(1).optional(),
+  scopes: z
+    .array(z.enum(['read', 'write', 'ai']))
+    .min(1)
+    .optional(),
   ttlDays: z.number().int().min(1).max(365).optional(),
 });
 
@@ -591,11 +609,13 @@ git commit -m "feat(mcp): add MCP key management and admin toggle API routes"
 ### Task 10: Update user profile to include mcp_enabled
 
 **Files:**
+
 - Modify: `server/auth/users.ts` (include mcp_enabled in User interface and queries)
 
 **Step 1: Add mcp_enabled to User interface and queries**
 
 In `server/auth/users.ts`:
+
 - Add `mcpEnabled: boolean` to the `User` interface
 - Include `mcp_enabled` in the SELECT queries for `getUserById`, `findUserByEmail`, `listUsers`
 - Map `mcp_enabled` → `mcpEnabled` in the row-to-object conversion
@@ -613,6 +633,7 @@ git commit -m "feat(mcp): include mcp_enabled in user profile data"
 ### Task 11: Web UI — MCP settings in account settings
 
 **Files:**
+
 - Create: `web/src/components/settings/McpKeysSection.tsx`
 - Modify: `web/src/components/settings/SettingsPage.tsx` (or equivalent settings component — add MCP tab/section)
 - Modify: `web/src/api.ts` (add MCP key API functions)
@@ -620,6 +641,7 @@ git commit -m "feat(mcp): include mcp_enabled in user profile data"
 **Step 1: Add API functions**
 
 In `web/src/api.ts`, add typed fetch wrappers:
+
 - `listMcpKeys(): Promise<McpKey[]>`
 - `createMcpKey(name, scopes?, ttlDays?): Promise<{ key: McpKey; rawKey: string }>`
 - `revokeMcpKey(keyId): Promise<void>`
@@ -651,6 +673,7 @@ git commit -m "feat(mcp): add MCP key management UI in account settings"
 ### Task 12: Web UI — Admin MCP controls
 
 **Files:**
+
 - Modify: admin settings component (add global MCP toggle)
 - Modify: admin user list component (add per-user MCP toggle column)
 
@@ -705,6 +728,7 @@ Save the `rawKey` from the response.
 Run: `npx @modelcontextprotocol/inspector`
 
 Configure it to connect to `http://localhost:3000/mcp` with the Bearer token. Verify:
+
 - Tools list shows all 10 (or 11 with get-stats) tools
 - `get-tasks` returns user's tasks
 - `create-task` creates a task
@@ -731,6 +755,7 @@ git commit -m "fix(mcp): address issues found during integration testing"
 ### Task 14: Documentation and deploy
 
 **Files:**
+
 - Modify: `.env.example` (no new env vars needed, but document MCP)
 - Modify: `deploy/deploy.sh` (ensure migration runs — already does)
 
@@ -741,6 +766,7 @@ The existing `deploy.sh` already runs `npm run migrate`, so the new migration wi
 **Step 2: Build and verify**
 
 Run:
+
 ```bash
 npm run build:server
 npm run build:web
