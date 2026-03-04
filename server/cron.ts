@@ -71,5 +71,7 @@ export function startCronJobs(): void {
     }
   });
 
-  logger.info('Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM)');
+  logger.info(
+    'Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM)',
+  );
 }

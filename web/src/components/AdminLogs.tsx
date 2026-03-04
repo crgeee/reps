@@ -18,7 +18,12 @@ const EMPTY_FILTERS: Filters = { level: '', path: '', from: '', to: '', search: 
 
 function formatTime(unix: number): string {
   const d = new Date(unix);
-  return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return d.toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 
 function levelBadgeClasses(label: string): string {
@@ -300,9 +305,14 @@ export default function AdminLogs() {
           ) : (
             <div className="space-y-1">
               {traceEntries.map((entry, i) => (
-                <div key={i} className="flex items-start gap-3 text-xs font-mono py-1.5 border-b border-zinc-800/50 last:border-0">
+                <div
+                  key={i}
+                  className="flex items-start gap-3 text-xs font-mono py-1.5 border-b border-zinc-800/50 last:border-0"
+                >
                   <span className="text-zinc-500 shrink-0">{formatTime(entry.time)}</span>
-                  <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${levelBadgeClasses(entry.levelLabel)}`}>
+                  <span
+                    className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${levelBadgeClasses(entry.levelLabel)}`}
+                  >
                     {entry.levelLabel}
                   </span>
                   <span className="text-zinc-300 break-all">{entry.msg}</span>

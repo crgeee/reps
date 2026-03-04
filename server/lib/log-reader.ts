@@ -169,7 +169,9 @@ export async function getRequestTrace(requestId: string): Promise<LogEntry[]> {
 }
 
 /** Aggregate error counts by message over the last N hours */
-export async function getErrorSummary(hours = 24): Promise<{ message: string; count: number; lastSeen: number }[]> {
+export async function getErrorSummary(
+  hours = 24,
+): Promise<{ message: string; count: number; lastSeen: number }[]> {
   const from = Date.now() - hours * 60 * 60 * 1000;
   const files = getLogFiles();
   const counts = new Map<string, { count: number; lastSeen: number }>();
@@ -194,10 +196,7 @@ export async function getErrorSummary(hours = 24): Promise<{ message: string; co
 }
 
 /** Find requests above a latency threshold */
-export async function getSlowRequests(
-  thresholdMs = 1000,
-  limit = 50,
-): Promise<LogEntry[]> {
+export async function getSlowRequests(thresholdMs = 1000, limit = 50): Promise<LogEntry[]> {
   const files = getLogFiles();
   const slow: LogEntry[] = [];
 
@@ -225,7 +224,10 @@ export async function getLogStats(hours = 24): Promise<{
 }> {
   const from = Date.now() - hours * 60 * 60 * 1000;
   const files = getLogFiles();
-  const hourBuckets = new Map<string, { info: number; warn: number; error: number; total: number }>();
+  const hourBuckets = new Map<
+    string,
+    { info: number; warn: number; error: number; total: number }
+  >();
   const latencies: number[] = [];
   let totalRequests = 0;
   let totalErrors = 0;
@@ -236,8 +238,10 @@ export async function getLogStats(hours = 24): Promise<{
       const hour = new Date(entry.time).toISOString().slice(0, 13) + ':00';
       const bucket = hourBuckets.get(hour) ?? { info: 0, warn: 0, error: 0, total: 0 };
       bucket.total++;
-      if (entry.level >= 50) { bucket.error++; totalErrors++; }
-      else if (entry.level >= 40) bucket.warn++;
+      if (entry.level >= 50) {
+        bucket.error++;
+        totalErrors++;
+      } else if (entry.level >= 40) bucket.warn++;
       else bucket.info++;
       hourBuckets.set(hour, bucket);
 
@@ -250,11 +254,17 @@ export async function getLogStats(hours = 24): Promise<{
 
   latencies.sort((a, b) => a - b);
   const avgLatency = latencies.length ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0;
-  const p95Latency = latencies.length ? latencies[Math.floor(latencies.length * 0.95)] ?? 0 : 0;
+  const p95Latency = latencies.length ? (latencies[Math.floor(latencies.length * 0.95)] ?? 0) : 0;
 
   const byHour = Array.from(hourBuckets.entries())
     .map(([hour, data]) => ({ hour, ...data }))
     .sort((a, b) => a.hour.localeCompare(b.hour));
 
-  return { byHour, totalRequests, totalErrors, avgLatency: Math.round(avgLatency), p95Latency: Math.round(p95Latency) };
+  return {
+    byHour,
+    totalRequests,
+    totalErrors,
+    avgLatency: Math.round(avgLatency),
+    p95Latency: Math.round(p95Latency),
+  };
 }

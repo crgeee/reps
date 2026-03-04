@@ -50,7 +50,10 @@ export async function sendMagicLink(email: string): Promise<void> {
     }
   } else {
     // Console fallback for development
-    logger.info({ email, verifyUrlPrefix: verifyUrl.split('?')[0] }, 'Magic link generated (dev fallback)');
+    logger.info(
+      { email, verifyUrlPrefix: verifyUrl.split('?')[0] },
+      'Magic link generated (dev fallback)',
+    );
   }
 }
 
