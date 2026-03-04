@@ -17,17 +17,19 @@ export const requestLogger = createMiddleware<Env>(async (c, next) => {
   c.set('reqId', reqId);
   c.header('X-Request-Id', reqId);
 
-  await next();
+  try {
+    await next();
+  } finally {
+    const latency = Date.now() - start;
+    const status = c.res.status;
+    const logData = { status, latency };
 
-  const latency = Date.now() - start;
-  const status = c.res.status;
-  const logData = { status, latency };
-
-  if (status >= 500) {
-    childLogger.error(logData, 'request completed');
-  } else if (status >= 400) {
-    childLogger.warn(logData, 'request completed');
-  } else {
-    childLogger.info(logData, 'request completed');
+    if (status >= 500) {
+      childLogger.error(logData, 'request completed');
+    } else if (status >= 400) {
+      childLogger.warn(logData, 'request completed');
+    } else {
+      childLogger.info(logData, 'request completed');
+    }
   }
 });

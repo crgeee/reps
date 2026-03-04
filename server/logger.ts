@@ -15,30 +15,35 @@ function createLogger() {
     });
   }
 
-  return pino(
-    { level },
-    pino.transport({
-      targets: [
-        {
-          target: 'pino-roll',
-          level,
-          options: {
-            file: `${logDir}/app.log`,
-            frequency: 'daily',
-            size: '50m',
-            dateFormat: 'yyyy-MM-dd',
-            mkdir: true,
-            limit: { count: 14 },
+  try {
+    return pino(
+      { level },
+      pino.transport({
+        targets: [
+          {
+            target: 'pino-roll',
+            level,
+            options: {
+              file: `${logDir}/app.log`,
+              frequency: 'daily',
+              size: '50m',
+              dateFormat: 'yyyy-MM-dd',
+              mkdir: true,
+              limit: { count: 14 },
+            },
           },
-        },
-        {
-          target: 'pino/file',
-          level,
-          options: { destination: 1 },
-        },
-      ],
-    }),
-  );
+          {
+            target: 'pino/file',
+            level,
+            options: { destination: 1 },
+          },
+        ],
+      }),
+    );
+  } catch {
+    // Fallback to stdout if transport setup fails (e.g. missing log dir permissions)
+    return pino({ level });
+  }
 }
 
 export const logger = createLogger();

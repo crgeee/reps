@@ -22,8 +22,12 @@ server.tool(
     level: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).optional().describe('Minimum log level filter'),
   },
   async ({ lines, level }) => {
-    const entries = await tailLogs(lines, level);
-    return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    try {
+      const entries = await tailLogs(lines, level);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+    }
   },
 );
 
@@ -39,8 +43,12 @@ server.tool(
     limit: z.number().int().min(1).max(1000).default(100).describe('Max entries to return'),
   },
   async (opts) => {
-    const entries = await searchLogs(opts);
-    return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    try {
+      const entries = await searchLogs(opts);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+    }
   },
 );
 
@@ -51,8 +59,12 @@ server.tool(
     hours: z.number().int().min(1).max(720).default(24).describe('Look back period in hours'),
   },
   async ({ hours }) => {
-    const summary = await getErrorSummary(hours);
-    return { content: [{ type: 'text' as const, text: JSON.stringify(summary, null, 2) }] };
+    try {
+      const summary = await getErrorSummary(hours);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(summary, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+    }
   },
 );
 
@@ -63,8 +75,12 @@ server.tool(
     requestId: z.string().uuid().describe('The X-Request-Id to trace'),
   },
   async ({ requestId }) => {
-    const entries = await getRequestTrace(requestId);
-    return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    try {
+      const entries = await getRequestTrace(requestId);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+    }
   },
 );
 
@@ -76,8 +92,12 @@ server.tool(
     limit: z.number().int().min(1).max(200).default(50).describe('Max entries to return'),
   },
   async ({ thresholdMs, limit }) => {
-    const entries = await getSlowRequests(thresholdMs, limit);
-    return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    try {
+      const entries = await getSlowRequests(thresholdMs, limit);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }], isError: true };
+    }
   },
 );
 

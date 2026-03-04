@@ -1,6 +1,7 @@
 import { createReadStream, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { createInterface } from 'readline';
+import { logger } from '../logger.js';
 
 const LOG_DIR = process.env.LOG_DIR ?? '/var/log/reps';
 
@@ -60,7 +61,8 @@ export function getLogFiles(): string[] {
       }))
       .sort((a, b) => b.mtime - a.mtime);
     return files.map((f) => f.path);
-  } catch {
+  } catch (err) {
+    logger.error({ err, logDir: LOG_DIR }, 'Failed to read log directory');
     return [];
   }
 }
@@ -81,24 +83,28 @@ async function readLogFile(
   const minLevel = filter?.level ? (LEVEL_NUMBERS[filter.level] ?? 0) : 0;
   const searchLower = filter?.search?.toLowerCase();
 
-  const rl = createInterface({
-    input: createReadStream(filePath),
-    crlfDelay: Infinity,
-  });
+  try {
+    const rl = createInterface({
+      input: createReadStream(filePath),
+      crlfDelay: Infinity,
+    });
 
-  for await (const line of rl) {
-    const entry = parseLine(line);
-    if (!entry) continue;
-    if (minLevel && entry.level < minLevel) continue;
-    if (filter?.from && entry.time < filter.from) continue;
-    if (filter?.to && entry.time > filter.to) continue;
-    if (filter?.path && entry.path !== filter.path) continue;
-    if (filter?.reqId && entry.reqId !== filter.reqId) continue;
-    if (searchLower) {
-      const text = (entry.msg + JSON.stringify(entry.err ?? '')).toLowerCase();
-      if (!text.includes(searchLower)) continue;
+    for await (const line of rl) {
+      const entry = parseLine(line);
+      if (!entry) continue;
+      if (minLevel && entry.level < minLevel) continue;
+      if (filter?.from && entry.time < filter.from) continue;
+      if (filter?.to && entry.time > filter.to) continue;
+      if (filter?.path && entry.path !== filter.path) continue;
+      if (filter?.reqId && entry.reqId !== filter.reqId) continue;
+      if (searchLower) {
+        const text = (entry.msg + JSON.stringify(entry.err ?? '')).toLowerCase();
+        if (!text.includes(searchLower)) continue;
+      }
+      entries.push(entry);
     }
-    entries.push(entry);
+  } catch (err) {
+    logger.error({ err, filePath }, 'Failed to read log file');
   }
 
   return entries;
@@ -116,7 +122,7 @@ export async function tailLogs(lines = 50, level?: string): Promise<LogEntry[]> 
     if (allEntries.length >= lines) break;
   }
 
-  return allEntries.slice(-lines);
+  return allEntries.sort((a, b) => a.time - b.time).slice(-lines);
 }
 
 /** Search logs across files with filters */
