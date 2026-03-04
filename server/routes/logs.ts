@@ -89,16 +89,20 @@ logs.get('/errors', async (c) => {
   }
 });
 
-// GET /logs/nginx-errors — nginx error log entries (502s, upstream failures)
+// GET /logs/nginx-errors?hours=N&search=text&limit=N — nginx error log entries (default 24h, limit 100)
 logs.get('/nginx-errors', async (c) => {
-  const hoursParam = new URL(c.req.url).searchParams.get('hours') ?? '24';
+  const params = new URL(c.req.url).searchParams;
+  const hoursParam = params.get('hours') ?? '24';
   const hours = parseInt(hoursParam, 10);
   if (Number.isNaN(hours) || hours < 1 || hours > 720) {
     return c.json({ error: 'hours must be between 1 and 720' }, 400);
   }
-  const search = new URL(c.req.url).searchParams.get('search') ?? undefined;
-  const limitParam = new URL(c.req.url).searchParams.get('limit') ?? '100';
+  const limitParam = params.get('limit') ?? '100';
   const limit = parseInt(limitParam, 10);
+  if (Number.isNaN(limit) || limit < 1 || limit > 500) {
+    return c.json({ error: 'limit must be between 1 and 500' }, 400);
+  }
+  const search = params.get('search') ?? undefined;
 
   try {
     const entries = await getNginxErrors({ hours, search, limit });

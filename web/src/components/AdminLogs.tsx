@@ -84,7 +84,7 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { level: '', path: '', from: '', to: '', search: '' };
 
-/** Formats a unix timestamp as "Mon D HH:MM:SS PST" in Pacific time */
+/** Formats a unix timestamp as "Mon D HH:MM:SS PST/PDT" in Pacific time */
 function formatTime(unix: number): string {
   const d = new Date(unix);
   const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'America/Los_Angeles' });

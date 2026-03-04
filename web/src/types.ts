@@ -373,13 +373,24 @@ export interface LogErrorSummary {
   lastSeen: number;
 }
 
+// Keep in sync with server/lib/log-reader.ts
+export type NginxLogLevel =
+  | 'debug'
+  | 'info'
+  | 'notice'
+  | 'warn'
+  | 'error'
+  | 'crit'
+  | 'alert'
+  | 'emerg';
+
 export interface NginxErrorEntry {
-  time: number;
-  level: string;
-  message: string;
-  client?: string;
-  server?: string;
-  request?: string;
-  upstream?: string;
-  host?: string;
+  readonly time: number;
+  readonly level: NginxLogLevel;
+  readonly message: string;
+  readonly client?: string;
+  readonly server?: string;
+  readonly request?: string;
+  readonly upstream?: string;
+  readonly host?: string;
 }
