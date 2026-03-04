@@ -366,3 +366,9 @@ export interface LogStats {
   avgLatency: number;
   p95Latency: number;
 }
+
+export interface LogErrorSummary {
+  message: string;
+  count: number;
+  lastSeen: number;
+}

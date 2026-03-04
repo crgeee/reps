@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getUserById } from '../auth/users.js';
-import { searchLogs, getLogStats, getRequestTrace } from '../lib/log-reader.js';
+import { searchLogs, getLogStats, getRequestTrace, getErrorSummary } from '../lib/log-reader.js';
 import type { AppEnv } from '../types.js';
 
 const logs = new Hono<AppEnv>();
@@ -63,6 +63,23 @@ logs.get('/stats', async (c) => {
   } catch (err) {
     c.get('logger').error({ err }, 'Failed to get log stats');
     return c.json({ error: 'Failed to read log stats' }, 500);
+  }
+});
+
+// GET /logs/errors?hours=N — error summary for the last N hours (default 24, max 720)
+logs.get('/errors', async (c) => {
+  const hoursParam = new URL(c.req.url).searchParams.get('hours') ?? '24';
+  const hours = parseInt(hoursParam, 10);
+  if (Number.isNaN(hours) || hours < 1 || hours > 720) {
+    return c.json({ error: 'hours must be between 1 and 720' }, 400);
+  }
+
+  try {
+    const errors = await getErrorSummary(hours);
+    return c.json({ errors });
+  } catch (err) {
+    c.get('logger').error({ err, hours }, 'Failed to get error summary');
+    return c.json({ error: 'Failed to read error summary' }, 500);
   }
 });
 
