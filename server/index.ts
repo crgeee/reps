@@ -20,6 +20,7 @@ import tags from './routes/tags.js';
 import statsRoutes from './routes/stats.js';
 import usersRoutes from './routes/users.js';
 import { calendarFeed, exportRoutes } from './routes/export.js';
+import logsRoutes from './routes/logs.js';
 import mcpRoute from './mcp/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -101,6 +102,7 @@ app.route('/tags', tags);
 app.route('/stats', statsRoutes);
 app.route('/users', usersRoutes);
 app.route('/export', exportRoutes);
+app.route('/logs', logsRoutes);
 
 const port = parseInt(process.env.PORT || '3000', 10);
 
