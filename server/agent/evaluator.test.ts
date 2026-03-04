@@ -6,39 +6,19 @@ vi.mock('@anthropic-ai/sdk', () => ({ default: class {} }));
 import { clampScore } from './evaluator.js';
 
 describe('clampScore', () => {
-  it('returns value within range as-is', () => {
-    expect(clampScore(3)).toBe(3);
-  });
-
-  it('clamps below min to 1', () => {
-    expect(clampScore(0)).toBe(1);
-  });
-
-  it('clamps above max to 5', () => {
-    expect(clampScore(6)).toBe(5);
-  });
-
-  it('returns 3 for NaN', () => {
-    expect(clampScore(NaN)).toBe(3);
-  });
-
-  it('returns 3 for undefined', () => {
-    expect(clampScore(undefined)).toBe(3);
-  });
-
-  it('rounds 2.7 to 3', () => {
-    expect(clampScore(2.7)).toBe(3);
-  });
-
-  it('clamps null (Number(null)=0) to 1', () => {
-    expect(clampScore(null)).toBe(1);
-  });
-
-  it('handles string numbers', () => {
-    expect(clampScore('4')).toBe(4);
-  });
-
-  it('clamps negative numbers to 1', () => {
-    expect(clampScore(-1)).toBe(1);
+  it.each([
+    [3, 3, 'value within range'],
+    [1, 1, 'min boundary'],
+    [5, 5, 'max boundary'],
+    [0, 1, 'below min clamps to 1'],
+    [6, 5, 'above max clamps to 5'],
+    [-1, 1, 'negative clamps to 1'],
+    [2.7, 3, 'rounds 2.7 to 3'],
+    [NaN, 3, 'NaN defaults to 3'],
+    [undefined, 3, 'undefined defaults to 3'],
+    [null, 1, 'null (Number(null)=0) clamps to 1'],
+    ['4', 4, 'string number coerced'],
+  ] as [unknown, number, string][])('clampScore(%s) => %s (%s)', (input, expected) => {
+    expect(clampScore(input)).toBe(expected);
   });
 });

@@ -67,6 +67,11 @@ describe('buildUpdates', () => {
       last_reviewed: undefined,
     });
   });
+
+  it('ignores keys not in fieldMap', () => {
+    const body = { easeFactor: 2.7, unknownField: 'should be ignored' };
+    expect(buildUpdates(body, fieldMap)).toEqual({ ease_factor: 2.7 });
+  });
 });
 
 describe('collectionSchema', () => {

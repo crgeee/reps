@@ -25,6 +25,10 @@ describe('toDateStr', () => {
   it('date-only string returns as-is', () => {
     expect(toDateStr('2025-06-15')).toBe('2025-06-15');
   });
+
+  it('Date near midnight UTC does not shift day', () => {
+    expect(toDateStr(new Date('2025-06-15T23:59:59Z'))).toBe('2025-06-15');
+  });
 });
 
 describe('rowToNote', () => {
@@ -41,17 +45,6 @@ describe('rowToNote', () => {
       text: 'some note',
       createdAt: '2025-06-15',
     });
-  });
-
-  it('does not include task_id in output', () => {
-    const row: NoteRow = {
-      id: 'abc-123',
-      task_id: 'task-1',
-      text: 'test',
-      created_at: '2025-01-01',
-    };
-    const note = rowToNote(row);
-    expect(note).not.toHaveProperty('task_id');
   });
 });
 
