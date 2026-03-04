@@ -90,7 +90,7 @@ const syncSchema = z.array(syncTaskSchema).max(500);
 
 // --- helpers ---
 
-interface TaskRow {
+export interface TaskRow {
   id: string;
   topic: string;
   title: string;
@@ -108,14 +108,14 @@ interface TaskRow {
   priority: string;
 }
 
-interface NoteRow {
+export interface NoteRow {
   id: string;
   task_id: string;
   text: string;
   created_at: string;
 }
 
-interface TagRow {
+export interface TagRow {
   task_id: string;
   tag_id: string;
   name: string;
@@ -123,13 +123,13 @@ interface TagRow {
 }
 
 // postgres.js returns Date objects for DATE columns — normalize to yyyy-MM-dd string
-function toDateStr(val: string | Date | null | undefined): string | undefined {
+export function toDateStr(val: string | Date | null | undefined): string | undefined {
   if (!val) return undefined;
   if (val instanceof Date) return val.toISOString().slice(0, 10);
   return val.slice(0, 10);
 }
 
-function rowToTask(
+export function rowToTask(
   row: TaskRow,
   notes: Note[],
   tags: { id: string; name: string; color: string | null }[] = [],
@@ -160,7 +160,7 @@ function rowToTask(
   };
 }
 
-function rowToNote(row: NoteRow): Note {
+export function rowToNote(row: NoteRow): Note {
   return {
     id: row.id,
     text: row.text,
@@ -168,7 +168,7 @@ function rowToNote(row: NoteRow): Note {
   };
 }
 
-function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
+export function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
   const notesByTask = new Map<string, Note[]>();
   for (const nr of noteRows) {
     const arr = notesByTask.get(nr.task_id) ?? [];
@@ -176,6 +176,15 @@ function groupNotes(noteRows: NoteRow[]): Map<string, Note[]> {
     notesByTask.set(nr.task_id, arr);
   }
   return notesByTask;
+}
+
+export function syncStatusCompleted(updates: Record<string, unknown>): void {
+  if ('status' in updates && !('completed' in updates)) {
+    updates['completed'] = updates['status'] === 'done';
+  }
+  if ('completed' in updates && !('status' in updates)) {
+    updates['status'] = updates['completed'] ? 'done' : 'todo';
+  }
 }
 
 function today(): string {
@@ -373,13 +382,7 @@ tasks.patch('/:id', async (c) => {
     priority: 'priority',
   });
 
-  // Keep completed and status in sync
-  if ('status' in updates && !('completed' in updates)) {
-    updates['completed'] = updates['status'] === 'done';
-  }
-  if ('completed' in updates && !('status' in updates)) {
-    updates['status'] = updates['completed'] ? 'done' : 'todo';
-  }
+  syncStatusCompleted(updates);
 
   // Only run UPDATE if there are scalar fields to update
   let row: TaskRow | undefined;

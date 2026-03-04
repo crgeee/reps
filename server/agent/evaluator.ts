@@ -10,6 +10,8 @@ export interface EvaluationResult {
   missionAlignment: number;
   feedback: string;
   suggestedImprovement: string;
+  scoringFailed?: boolean;
+  noteSaveFailed?: boolean;
 }
 
 interface TaskRow {
@@ -71,7 +73,8 @@ Do not include any text outside the JSON object.`;
       messages: [{ role: 'user', content: userPrompt }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const firstBlock = response.content[0];
+    const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
     try {
       // Extract JSON from response — handle possible markdown fences
@@ -91,11 +94,13 @@ Do not include any text outside the JSON object.`;
     } catch (parseErr) {
       console.error('[evaluator] JSON parse error:', parseErr);
       result = {
-        clarity: 3,
-        specificity: 3,
-        missionAlignment: 3,
+        clarity: 0,
+        specificity: 0,
+        missionAlignment: 0,
         feedback: text || 'Evaluation completed but structured scoring failed.',
-        suggestedImprovement: 'Try again for a more detailed evaluation.',
+        suggestedImprovement:
+          'Scoring unavailable — the AI response could not be parsed. Try submitting again.',
+        scoringFailed: true,
       };
     }
   } catch (err) {
@@ -114,6 +119,7 @@ Do not include any text outside the JSON object.`;
     `;
   } catch (err) {
     console.error('[evaluator] Failed to save feedback note:', err);
+    result.noteSaveFailed = true;
   }
 
   // Log to agent_logs
@@ -129,7 +135,7 @@ Do not include any text outside the JSON object.`;
   return result;
 }
 
-function clampScore(value: unknown): number {
+export function clampScore(value: unknown): number {
   const num = Number(value);
   if (isNaN(num)) return 3;
   return Math.max(1, Math.min(5, Math.round(num)));
