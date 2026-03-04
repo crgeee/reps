@@ -5,8 +5,8 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
-import type { Logger } from 'pino';
 import { logger } from './logger.js';
+import type { AppEnv } from './types.js';
 import { authMiddleware } from './middleware/auth.js';
 import { rateLimiter } from './middleware/rate-limit.js';
 import { etag } from './middleware/etag.js';
@@ -30,7 +30,6 @@ const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-
 import { startCronJobs } from './cron.js';
 startCronJobs();
 
-type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const app = new Hono<AppEnv>();
 
 // CORS — restrict to configured domain, enable credentials for cookies

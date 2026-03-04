@@ -1,9 +1,8 @@
 import { createMiddleware } from 'hono/factory';
 import { logger as rootLogger } from '../logger.js';
+import type { AppEnv } from '../types.js';
 
-type Env = { Variables: { logger: typeof rootLogger; reqId: string; userId: string } };
-
-export const requestLogger = createMiddleware<Env>(async (c, next) => {
+export const requestLogger = createMiddleware<AppEnv>(async (c, next) => {
   const reqId = crypto.randomUUID();
   const start = Date.now();
 

@@ -2,9 +2,8 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { getUserById } from '../auth/users.js';
 import { searchLogs, getLogStats, getRequestTrace } from '../lib/log-reader.js';
-import type { Logger } from 'pino';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const logs = new Hono<AppEnv>();
 
 // Admin gate middleware
@@ -34,8 +33,8 @@ logs.get('/', async (c) => {
   }
 
   try {
-    const { page, limit, ...filters } = parsed.data;
-    const allEntries = await searchLogs({ ...filters, limit: page * limit });
+    const { page, limit, search, ...filters } = parsed.data;
+    const allEntries = await searchLogs({ ...filters, query: search, limit: page * limit });
     const start = (page - 1) * limit;
     const entries = allEntries.slice(start, start + limit);
 

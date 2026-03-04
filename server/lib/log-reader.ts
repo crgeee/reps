@@ -43,6 +43,13 @@ const LEVEL_NUMBERS: Record<string, number> = {
 function parseLine(line: string): LogEntry | null {
   try {
     const obj = JSON.parse(line);
+    if (
+      typeof obj.level !== 'number' ||
+      typeof obj.time !== 'number' ||
+      typeof obj.msg !== 'string'
+    ) {
+      return null;
+    }
     return {
       ...obj,
       levelLabel: LEVEL_LABELS[obj.level] ?? 'unknown',

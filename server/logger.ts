@@ -40,9 +40,14 @@ function createLogger() {
         ],
       }),
     );
-  } catch {
-    // Fallback to stdout if transport setup fails (e.g. missing log dir permissions)
-    return pino({ level });
+  } catch (err) {
+    // Fallback to stdout — log files, admin explorer, and MCP log server will not function
+    const fallback = pino({ level });
+    fallback.error(
+      { err: err instanceof Error ? err.message : String(err), logDir },
+      'Failed to initialize file logging transport — falling back to stdout only',
+    );
+    return fallback;
   }
 }
 

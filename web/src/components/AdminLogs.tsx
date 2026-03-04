@@ -48,6 +48,7 @@ export default function AdminLogs() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [stats, setStats] = useState<LogStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
   const [autoRefresh, setAutoRefresh] = useState<AutoRefresh>(0);
@@ -64,6 +65,7 @@ export default function AdminLogs() {
     async (pageNum: number, append: boolean) => {
       try {
         if (!append) setLoading(true);
+        setError(null);
         const params: Record<string, string | number> = { page: pageNum, limit: 50 };
         if (appliedFilters.level) params.level = appliedFilters.level;
         if (appliedFilters.path) params.path = appliedFilters.path;
@@ -79,7 +81,7 @@ export default function AdminLogs() {
         }
         setHasMore(res.hasMore);
       } catch {
-        // silently fail on refresh
+        setError('Failed to load log entries');
       } finally {
         setLoading(false);
       }
@@ -92,7 +94,7 @@ export default function AdminLogs() {
       const s = await getLogStats(24);
       setStats(s);
     } catch {
-      // ignore
+      setStats(null);
     }
   }, []);
 
@@ -320,6 +322,13 @@ export default function AdminLogs() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Error banner */}
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {error}
         </div>
       )}
 
