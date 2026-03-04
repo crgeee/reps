@@ -401,6 +401,23 @@ npx tsc --noEmit --project web/tsconfig.json  # TypeScript (web)
 
 If `format:check` fails, fix with `npx prettier --write <file>`.
 
+### Worktree cleanup
+
+Worktrees accumulate in `.claude/worktrees/`. After merging or closing PRs, clean up stale worktrees:
+
+```bash
+# List all worktrees
+git worktree list
+
+# Remove a specific worktree
+git worktree remove .claude/worktrees/<name>
+
+# Remove all non-main worktrees (use with care)
+git worktree list --porcelain | grep "^worktree " | grep -v "reps$" | sed 's/^worktree //' | xargs -I{} git worktree remove --force {}
+```
+
+Periodically check for stale worktrees — if no open PRs reference them, they can be safely removed.
+
 ---
 
 ## Agent Team Setup

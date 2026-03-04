@@ -24,6 +24,7 @@ import type {
   LogEntry,
   LogsResponse,
   LogStats,
+  LogErrorSummary,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -583,6 +584,10 @@ export function getLogs(params: {
 
 export function getLogStats(hours = 24): Promise<LogStats> {
   return request<LogStats>(`/logs/stats?hours=${hours}`);
+}
+
+export function getLogErrors(hours = 24): Promise<{ errors: LogErrorSummary[] }> {
+  return request<{ errors: LogErrorSummary[] }>(`/logs/errors?hours=${hours}`);
 }
 
 export function getLogRequestTrace(requestId: string): Promise<{ entries: LogEntry[] }> {

@@ -1,14 +1,78 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
-import { getLogs, getLogStats, getLogRequestTrace } from '../api';
-import type { LogEntry, LogStats } from '../types';
+import { getLogs, getLogStats, getLogErrors, getLogRequestTrace } from '../api';
+import type { LogEntry, LogStats, LogErrorSummary } from '../types';
+import TimeSeriesChart from './TimeSeriesChart';
+import BarChart from './BarChart';
 
 type AutoRefresh = 0 | 5 | 15;
 type SortColumn = 'time' | 'level' | 'status' | 'latency';
 type SortDirection = 'asc' | 'desc';
 type SortState = { column: SortColumn; direction: SortDirection } | null;
 type StatusFilter = '' | '2xx' | '3xx' | '4xx' | '5xx';
+
+type ColumnKey =
+  | 'time'
+  | 'level'
+  | 'method'
+  | 'path'
+  | 'status'
+  | 'latency'
+  | 'user'
+  | 'ip'
+  | 'message';
+
+const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: 'time', label: 'Date / Time' },
+  { key: 'level', label: 'Level' },
+  { key: 'method', label: 'Method' },
+  { key: 'path', label: 'Path' },
+  { key: 'status', label: 'Status' },
+  { key: 'latency', label: 'Latency' },
+  { key: 'user', label: 'User' },
+  { key: 'ip', label: 'IP' },
+  { key: 'message', label: 'Message' },
+];
+
+const VALID_COLUMN_KEYS = new Set<ColumnKey>(ALL_COLUMNS.map((c) => c.key));
+const SORTABLE_COLUMNS = new Set<ColumnKey>(['time', 'level', 'status', 'latency']);
+
+const STORAGE_KEY = 'reps_log_columns';
+
+const LEVEL_COLORS: Record<string, string> = {
+  Info: 'bg-blue-500',
+  Warn: 'bg-amber-500',
+  Error: 'bg-red-500',
+};
+
+function loadVisibleColumns(): Set<ColumnKey> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const arr = JSON.parse(stored);
+      if (Array.isArray(arr)) {
+        const filtered = arr.filter((k: string) => VALID_COLUMN_KEYS.has(k as ColumnKey));
+        if (filtered.length > 0) return new Set(filtered);
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load column preferences:', err);
+  }
+  return new Set(ALL_COLUMNS.map((c) => c.key));
+}
+
+function saveVisibleColumns(cols: Set<ColumnKey>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...cols]));
+  } catch (err) {
+    console.warn('Failed to save column preferences:', err);
+  }
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + '...' : text;
+}
 
 interface Filters {
   level: string;
@@ -20,14 +84,18 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { level: '', path: '', from: '', to: '', search: '' };
 
+/** Formats a unix timestamp as "Mon D HH:MM:SS" (e.g., "Mar 3 14:05:22") */
 function formatTime(unix: number): string {
   const d = new Date(unix);
-  return d.toLocaleTimeString('en-US', {
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  const time = d.toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
   });
+  return `${month} ${day} ${time}`;
 }
 
 function levelBadgeClasses(label: string): string {
@@ -46,6 +114,45 @@ function statusColor(status?: number): string {
   return 'text-zinc-400';
 }
 
+function renderCell(key: ColumnKey, entry: LogEntry): ReactNode {
+  switch (key) {
+    case 'time':
+      return (
+        <span className="text-zinc-500 font-mono whitespace-nowrap">{formatTime(entry.time)}</span>
+      );
+    case 'level':
+      return (
+        <span
+          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${levelBadgeClasses(entry.levelLabel)}`}
+        >
+          {entry.levelLabel}
+        </span>
+      );
+    case 'method':
+      return <span className="text-zinc-300 font-mono">{entry.method ?? ''}</span>;
+    case 'path':
+      return (
+        <span className="text-zinc-300 font-mono max-w-[200px] truncate block">
+          {entry.path ?? ''}
+        </span>
+      );
+    case 'status':
+      return <span className={`font-mono ${statusColor(entry.status)}`}>{entry.status ?? ''}</span>;
+    case 'latency':
+      return (
+        <span className="text-zinc-400 font-mono whitespace-nowrap">
+          {entry.latency != null ? `${entry.latency}ms` : ''}
+        </span>
+      );
+    case 'user':
+      return <span className="text-zinc-400 font-mono">{entry.userId ?? ''}</span>;
+    case 'ip':
+      return <span className="text-zinc-400 font-mono">{entry.ip ?? ''}</span>;
+    case 'message':
+      return <span className="text-zinc-400 max-w-[300px] truncate block">{entry.msg}</span>;
+  }
+}
+
 export default function AdminLogs() {
   const { user } = useProtectedContext();
 
@@ -62,8 +169,12 @@ export default function AdminLogs() {
   const [traceRequestId, setTraceRequestId] = useState<string | null>(null);
   const [traceEntries, setTraceEntries] = useState<LogEntry[]>([]);
   const [traceLoading, setTraceLoading] = useState(false);
-  const [sort, setSort] = useState<SortState>(null);
+  const [sort, setSort] = useState<SortState>({ column: 'time', direction: 'desc' });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(loadVisibleColumns);
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
+  const [errorSummary, setErrorSummary] = useState<LogErrorSummary[]>([]);
+  const columnPickerRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -87,7 +198,8 @@ export default function AdminLogs() {
           setEntries(res.entries);
         }
         setHasMore(res.hasMore);
-      } catch {
+      } catch (err) {
+        console.error('Failed to fetch log entries:', err);
         setError('Failed to load log entries');
       } finally {
         setLoading(false);
@@ -97,11 +209,23 @@ export default function AdminLogs() {
   );
 
   const fetchStats = useCallback(async () => {
-    try {
-      const s = await getLogStats(24);
-      setStats(s);
-    } catch {
+    const [statsResult, errorsResult] = await Promise.allSettled([
+      getLogStats(24),
+      getLogErrors(24),
+    ]);
+
+    if (statsResult.status === 'fulfilled') {
+      setStats(statsResult.value);
+    } else {
+      console.error('Failed to fetch log stats:', statsResult.reason);
       setStats(null);
+    }
+
+    if (errorsResult.status === 'fulfilled') {
+      setErrorSummary(errorsResult.value.errors.slice(0, 5));
+    } else {
+      console.error('Failed to fetch error summary:', errorsResult.reason);
+      setErrorSummary([]);
     }
   }, []);
 
@@ -142,7 +266,8 @@ export default function AdminLogs() {
       .then((res) => {
         if (!cancelled) setTraceEntries(res.entries);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Failed to fetch request trace:', err);
         if (!cancelled) setTraceEntries([]);
       })
       .finally(() => {
@@ -152,6 +277,18 @@ export default function AdminLogs() {
       cancelled = true;
     };
   }, [traceRequestId]);
+
+  // Close column picker on outside click
+  useEffect(() => {
+    if (!columnPickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (columnPickerRef.current && !columnPickerRef.current.contains(e.target as Node)) {
+        setColumnPickerOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [columnPickerOpen]);
 
   const displayEntries = useMemo(() => {
     let filtered = entries;
@@ -182,6 +319,35 @@ export default function AdminLogs() {
       setSort(null);
     }
   }
+
+  function toggleColumn(key: ColumnKey) {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key);
+      } else {
+        next.add(key);
+      }
+      saveVisibleColumns(next);
+      return next;
+    });
+  }
+
+  const levelDistribution = useMemo(() => {
+    if (!stats) return {};
+    const buckets: Record<string, number> = {};
+    for (const h of stats.byHour) {
+      buckets['Info'] = (buckets['Info'] ?? 0) + h.info;
+      buckets['Warn'] = (buckets['Warn'] ?? 0) + h.warn;
+      buckets['Error'] = (buckets['Error'] ?? 0) + h.error;
+    }
+    return Object.fromEntries(Object.entries(buckets).filter(([, v]) => v > 0));
+  }, [stats]);
+
+  const activeColumns = useMemo(
+    () => ALL_COLUMNS.filter((col) => visibleColumns.has(col.key)),
+    [visibleColumns],
+  );
 
   if (!user.isAdmin) {
     return <Navigate to="/" replace />;
@@ -268,6 +434,37 @@ export default function AdminLogs() {
           />
           <StatCard label="Avg Latency" value={`${Math.round(stats.avgLatency)}ms`} />
           <StatCard label="P95 Latency" value={`${Math.round(stats.p95Latency)}ms`} />
+        </div>
+      )}
+
+      {/* Charts */}
+      {stats && stats.byHour.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <h3 className="text-xs font-medium text-zinc-500 mb-3">Requests by Hour (24h)</h3>
+            <TimeSeriesChart data={stats.byHour} />
+          </div>
+          <div className="space-y-3">
+            {Object.keys(levelDistribution).length > 0 && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+                <h3 className="text-xs font-medium text-zinc-500 mb-3">Log Level Distribution</h3>
+                <BarChart data={levelDistribution} colors={LEVEL_COLORS} />
+              </div>
+            )}
+            {errorSummary.length > 0 && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+                <h3 className="text-xs font-medium text-zinc-500 mb-3">Top Errors (24h)</h3>
+                <BarChart
+                  data={Object.fromEntries(
+                    errorSummary.map((e) => [truncate(e.message, 40), e.count]),
+                  )}
+                  colors={Object.fromEntries(
+                    errorSummary.map((e) => [truncate(e.message, 40), 'bg-red-500']),
+                  )}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -402,6 +599,54 @@ export default function AdminLogs() {
 
       {/* Log table */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+        {/* Column picker */}
+        <div className="flex items-center justify-end px-3 py-2 border-b border-zinc-800/50">
+          <div className="relative" ref={columnPickerRef}>
+            <button
+              onClick={() => setColumnPickerOpen((o) => !o)}
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+              title="Select columns"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
+            {columnPickerOpen && (
+              <div className="absolute right-0 top-full mt-1 z-20 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-2 min-w-[160px]">
+                {ALL_COLUMNS.map((col) => (
+                  <label
+                    key={col.key}
+                    className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 rounded cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.has(col.key)}
+                      onChange={() => toggleColumn(col.key)}
+                      className="rounded border-zinc-600 bg-zinc-800 text-amber-500 focus:ring-0 focus:ring-offset-0"
+                    />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin h-5 w-5 border-2 border-zinc-600 border-t-zinc-300 rounded-full" />
@@ -413,18 +658,21 @@ export default function AdminLogs() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 text-xs text-zinc-500">
-                  <SortableHeader column="time" label="Time" sort={sort} onSort={handleSort} />
-                  <SortableHeader column="level" label="Level" sort={sort} onSort={handleSort} />
-                  <th className="text-left px-3 py-2.5 font-medium">Method</th>
-                  <th className="text-left px-3 py-2.5 font-medium">Path</th>
-                  <SortableHeader column="status" label="Status" sort={sort} onSort={handleSort} />
-                  <SortableHeader
-                    column="latency"
-                    label="Latency"
-                    sort={sort}
-                    onSort={handleSort}
-                  />
-                  <th className="text-left px-3 py-2.5 font-medium">Message</th>
+                  {activeColumns.map((col) =>
+                    SORTABLE_COLUMNS.has(col.key) ? (
+                      <SortableHeader
+                        key={col.key}
+                        column={col.key as SortColumn}
+                        label={col.label}
+                        sort={sort}
+                        onSort={handleSort}
+                      />
+                    ) : (
+                      <th key={col.key} className="text-left px-3 py-2.5 font-medium">
+                        {col.label}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -435,6 +683,7 @@ export default function AdminLogs() {
                     expanded={expandedRow === i}
                     onToggle={() => handleRowClick(i)}
                     onTraceClick={handleTraceClick}
+                    activeColumns={activeColumns}
                   />
                 ))}
               </tbody>
@@ -506,11 +755,13 @@ function LogRow({
   expanded,
   onToggle,
   onTraceClick,
+  activeColumns,
 }: {
   entry: LogEntry;
   expanded: boolean;
   onToggle: () => void;
   onTraceClick: (reqId: string) => void;
+  activeColumns: { key: ColumnKey; label: string }[];
 }) {
   return (
     <>
@@ -520,31 +771,15 @@ function LogRow({
           expanded ? 'bg-zinc-800/30' : ''
         }`}
       >
-        <td className="px-3 py-2 text-xs text-zinc-500 font-mono whitespace-nowrap">
-          {formatTime(entry.time)}
-        </td>
-        <td className="px-3 py-2">
-          <span
-            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${levelBadgeClasses(entry.levelLabel)}`}
-          >
-            {entry.levelLabel}
-          </span>
-        </td>
-        <td className="px-3 py-2 text-xs text-zinc-300 font-mono">{entry.method ?? ''}</td>
-        <td className="px-3 py-2 text-xs text-zinc-300 font-mono max-w-[200px] truncate">
-          {entry.path ?? ''}
-        </td>
-        <td className={`px-3 py-2 text-xs font-mono ${statusColor(entry.status)}`}>
-          {entry.status ?? ''}
-        </td>
-        <td className="px-3 py-2 text-xs text-zinc-400 font-mono whitespace-nowrap">
-          {entry.latency != null ? `${entry.latency}ms` : ''}
-        </td>
-        <td className="px-3 py-2 text-xs text-zinc-400 max-w-[300px] truncate">{entry.msg}</td>
+        {activeColumns.map((col) => (
+          <td key={col.key} className="px-3 py-2 text-xs">
+            {renderCell(col.key, entry)}
+          </td>
+        ))}
       </tr>
       {expanded && (
         <tr className="border-b border-zinc-800/50">
-          <td colSpan={7} className="px-4 py-3 bg-zinc-900/80">
+          <td colSpan={activeColumns.length} className="px-4 py-3 bg-zinc-900/80">
             <div className="space-y-2 text-xs">
               {entry.reqId && (
                 <div>
