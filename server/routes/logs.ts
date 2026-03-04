@@ -1,7 +1,13 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getUserById } from '../auth/users.js';
-import { searchLogs, getLogStats, getRequestTrace, getErrorSummary } from '../lib/log-reader.js';
+import {
+  searchLogs,
+  getLogStats,
+  getRequestTrace,
+  getErrorSummary,
+  getNginxErrors,
+} from '../lib/log-reader.js';
 import type { AppEnv } from '../types.js';
 
 const logs = new Hono<AppEnv>();
@@ -80,6 +86,30 @@ logs.get('/errors', async (c) => {
   } catch (err) {
     c.get('logger').error({ err, hours }, 'Failed to get error summary');
     return c.json({ error: 'Failed to read error summary' }, 500);
+  }
+});
+
+// GET /logs/nginx-errors?hours=N&search=text&limit=N — nginx error log entries (default 24h, limit 100)
+logs.get('/nginx-errors', async (c) => {
+  const params = new URL(c.req.url).searchParams;
+  const hoursParam = params.get('hours') ?? '24';
+  const hours = parseInt(hoursParam, 10);
+  if (Number.isNaN(hours) || hours < 1 || hours > 720) {
+    return c.json({ error: 'hours must be between 1 and 720' }, 400);
+  }
+  const limitParam = params.get('limit') ?? '100';
+  const limit = parseInt(limitParam, 10);
+  if (Number.isNaN(limit) || limit < 1 || limit > 500) {
+    return c.json({ error: 'limit must be between 1 and 500' }, 400);
+  }
+  const search = params.get('search') ?? undefined;
+
+  try {
+    const entries = await getNginxErrors({ hours, search, limit });
+    return c.json({ entries });
+  } catch (err) {
+    c.get('logger').error({ err, hours }, 'Failed to get nginx errors');
+    return c.json({ error: 'Failed to read nginx error logs' }, 500);
   }
 });
 

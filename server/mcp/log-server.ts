@@ -7,6 +7,7 @@ import {
   getErrorSummary,
   getRequestTrace,
   getSlowRequests,
+  getNginxErrors,
 } from '../lib/log-reader.js';
 
 const server = new McpServer({
@@ -139,6 +140,32 @@ server.tool(
   async ({ thresholdMs, limit }) => {
     try {
       const entries = await getSlowRequests(thresholdMs, limit);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'nginx_errors',
+  'Get nginx error log entries (502s, upstream failures, etc.)',
+  {
+    hours: z.number().int().min(1).max(720).default(24).describe('Look back period in hours'),
+    search: z.string().optional().describe('Text to search for in error messages'),
+    limit: z.number().int().min(1).max(500).default(100).describe('Max entries to return'),
+  },
+  async ({ hours, search, limit }) => {
+    try {
+      const entries = await getNginxErrors({ hours, search, limit });
       return { content: [{ type: 'text' as const, text: JSON.stringify(entries, null, 2) }] };
     } catch (err) {
       return {

@@ -84,18 +84,23 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { level: '', path: '', from: '', to: '', search: '' };
 
-/** Formats a unix timestamp as "Mon D HH:MM:SS" (e.g., "Mar 3 14:05:22") */
+/** Formats a unix timestamp as "Mon D HH:MM:SS PST/PDT" in Pacific time */
 function formatTime(unix: number): string {
   const d = new Date(unix);
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const day = d.getDate();
+  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'America/Los_Angeles' });
+  const day = d.toLocaleString('en-US', { day: 'numeric', timeZone: 'America/Los_Angeles' });
   const time = d.toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: 'America/Los_Angeles',
   });
-  return `${month} ${day} ${time}`;
+  const tz = d
+    .toLocaleString('en-US', { timeZoneName: 'short', timeZone: 'America/Los_Angeles' })
+    .split(' ')
+    .pop();
+  return `${month} ${day} ${time} ${tz}`;
 }
 
 function levelBadgeClasses(label: string): string {
