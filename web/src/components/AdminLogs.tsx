@@ -451,6 +451,28 @@ function LogRow({
                   </button>
                 </div>
               )}
+              {(entry.userId || entry.ip || entry.userAgent) && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {entry.userId && (
+                    <div>
+                      <span className="text-zinc-500">User: </span>
+                      <span className="text-zinc-300 font-mono">{entry.userId}</span>
+                    </div>
+                  )}
+                  {entry.ip && (
+                    <div>
+                      <span className="text-zinc-500">IP: </span>
+                      <span className="text-zinc-300 font-mono">{entry.ip}</span>
+                    </div>
+                  )}
+                  {entry.userAgent && (
+                    <div>
+                      <span className="text-zinc-500">User-Agent: </span>
+                      <span className="text-zinc-300 font-mono text-[11px]">{entry.userAgent}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {entry.err?.stack && (
                 <div>
                   <p className="text-zinc-500 mb-1">Stack trace:</p>

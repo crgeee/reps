@@ -15,6 +15,9 @@ export interface LogEntry {
   path?: string;
   status?: number;
   latency?: number;
+  userId?: string;
+  userAgent?: string;
+  ip?: string;
   err?: { message: string; stack?: string };
   [key: string]: unknown;
 }
