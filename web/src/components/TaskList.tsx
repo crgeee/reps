@@ -15,14 +15,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task, Topic, TaskStatus, Tag, CollectionStatus } from '../types';
-import {
-  TOPICS,
-  STATUSES,
-  STATUS_LABELS,
-  formatStatusLabel,
-  getTopicLabel,
-  getTopicColor,
-} from '../types';
+import { STATUSES, STATUS_LABELS, formatStatusLabel, getTopicLabel, getTopicColor } from '../types';
 import { useFilteredTasks } from '../hooks/useFilteredTasks';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import FilterBar from './FilterBar';
@@ -92,18 +85,15 @@ export default function TaskList() {
     return filtered.filter((t) => t.tags?.some((tag) => tag.id === tagFilter));
   }, [filtered, tagFilter]);
 
-  const topicGroups = useMemo(
-    () =>
-      TOPICS.reduce<Record<Topic, Task[]>>(
-        (acc, topic) => {
-          const topicTasks = tagFiltered.filter((t) => t.topic === topic);
-          if (topicTasks.length > 0) acc[topic] = topicTasks;
-          return acc;
-        },
-        {} as Record<Topic, Task[]>,
-      ),
-    [tagFiltered],
-  );
+  const topicGroups = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (const t of tagFiltered) {
+      const list = map[t.topic] ?? [];
+      list.push(t);
+      map[t.topic] = list;
+    }
+    return map;
+  }, [tagFiltered]);
 
   // Collect all unique tags used in tasks for the filter
   const usedTags = useMemo(() => {
