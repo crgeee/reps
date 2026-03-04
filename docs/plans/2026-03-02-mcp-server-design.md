@@ -33,15 +33,15 @@ Claude Desktop / Claude Code / any MCP client
 
 ## New Files
 
-| File | Purpose |
-|------|---------|
-| `server/mcp/server.ts` | McpServer instance + all tool/resource registrations |
-| `server/mcp/tools/tasks.ts` | Task CRUD tool handlers |
-| `server/mcp/tools/reviews.ts` | SM-2 review tool handler |
-| `server/mcp/tools/agent.ts` | AI coaching/eval/question tool handlers |
-| `server/mcp/resources.ts` | Resource registrations (topics, stats) |
-| `server/mcp/index.ts` | Hono route handler mounting the MCP transport |
-| `server/middleware/mcp-auth.ts` | MCP-specific auth middleware (separate from REST) |
+| File                            | Purpose                                              |
+| ------------------------------- | ---------------------------------------------------- |
+| `server/mcp/server.ts`          | McpServer instance + all tool/resource registrations |
+| `server/mcp/tools/tasks.ts`     | Task CRUD tool handlers                              |
+| `server/mcp/tools/reviews.ts`   | SM-2 review tool handler                             |
+| `server/mcp/tools/agent.ts`     | AI coaching/eval/question tool handlers              |
+| `server/mcp/resources.ts`       | Resource registrations (topics, stats)               |
+| `server/mcp/index.ts`           | Hono route handler mounting the MCP transport        |
+| `server/middleware/mcp-auth.ts` | MCP-specific auth middleware (separate from REST)    |
 
 ## Database Changes
 
@@ -150,25 +150,26 @@ CREATE TABLE IF NOT EXISTS mcp_audit_log (
 
 ### Task Management (scope: `read` / `write`)
 
-| Tool | Scope | Description | Key Inputs |
-|------|-------|-------------|------------|
-| `get-tasks` | read | List tasks with optional filters | `topic?`, `collectionId?`, `dueOnly?`, `status?` |
-| `get-task` | read | Get single task with notes and tags | `taskId` |
-| `create-task` | write | Create a new prep task | `topic`, `title`, `deadline?`, `description?`, `priority?`, `collectionId?` |
-| `update-task` | write | Update any task fields | `taskId`, plus any patchable field |
-| `delete-task` | write | Delete a task | `taskId` |
-| `add-note` | write | Add a note to a task | `taskId`, `text` |
-| `submit-review` | write | Run SM-2 quality rating | `taskId`, `quality` (0-5) |
+| Tool            | Scope | Description                         | Key Inputs                                                                  |
+| --------------- | ----- | ----------------------------------- | --------------------------------------------------------------------------- |
+| `get-tasks`     | read  | List tasks with optional filters    | `topic?`, `collectionId?`, `dueOnly?`, `status?`                            |
+| `get-task`      | read  | Get single task with notes and tags | `taskId`                                                                    |
+| `create-task`   | write | Create a new prep task              | `topic`, `title`, `deadline?`, `description?`, `priority?`, `collectionId?` |
+| `update-task`   | write | Update any task fields              | `taskId`, plus any patchable field                                          |
+| `delete-task`   | write | Delete a task                       | `taskId`                                                                    |
+| `add-note`      | write | Add a note to a task                | `taskId`, `text`                                                            |
+| `submit-review` | write | Run SM-2 quality rating             | `taskId`, `quality` (0-5)                                                   |
 
 ### AI Features (scope: `ai`)
 
-| Tool | Scope | Description | Key Inputs |
-|------|-------|-------------|------------|
-| `generate-question` | ai | Generate AI interview question for a task | `taskId` |
-| `evaluate-answer` | ai | Get AI feedback on an answer | `taskId`, `answer` |
-| `get-daily-briefing` | ai | Trigger and return today's coaching briefing | (none) |
+| Tool                 | Scope | Description                                  | Key Inputs         |
+| -------------------- | ----- | -------------------------------------------- | ------------------ |
+| `generate-question`  | ai    | Generate AI interview question for a task    | `taskId`           |
+| `evaluate-answer`    | ai    | Get AI feedback on an answer                 | `taskId`, `answer` |
+| `get-daily-briefing` | ai    | Trigger and return today's coaching briefing | (none)             |
 
 All tool handlers:
+
 - Validate inputs with Zod schemas
 - Wrap logic in try/catch, return `{ isError: true, content: [...] }` on failure
 - Are user-scoped (all queries filtered by `userId` from auth context)
@@ -176,19 +177,19 @@ All tool handlers:
 
 ## Resources (read-only)
 
-| Resource | URI | Description |
-|----------|-----|-------------|
-| `topics` | `reps://topics` | List of valid topic values with descriptions |
-| `stats` | `reps://stats` | Current review stats, streaks, topic breakdown (user-scoped) |
+| Resource | URI             | Description                                                  |
+| -------- | --------------- | ------------------------------------------------------------ |
+| `topics` | `reps://topics` | List of valid topic values with descriptions                 |
+| `stats`  | `reps://stats`  | Current review stats, streaks, topic breakdown (user-scoped) |
 
 ## Rate Limiting
 
 Two-tier system per MCP key:
 
-| Tier | Limit | Applies To |
-|------|-------|------------|
-| General | 60 req/min | All CRUD tools + resources |
-| AI | 10 req/hour | `generate-question`, `evaluate-answer`, `get-daily-briefing` |
+| Tier    | Limit       | Applies To                                                   |
+| ------- | ----------- | ------------------------------------------------------------ |
+| General | 60 req/min  | All CRUD tools + resources                                   |
+| AI      | 10 req/hour | `generate-question`, `evaluate-answer`, `get-daily-briefing` |
 
 Daily cost ceiling: if a key triggers >50 Claude API calls in 24 hours, auto-disable the key and notify admin via existing notification system.
 

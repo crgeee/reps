@@ -13,6 +13,7 @@
 ### Task 1: Install react-router
 
 **Files:**
+
 - Modify: `web/package.json`
 
 **Step 1: Install dependency**
@@ -36,6 +37,7 @@ git commit -m "chore: install react-router v7"
 ### Task 2: Create PublicLayout
 
 **Files:**
+
 - Create: `web/src/layouts/PublicLayout.tsx`
 
 **Step 1: Create the layout**
@@ -71,6 +73,7 @@ git commit -m "feat: add PublicLayout with Outlet"
 Extract the entire authenticated shell from `App.tsx` (header, desktop nav, mobile nav, bottom nav, data fetching, collection switching, error/loading states) into a layout component that uses `<Outlet />` for page content.
 
 **Files:**
+
 - Create: `web/src/layouts/ProtectedLayout.tsx`
 
 **Step 1: Create the layout**
@@ -131,6 +134,7 @@ git commit -m "feat: add ProtectedLayout with auth guard and shared data context
 ### Task 4: Create router definition and update App.tsx + main.tsx
 
 **Files:**
+
 - Create: `web/src/router.tsx`
 - Modify: `web/src/App.tsx`
 - Modify: `web/src/main.tsx`
@@ -237,6 +241,7 @@ git commit -m "feat: add router definition and simplify App to RouterProvider"
 ### Task 5: Update Footer.tsx — replace onNavigate with Link
 
 **Files:**
+
 - Modify: `web/src/components/Footer.tsx`
 
 **Step 1: Update Footer**
@@ -292,6 +297,7 @@ git commit -m "refactor: Footer uses Link instead of onNavigate callback"
 ### Task 6: Update Dashboard.tsx — replace onNavigate/onStartReview with useNavigate
 
 **Files:**
+
 - Modify: `web/src/components/Dashboard.tsx`
 
 **Step 1: Update Dashboard**
@@ -325,6 +331,7 @@ git commit -m "refactor: Dashboard uses useNavigate and outlet context"
 ### Task 7: Update TemplateGallery.tsx — replace onNavigate with useNavigate
 
 **Files:**
+
 - Modify: `web/src/components/TemplateGallery.tsx`
 
 **Step 1: Update TemplateGallery**
@@ -357,6 +364,7 @@ git commit -m "refactor: TemplateGallery uses useNavigate and outlet context"
 ### Task 8: Update remaining page components to use outlet context
 
 **Files:**
+
 - Modify: `web/src/components/TaskList.tsx` — get props from `useProtectedContext()`
 - Modify: `web/src/components/AddTask.tsx` — get props from `useProtectedContext()`
 - Modify: `web/src/components/TopicProgress.tsx` — get props from `useProtectedContext()`
@@ -364,6 +372,7 @@ git commit -m "refactor: TemplateGallery uses useNavigate and outlet context"
 - Modify: `web/src/components/Settings.tsx` — get `user` and `onUserUpdate` from context
 
 For each component:
+
 1. Import `useProtectedContext` from `../layouts/ProtectedLayout`.
 2. Replace props with context values.
 3. Remove the now-unnecessary props from the interface.
@@ -381,6 +390,7 @@ git commit -m "refactor: page components consume outlet context instead of props
 ### Task 9: Update LoginPage — redirect to / when already authenticated
 
 **Files:**
+
 - Modify: `web/src/components/LoginPage.tsx`
 
 **Step 1: Add auth redirect**
@@ -410,6 +420,7 @@ git commit -m "feat: LoginPage redirects to / when already authenticated"
 ### Task 10: Update PrivacyPolicy and TermsOfService — add back button with Link
 
 **Files:**
+
 - Modify: `web/src/components/PrivacyPolicy.tsx`
 - Modify: `web/src/components/TermsOfService.tsx`
 
@@ -429,9 +440,11 @@ git commit -m "feat: add back link to privacy and terms pages"
 ### Task 11: Clean up — remove dead View type and hash routing code
 
 **Files:**
+
 - Modify: `web/src/App.tsx` — should already be clean from Task 4
 
 Verify no remaining references to:
+
 - `window.location.hash`
 - `getViewFromHash`
 - `VALID_VIEWS`
@@ -459,6 +472,7 @@ Expected: No TypeScript errors, clean build
 **Step 2: Dev server smoke test**
 
 Run dev server and verify:
+
 - `/` shows Dashboard (when authenticated)
 - `/login` shows LoginPage
 - `/tasks` shows TaskList
@@ -477,6 +491,7 @@ Run dev server and verify:
 ### Task 13: Update vite config — add react-router to manual chunks
 
 **Files:**
+
 - Modify: `web/vite.config.ts`
 
 **Step 1: Add chunk**
