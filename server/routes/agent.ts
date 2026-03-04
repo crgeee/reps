@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { Logger } from 'pino';
 import sql from '../db/client.js';
 import { evaluateAnswer } from '../agent/evaluator.js';
 import { generateQuestion } from '../agent/questions.js';
@@ -16,8 +15,8 @@ import {
 import { validateUuid, uuidStr, mockStartSchema, mockRespondSchema } from '../validation.js';
 import type { Task, Note } from '../../src/types.js';
 import { logger } from '../logger.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const agent = new Hono<AppEnv>();
 
 const evaluateSchema = z.object({

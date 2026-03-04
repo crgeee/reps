@@ -268,51 +268,36 @@ export async function getInterleaveTopicForMock(
   const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
   const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
 
-  try {
-    const [row] = await sql<{ topic: string }[]>`
-      SELECT topic FROM tasks
-      WHERE completed = false ${collectionFilter} ${userFilter}
-      GROUP BY topic
-      ORDER BY AVG(ease_factor) ASC, MAX(last_reviewed) ASC NULLS FIRST
-      LIMIT 1
-    `;
-    return row?.topic ?? 'coding';
-  } catch (err) {
-    logger.error({ err }, 'getInterleaveTopicForMock failed');
-    return 'coding';
-  }
+  const [row] = await sql<{ topic: string }[]>`
+    SELECT topic FROM tasks
+    WHERE completed = false ${collectionFilter} ${userFilter}
+    GROUP BY topic
+    ORDER BY AVG(ease_factor) ASC, MAX(last_reviewed) ASC NULLS FIRST
+    LIMIT 1
+  `;
+  return row?.topic ?? 'coding';
 }
 
 export async function getMockSession(
   sessionId: string,
   userId?: string,
 ): Promise<MockSession | null> {
-  try {
-    const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
-    const [row] = await sql<
-      SessionRow[]
-    >`SELECT * FROM mock_sessions WHERE id = ${sessionId} ${userFilter}`;
-    return row ? rowToSession(row) : null;
-  } catch (err) {
-    logger.error({ err, sessionId }, 'getMockSession failed');
-    return null;
-  }
+  const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [row] = await sql<
+    SessionRow[]
+  >`SELECT * FROM mock_sessions WHERE id = ${sessionId} ${userFilter}`;
+  return row ? rowToSession(row) : null;
 }
 
 export async function listMockSessions(
   collectionId?: string,
   userId?: string,
 ): Promise<MockSession[]> {
-  try {
-    const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
-    const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
-    const rows = await sql<SessionRow[]>`
-      SELECT * FROM mock_sessions WHERE 1=1 ${userFilter} ${collectionFilter}
-      ORDER BY started_at DESC LIMIT 50
-    `;
-    return rows.map(rowToSession);
-  } catch (err) {
-    logger.error({ err }, 'listMockSessions failed');
-    return [];
-  }
+  const userFilter = userId ? sql`AND user_id = ${userId}` : sql``;
+  const collectionFilter = collectionId ? sql`AND collection_id = ${collectionId}` : sql``;
+  const rows = await sql<SessionRow[]>`
+    SELECT * FROM mock_sessions WHERE 1=1 ${userFilter} ${collectionFilter}
+    ORDER BY started_at DESC LIMIT 50
+  `;
+  return rows.map(rowToSession);
 }

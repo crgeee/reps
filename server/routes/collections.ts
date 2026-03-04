@@ -11,8 +11,8 @@ import {
   patchCollectionTopicSchema,
   fromTemplateSchema,
 } from '../validation.js';
+import type { AppEnv } from '../types.js';
 
-type AppEnv = { Variables: { userId: string } };
 const collections = new Hono<AppEnv>();
 
 function isUniqueViolation(err: unknown): boolean {
