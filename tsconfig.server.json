@@ -16,5 +16,5 @@
     }
   },
   "include": ["server/**/*", "src/spaced-repetition.ts", "src/types.ts"],
-  "exclude": ["node_modules", "dist", "web"]
+  "exclude": ["node_modules", "dist", "web", "**/*.test.ts"]
 }
