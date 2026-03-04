@@ -334,3 +334,36 @@ export function getTopicColor(topic: string): string {
 export function formatStatusLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');
 }
+
+export interface LogEntry {
+  level: number;
+  levelLabel: string;
+  time: number;
+  msg: string;
+  reqId?: string;
+  method?: string;
+  path?: string;
+  status?: number;
+  latency?: number;
+  userId?: string;
+  userAgent?: string;
+  ip?: string;
+  err?: { message: string; stack?: string };
+  [key: string]: unknown;
+}
+
+export interface LogsResponse {
+  entries: LogEntry[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface LogStats {
+  byHour: { hour: string; info: number; warn: number; error: number; total: number }[];
+  totalRequests: number;
+  totalErrors: number;
+  avgLatency: number;
+  p95Latency: number;
+}

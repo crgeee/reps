@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "reps-logs": {
+      "command": "ssh",
+      "args": ["hetzner", "node", "/var/www/reps/dist/server/mcp/log-server.js"]
+    }
+  }
+}

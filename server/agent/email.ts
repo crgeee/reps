@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { getDailyBriefingData } from './shared.js';
+import { logger } from '../logger.js';
 
 function escapeHtml(s: string): string {
   return s
@@ -22,9 +23,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
   const to = userEmail ?? process.env.DIGEST_EMAIL_TO;
 
   if (!client || !to) {
-    console.log(
-      '[email] Resend not configured (missing RESEND_API_KEY or email), skipping daily digest',
-    );
+    logger.info('Resend not configured (missing RESEND_API_KEY or email), skipping daily digest');
     return;
   }
 
@@ -32,7 +31,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
   try {
     data = await getDailyBriefingData(undefined, userId);
   } catch (err) {
-    console.error('[email] Failed to fetch briefing data:', err);
+    logger.error({ err }, 'Failed to fetch briefing data');
     return;
   }
 
@@ -96,8 +95,8 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
       subject,
       html,
     });
-    console.log('[email] Daily digest sent to', to);
+    logger.info({ to }, 'Daily digest sent');
   } catch (err) {
-    console.error('[email] Failed to send daily digest:', err);
+    logger.error({ err }, 'Failed to send daily digest');
   }
 }

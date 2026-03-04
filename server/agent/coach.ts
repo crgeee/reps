@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
 import { send } from './notify.js';
 import { getDailyBriefingData } from './shared.js';
+import { logger } from '../logger.js';
 
 const anthropic = new Anthropic();
 const MODEL = 'claude-sonnet-4-6';
@@ -47,7 +48,7 @@ export async function dailyBriefing(userId?: string): Promise<string> {
         ? response.content[0].text
         : 'Unable to generate briefing.';
   } catch (err) {
-    console.error('[coach] dailyBriefing Claude error:', err);
+    logger.error({ err }, 'dailyBriefing Claude error');
     message = `You have ${data.dueToday.length} review(s) due and ${data.upcomingDeadlines.length} upcoming deadline(s). Check your reps dashboard.`;
   }
 
@@ -59,7 +60,7 @@ export async function dailyBriefing(userId?: string): Promise<string> {
       VALUES ('daily_briefing', ${userPrompt}, ${message}, ${userId ?? null})
     `;
   } catch (err) {
-    console.error('[coach] Failed to log daily briefing:', err);
+    logger.error({ err }, 'Failed to log daily briefing');
   }
 
   return message;
@@ -118,7 +119,7 @@ export async function weeklyInsight(userId?: string): Promise<string> {
         ? response.content[0].text
         : 'Unable to generate insight.';
   } catch (err) {
-    console.error('[coach] weeklyInsight Claude error:', err);
+    logger.error({ err }, 'weeklyInsight Claude error');
     message = 'Could not generate weekly insight. Review your topic progress in the dashboard.';
   }
 
@@ -130,7 +131,7 @@ export async function weeklyInsight(userId?: string): Promise<string> {
       VALUES ('weekly_insight', ${userPrompt}, ${message}, ${userId ?? null})
     `;
   } catch (err) {
-    console.error('[coach] Failed to log weekly insight:', err);
+    logger.error({ err }, 'Failed to log weekly insight');
   }
 
   return message;

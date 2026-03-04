@@ -1,4 +1,5 @@
 import sql from '../db/client.js';
+import { logger } from '../logger.js';
 
 export async function logMcpAudit(
   keyId: string,
@@ -13,6 +14,6 @@ export async function logMcpAudit(
       VALUES (${keyId}, ${userId}, ${toolName}, ${success}, ${error ?? null})
     `;
   } catch (err) {
-    console.error('[mcp-audit] Failed to log:', err);
+    logger.error({ err, keyId, toolName }, 'Failed to log MCP audit entry');
   }
 }

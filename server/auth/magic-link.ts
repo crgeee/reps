@@ -3,6 +3,7 @@ import sql from '../db/client.js';
 import { generateToken, hashToken } from './crypto.js';
 import { createSession } from './sessions.js';
 import { findUserByEmail, createUser } from './users.js';
+import { logger } from '../logger.js';
 
 const MAGIC_LINK_EXPIRY_MINUTES = 15;
 
@@ -45,11 +46,14 @@ export async function sendMagicLink(email: string): Promise<void> {
         `,
       });
     } catch (err) {
-      console.error('[magic-link] Failed to send email:', err);
+      logger.error({ err }, 'Failed to send magic link email');
     }
   } else {
     // Console fallback for development
-    console.log(`[magic-link] Verify URL for ${email}: ${verifyUrl}`);
+    logger.info(
+      { email, verifyUrlPrefix: verifyUrl.split('?')[0] },
+      'Magic link generated (dev fallback)',
+    );
   }
 }
 

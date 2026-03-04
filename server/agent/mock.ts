@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
+import { logger } from '../logger.js';
 
 const anthropic = new Anthropic();
 const MODEL = 'claude-sonnet-4-6';
@@ -142,7 +143,7 @@ export async function startMockInterview(
         ? response.content[0].text
         : "Tell me about a challenging technical problem you've solved recently.";
   } catch (err) {
-    console.error('[mock] Failed to generate opening question:', err);
+    logger.error({ err }, 'Failed to generate opening question');
     question = "Tell me about a challenging technical problem you've solved recently.";
   }
 
@@ -162,7 +163,7 @@ export async function startMockInterview(
       VALUES ('mock_question', ${topic}, ${question})
     `;
   } catch (err) {
-    console.error('[mock] Failed to log question:', err);
+    logger.error({ err }, 'Failed to log mock question');
   }
 
   return { sessionId: row.id, question };
@@ -205,7 +206,7 @@ Evaluate this mock interview. Return JSON only with this exact schema:
       const text = response.content[0]?.type === 'text' ? response.content[0].text : '{}';
       score = parseScoreJson(text);
     } catch (err) {
-      console.error('[mock] Evaluation failed:', err);
+      logger.error({ err, sessionId }, 'Mock evaluation failed');
       score = { ...DEFAULT_FALLBACK_SCORE };
     }
 
@@ -224,7 +225,7 @@ Evaluate this mock interview. Return JSON only with this exact schema:
         VALUES ('mock_evaluation', ${sessionId}, ${JSON.stringify(score)})
       `;
     } catch (err) {
-      console.error('[mock] Failed to log evaluation:', err);
+      logger.error({ err, sessionId }, 'Failed to log mock evaluation');
     }
 
     return { evaluation: score };
@@ -245,7 +246,7 @@ Evaluate this mock interview. Return JSON only with this exact schema:
         ? response.content[0].text
         : 'Can you elaborate on that?';
   } catch (err) {
-    console.error('[mock] Follow-up generation failed:', err);
+    logger.error({ err, sessionId }, 'Follow-up generation failed');
     followUp = 'Can you elaborate on your approach and discuss potential trade-offs?';
   }
 
@@ -277,7 +278,7 @@ export async function getInterleaveTopicForMock(
     `;
     return row?.topic ?? 'coding';
   } catch (err) {
-    console.error('[mock] getInterleaveTopicForMock failed:', err);
+    logger.error({ err }, 'getInterleaveTopicForMock failed');
     return 'coding';
   }
 }
@@ -293,7 +294,7 @@ export async function getMockSession(
     >`SELECT * FROM mock_sessions WHERE id = ${sessionId} ${userFilter}`;
     return row ? rowToSession(row) : null;
   } catch (err) {
-    console.error('[mock] getMockSession failed:', err);
+    logger.error({ err, sessionId }, 'getMockSession failed');
     return null;
   }
 }
@@ -311,7 +312,7 @@ export async function listMockSessions(
     `;
     return rows.map(rowToSession);
   } catch (err) {
-    console.error('[mock] listMockSessions failed:', err);
+    logger.error({ err }, 'listMockSessions failed');
     return [];
   }
 }

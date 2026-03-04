@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import type { Logger } from 'pino';
 import { sendMagicLink, verifyMagicLink } from '../auth/magic-link.js';
 import { deleteSessionByToken } from '../auth/sessions.js';
 import {
@@ -11,8 +12,9 @@ import {
 import { getUserById } from '../auth/users.js';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { authMiddleware } from '../middleware/auth.js';
+import { logger } from '../logger.js';
 
-type AppEnv = { Variables: { userId: string } };
+type AppEnv = { Variables: { userId: string; logger: Logger; reqId: string } };
 const auth = new Hono<AppEnv>();
 
 const SESSION_COOKIE = 'reps_session';
@@ -43,7 +45,8 @@ auth.post('/magic-link', async (c) => {
   try {
     await sendMagicLink(parsed.data.email);
   } catch (err) {
-    console.error('[auth] sendMagicLink error:', err);
+    const log = c.get('logger') ?? logger;
+    log.error({ err }, 'sendMagicLink error');
   }
 
   return c.json({ message: 'If an account exists, a magic link has been sent.' });

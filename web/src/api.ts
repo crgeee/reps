@@ -21,6 +21,9 @@ import type {
   AdminUser,
   SessionInfo,
   CustomTopic,
+  LogEntry,
+  LogsResponse,
+  LogStats,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -558,4 +561,30 @@ export interface McpAuditEntry {
 
 export async function getAdminMcpAudit(): Promise<McpAuditEntry[]> {
   return request<McpAuditEntry[]>('/users/admin/mcp/audit');
+}
+
+// Logs
+
+export function getLogs(params: {
+  level?: string;
+  path?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<LogsResponse> {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null) query.set(key, String(value));
+  }
+  return request<LogsResponse>(`/logs?${query}`);
+}
+
+export function getLogStats(hours = 24): Promise<LogStats> {
+  return request<LogStats>(`/logs/stats?hours=${hours}`);
+}
+
+export function getLogRequestTrace(requestId: string): Promise<{ entries: LogEntry[] }> {
+  return request<{ entries: LogEntry[] }>(`/logs/request/${requestId}`);
 }
