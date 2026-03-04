@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Outlet, Navigate, NavLink, Link, useOutletContext } from 'react-router';
-import type { Task, Collection, Tag, User, CollectionStatus } from '../types';
+import type { Task, Collection, Tag, User, CollectionStatus, CustomTopic } from '../types';
 import { formatStatusLabel } from '../types';
-import { getTasks, getCollections, getTags } from '../api';
+import { getTasks, getCollections, getTags, getCustomTopics } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import { logger } from '../logger';
 import Spinner from '../components/Spinner';
@@ -18,6 +18,7 @@ export interface ProtectedContext {
   filteredDueTasks: Task[];
   collections: Collection[];
   tags: Tag[];
+  customTopics: CustomTopic[];
   activeCollectionId: string | null;
   activeStatuses: CollectionStatus[] | undefined;
   activeStatusOptions: { value: string; label: string }[] | undefined;
@@ -28,6 +29,7 @@ export interface ProtectedContext {
   fetchCollections: () => Promise<void>;
   handleCollectionChange: (id: string | null) => void;
   handleTagCreated: (tag: Tag) => void;
+  handleCustomTopicCreated: (topic: CustomTopic) => void;
   handleUserUpdate: (updated: User) => void;
   handleCollectionCreated: (col: Collection) => void;
   handleCollectionUpdated: (updated: Collection) => void;
@@ -63,6 +65,7 @@ export default function ProtectedLayout() {
     localStorage.getItem('reps_active_collection'),
   );
   const [tags, setTags] = useState<Tag[]>([]);
+  const [customTopics, setCustomTopics] = useState<CustomTopic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -157,11 +160,20 @@ export default function ProtectedLayout() {
     }
   }, []);
 
+  const fetchCustomTopics = useCallback(async () => {
+    try {
+      const topics = await getCustomTopics();
+      setCustomTopics(topics);
+    } catch (err) {
+      logger.warn('Failed to fetch custom topics', { error: String(err) });
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
-      Promise.all([fetchData(), fetchCollections(), fetchTags()]);
+      Promise.all([fetchData(), fetchCollections(), fetchTags(), fetchCustomTopics()]);
     }
-  }, [isAuthenticated, fetchData, fetchCollections, fetchTags]);
+  }, [isAuthenticated, fetchData, fetchCollections, fetchTags, fetchCustomTopics]);
 
   const handleUserUpdate = useCallback(
     (updated: User) => {
@@ -172,6 +184,13 @@ export default function ProtectedLayout() {
 
   const handleTagCreated = useCallback((tag: Tag) => {
     setTags((prev) => [...prev, tag]);
+  }, []);
+
+  const handleCustomTopicCreated = useCallback((topic: CustomTopic) => {
+    setCustomTopics((prev) => {
+      if (prev.some((t) => t.id === topic.id)) return prev;
+      return [...prev, topic];
+    });
   }, []);
 
   // Derive due tasks client-side -- only from SR-enabled collections
@@ -213,6 +232,7 @@ export default function ProtectedLayout() {
       filteredDueTasks,
       collections,
       tags,
+      customTopics,
       activeCollectionId,
       activeStatuses,
       activeStatusOptions,
@@ -223,6 +243,7 @@ export default function ProtectedLayout() {
       fetchCollections,
       handleCollectionChange,
       handleTagCreated,
+      handleCustomTopicCreated,
       handleUserUpdate,
       handleCollectionCreated,
       handleCollectionUpdated,
@@ -237,6 +258,7 @@ export default function ProtectedLayout() {
       filteredDueTasks,
       collections,
       tags,
+      customTopics,
       activeCollectionId,
       activeStatuses,
       activeStatusOptions,
@@ -247,6 +269,7 @@ export default function ProtectedLayout() {
       fetchCollections,
       handleCollectionChange,
       handleTagCreated,
+      handleCustomTopicCreated,
       handleUserUpdate,
       handleCollectionCreated,
       handleCollectionUpdated,
