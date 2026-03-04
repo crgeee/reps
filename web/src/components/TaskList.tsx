@@ -46,6 +46,8 @@ export default function TaskList() {
     refreshQuietly: onBackgroundRefresh,
     activeStatuses: collectionStatuses,
     initialTopicFilter,
+    customTopics,
+    handleCustomTopicCreated: onCustomTopicCreated,
   } = useProtectedContext();
 
   const [searchParams] = useSearchParams();
@@ -245,12 +247,14 @@ export default function TaskList() {
           task={editingTask}
           collections={collections}
           availableTags={availableTags}
+          customTopics={customTopics}
           onSaved={() => {
             onRefresh();
             setEditingTask(null);
           }}
           onClose={() => setEditingTask(null)}
           onTagCreated={onTagCreated}
+          onCustomTopicCreated={onCustomTopicCreated}
         />
       )}
     </div>

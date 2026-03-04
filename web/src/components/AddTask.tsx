@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { TOPICS, TOPIC_LABELS } from '../types';
 import { createTask, createTag } from '../api';
 import { logger } from '../logger';
+import { maybeCreateCustomTopic } from '../lib/custom-topics';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import TagPicker from './TagPicker';
 import RecurrencePicker from './RecurrencePicker';
@@ -13,6 +14,8 @@ export default function AddTask() {
   const {
     tags: availableTags,
     handleTagCreated: onTagCreated,
+    handleCustomTopicCreated: onCustomTopicCreated,
+    customTopics,
     activeCollectionId,
     collections,
     fetchData,
@@ -29,7 +32,12 @@ export default function AddTask() {
   const useCollectionTopics = collectionTopics.length > 0;
   const topicOptions = useCollectionTopics
     ? collectionTopics.map((t) => ({ value: t.name, label: t.name, color: t.color }))
-    : TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null }));
+    : [
+        ...TOPICS.map((t) => ({ value: t, label: TOPIC_LABELS[t], color: null as string | null })),
+        ...customTopics
+          .filter((ct) => !TOPICS.includes(ct.name as (typeof TOPICS)[number]))
+          .map((ct) => ({ value: ct.name, label: ct.name, color: ct.color })),
+      ];
 
   const defaultTopic = activeCollection?.topics?.[0]?.name ?? 'coding';
   const [topic, setTopic] = useState<string>(defaultTopic);
@@ -70,6 +78,13 @@ export default function AddTask() {
         recurrenceUnit: recurrenceUnit ?? undefined,
         recurrenceDay: recurrenceDay ?? undefined,
         recurrenceEnd: recurrenceEnd || undefined,
+      });
+      maybeCreateCustomTopic({
+        topic,
+        showCustomTopic,
+        customTopics,
+        useCollectionTopics,
+        onCreated: onCustomTopicCreated,
       });
       await fetchData();
       navigate('/tasks');
@@ -120,6 +135,7 @@ export default function AddTask() {
                 type="button"
                 onClick={() => {
                   setTopic(t.value);
+                  setCustomTopic('');
                   setShowCustomTopic(false);
                 }}
                 className={`px-3 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
