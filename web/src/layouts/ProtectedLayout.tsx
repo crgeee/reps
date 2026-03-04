@@ -55,7 +55,7 @@ const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home; end?: 
 ];
 
 export default function ProtectedLayout() {
-  const { user, loading: authLoading, isAuthenticated, logout, refresh: refreshAuth } = useAuth();
+  const { user, loading: authLoading, isAuthenticated, logout, setUser } = useAuth();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -164,10 +164,10 @@ export default function ProtectedLayout() {
   }, [isAuthenticated, fetchData, fetchCollections, fetchTags]);
 
   const handleUserUpdate = useCallback(
-    (_updated: User) => {
-      refreshAuth();
+    (updated: User) => {
+      setUser(updated);
     },
-    [refreshAuth],
+    [setUser],
   );
 
   const handleTagCreated = useCallback((tag: Tag) => {
