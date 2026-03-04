@@ -32,6 +32,11 @@ export interface Task {
   tags?: Tag[];
   description?: string;
   priority: Priority;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
+  recurrenceDay?: number;
+  recurrenceEnd?: string;
+  recurrenceParentId?: string;
 }
 
 export interface Collection {
@@ -146,6 +151,10 @@ export interface CreateTaskInput {
   tagIds?: string[];
   description?: string;
   priority?: Priority;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
+  recurrenceDay?: number;
+  recurrenceEnd?: string;
 }
 
 export interface ReviewInput {
@@ -262,6 +271,25 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
   review: 'Review',
   done: 'Done',
 };
+
+export type RecurrenceUnit = 'day' | 'week' | 'month';
+
+export const RECURRENCE_UNITS: { value: RecurrenceUnit; label: string }[] = [
+  { value: 'day', label: 'Day(s)' },
+  { value: 'week', label: 'Week(s)' },
+  { value: 'month', label: 'Month(s)' },
+];
+
+export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export function formatRecurrence(interval?: number, unit?: RecurrenceUnit, day?: number): string {
+  if (!interval || !unit) return '';
+  let label = `Every ${interval}${unit[0]}`;
+  if (unit === 'week' && day != null) {
+    label = interval === 1 ? `${DAY_LABELS[day]} weekly` : `Every ${interval}w ${DAY_LABELS[day]}`;
+  }
+  return label;
+}
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 
