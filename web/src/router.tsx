@@ -16,6 +16,7 @@ const CalendarView = lazy(() => import('./components/CalendarView'));
 const ExportView = lazy(() => import('./components/ExportView'));
 const Settings = lazy(() => import('./components/Settings'));
 const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
+const AdminLogs = lazy(() => import('./components/AdminLogs'));
 
 function LazyFallback() {
   return (
@@ -133,6 +134,14 @@ export const router = createBrowserRouter([
         element: (
           <Lazy>
             <TemplateGallery />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/admin/logs',
+        element: (
+          <Lazy>
+            <AdminLogs />
           </Lazy>
         ),
       },
