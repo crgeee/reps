@@ -1,6 +1,7 @@
 import { useState, memo } from 'react';
+import { Repeat } from 'lucide-react';
 import type { Task } from '../types';
-import { getTopicLabel, getTopicColor } from '../types';
+import { getTopicLabel, getTopicColor, RECURRENCE_OPTIONS } from '../types';
 import { updateTask, deleteTask, addNote, getTaskEventUrl } from '../api';
 import { logger } from '../logger';
 import TagBadge from './TagBadge';
@@ -106,6 +107,14 @@ export default memo(function TaskCard({
             {task.title}
           </span>
         </button>
+
+        {/* Recurrence badge */}
+        {task.recurrenceType && task.recurrenceType !== 'none' && (
+          <span className="flex items-center gap-0.5 text-[9px] text-amber-400/70 font-mono flex-shrink-0">
+            <Repeat className="w-2.5 h-2.5" />
+            {RECURRENCE_OPTIONS.find((o) => o.value === task.recurrenceType)?.label ?? task.recurrenceType}
+          </span>
+        )}
 
         {/* Inline tags */}
         {!compact && task.tags && task.tags.length > 0 && (

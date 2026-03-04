@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import type { Tag } from '../types';
-import { TOPICS, TOPIC_LABELS } from '../types';
+import type { Tag, RecurrenceType } from '../types';
+import { TOPICS, TOPIC_LABELS, RECURRENCE_OPTIONS } from '../types';
 import { createTask, createTag } from '../api';
 import { logger } from '../logger';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
@@ -39,6 +39,8 @@ export default function AddTask() {
   const [deadline, setDeadline] = useState('');
   const [note, setNote] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
+  const [recurrenceEnd, setRecurrenceEnd] = useState('');
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomTopic, setShowCustomTopic] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +62,8 @@ export default function AddTask() {
         note: note.trim() || undefined,
         collectionId: activeCollection?.id ?? undefined,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+        recurrenceType: recurrenceType !== 'none' ? recurrenceType : undefined,
+        recurrenceEnd: recurrenceEnd || undefined,
       });
       await fetchData();
       navigate('/tasks');
@@ -167,6 +171,42 @@ export default function AddTask() {
             onChange={(e) => setDeadline(e.target.value)}
             className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 [color-scheme:dark] transition-all duration-200"
           />
+        </div>
+
+        {/* Recurrence */}
+        <div>
+          <label htmlFor="recurrence" className="block text-sm font-medium text-zinc-400 mb-2">
+            Recurrence (optional)
+          </label>
+          <select
+            id="recurrence"
+            value={recurrenceType}
+            onChange={(e) => setRecurrenceType(e.target.value as RecurrenceType)}
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all duration-200"
+          >
+            {RECURRENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {recurrenceType !== 'none' && (
+            <div className="mt-2">
+              <label
+                htmlFor="recurrenceEnd"
+                className="block text-xs text-zinc-500 mb-1"
+              >
+                End date (optional)
+              </label>
+              <input
+                id="recurrenceEnd"
+                type="date"
+                value={recurrenceEnd}
+                onChange={(e) => setRecurrenceEnd(e.target.value)}
+                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 [color-scheme:dark] transition-all duration-200"
+              />
+            </div>
+          )}
         </div>
 
         {/* Tags */}

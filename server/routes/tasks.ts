@@ -11,6 +11,7 @@ import {
   uuidStr,
   statusEnum,
   priorityEnum,
+  recurrenceEnum,
 } from '../validation.js';
 import type { Task, Note, Quality } from '../../src/types.js';
 
@@ -35,6 +36,8 @@ const createTaskSchema = z.object({
   tagIds: z.array(uuidStr).optional(),
   description: z.string().max(10000).nullable().optional(),
   priority: priorityEnum.optional(),
+  recurrenceType: recurrenceEnum.optional(),
+  recurrenceEnd: dateStr.nullable().optional(),
 });
 
 const patchTaskSchema = z.object({
@@ -52,6 +55,8 @@ const patchTaskSchema = z.object({
   collectionId: uuidStr.nullable().optional(),
   description: z.string().max(10000).nullable().optional(),
   priority: priorityEnum.optional(),
+  recurrenceType: recurrenceEnum.optional(),
+  recurrenceEnd: dateStr.nullable().optional(),
 });
 
 const addNoteSchema = z.object({
@@ -106,6 +111,9 @@ export interface TaskRow {
   collection_id: string | null;
   description: string | null;
   priority: string;
+  recurrence_type: string;
+  recurrence_end: string | null;
+  recurrence_parent_id: string | null;
 }
 
 export interface NoteRow {
@@ -138,6 +146,9 @@ export function rowToTask(
   description?: string;
   priority: string;
   tags: { id: string; name: string; color: string | null }[];
+  recurrenceType: string;
+  recurrenceEnd?: string;
+  recurrenceParentId?: string;
 } {
   return {
     id: row.id,
@@ -155,6 +166,9 @@ export function rowToTask(
     collectionId: row.collection_id,
     description: row.description ?? undefined,
     priority: row.priority,
+    recurrenceType: row.recurrence_type,
+    recurrenceEnd: toDateStr(row.recurrence_end) ?? undefined,
+    recurrenceParentId: row.recurrence_parent_id ?? undefined,
     notes,
     tags,
   };
@@ -210,6 +224,92 @@ async function fetchTagsByTaskIds(
   }
 
   return tagsByTask;
+}
+
+// --- recurrence helpers ---
+
+function calculateNextDate(from: Date, recurrenceType: string): Date {
+  const next = new Date(from);
+  switch (recurrenceType) {
+    case 'daily':
+      next.setDate(next.getDate() + 1);
+      break;
+    case 'every-2-days':
+      next.setDate(next.getDate() + 2);
+      break;
+    case 'every-3-days':
+      next.setDate(next.getDate() + 3);
+      break;
+    case 'weekly':
+      next.setDate(next.getDate() + 7);
+      break;
+    case 'biweekly':
+      next.setDate(next.getDate() + 14);
+      break;
+    case 'monthly':
+      next.setMonth(next.getMonth() + 1);
+      break;
+    case 'quarterly':
+      next.setMonth(next.getMonth() + 3);
+      break;
+    case 'semi-annually':
+      next.setMonth(next.getMonth() + 6);
+      break;
+  }
+  return next;
+}
+
+async function spawnNextRecurrence(completedRow: TaskRow, userId: string | null): Promise<void> {
+  if (completedRow.recurrence_type === 'none') return;
+
+  const now = new Date();
+  const nextDate = calculateNextDate(now, completedRow.recurrence_type);
+  const nextDateStr = nextDate.toISOString().slice(0, 10);
+
+  // 6-month guard
+  const sixMonthsOut = new Date();
+  sixMonthsOut.setMonth(sixMonthsOut.getMonth() + 6);
+  if (nextDate > sixMonthsOut) return;
+
+  // Check recurrence_end
+  if (completedRow.recurrence_end) {
+    const endDate = new Date(completedRow.recurrence_end);
+    if (nextDate > endDate) return;
+  }
+
+  const newId = uuidv4();
+  const parentId = completedRow.recurrence_parent_id ?? completedRow.id;
+
+  await sql`
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id, recurrence_type, recurrence_end, recurrence_parent_id)
+    VALUES (
+      ${newId},
+      ${completedRow.topic},
+      ${completedRow.title},
+      false,
+      'todo',
+      ${completedRow.deadline},
+      0,
+      1,
+      2.5,
+      ${nextDateStr},
+      ${null},
+      ${today()},
+      ${completedRow.collection_id},
+      ${completedRow.description},
+      ${completedRow.priority},
+      ${userId},
+      ${completedRow.recurrence_type},
+      ${completedRow.recurrence_end},
+      ${parentId}
+    )
+  `;
+
+  // Copy tags from completed task to new task
+  await sql`
+    INSERT INTO task_tags (task_id, tag_id)
+    SELECT ${newId}, tag_id FROM task_tags WHERE task_id = ${completedRow.id}
+  `;
 }
 
 // --- routes ---
@@ -311,7 +411,7 @@ tasks.post('/', async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id, recurrence_type, recurrence_end)
     VALUES (
       ${id},
       ${body.topic},
@@ -328,7 +428,9 @@ tasks.post('/', async (c) => {
       ${body.collectionId ?? null},
       ${body.description ?? null},
       ${body.priority ?? 'none'},
-      ${userId ?? null}
+      ${userId ?? null},
+      ${body.recurrenceType ?? 'none'},
+      ${body.recurrenceEnd ?? null}
     )
     RETURNING *
   `;
@@ -380,6 +482,8 @@ tasks.patch('/:id', async (c) => {
     collectionId: 'collection_id',
     description: 'description',
     priority: 'priority',
+    recurrenceType: 'recurrence_type',
+    recurrenceEnd: 'recurrence_end',
   });
 
   syncStatusCompleted(updates);
@@ -405,6 +509,15 @@ tasks.patch('/:id', async (c) => {
       return c.json({ error: 'Task not found' }, 404);
     }
     row = existing;
+  }
+
+  // Spawn next recurrence if task just became completed
+  const justCompleted =
+    row.completed &&
+    row.recurrence_type !== 'none' &&
+    ('completed' in updates || 'status' in updates);
+  if (justCompleted) {
+    await spawnNextRecurrence(row, userId);
   }
 
   // Handle tag replacement if tagIds provided

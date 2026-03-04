@@ -32,6 +32,9 @@ export interface Task {
   tags?: Tag[];
   description?: string;
   priority: Priority;
+  recurrenceType?: RecurrenceType;
+  recurrenceEnd?: string;
+  recurrenceParentId?: string;
 }
 
 export interface Collection {
@@ -146,6 +149,8 @@ export interface CreateTaskInput {
   tagIds?: string[];
   description?: string;
   priority?: Priority;
+  recurrenceType?: RecurrenceType;
+  recurrenceEnd?: string;
 }
 
 export interface ReviewInput {
@@ -262,6 +267,29 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
   review: 'Review',
   done: 'Done',
 };
+
+export type RecurrenceType =
+  | 'none'
+  | 'daily'
+  | 'every-2-days'
+  | 'every-3-days'
+  | 'weekly'
+  | 'biweekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'semi-annually';
+
+export const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'every-2-days', label: 'Every 2 days' },
+  { value: 'every-3-days', label: 'Every 3 days' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Biweekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'semi-annually', label: 'Every 6 months' },
+];
 
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 

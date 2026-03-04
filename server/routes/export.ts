@@ -202,7 +202,7 @@ exportRoutes.post('/calendar/token', async (c) => {
   `;
 
   const host = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? 'localhost:3000';
-  const url = `webcal://${host}/export/calendar/${token}.ics`;
+  const url = `webcal://${host}/api/export/calendar/${token}.ics`;
 
   return c.json({ token, url });
 });
@@ -218,7 +218,7 @@ exportRoutes.get('/calendar/token', async (c) => {
   }
 
   const host = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? 'localhost:3000';
-  const url = `webcal://${host}/export/calendar/${row.token}.ics`;
+  const url = `webcal://${host}/api/export/calendar/${row.token}.ics`;
 
   return c.json({ token: row.token, url });
 });
