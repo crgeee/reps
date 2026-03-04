@@ -92,6 +92,10 @@ export const patchCollectionTopicSchema = z.object({
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 
+export const recurrenceUnit = z.enum(['day', 'week', 'month']);
+export const recurrenceInterval = z.number().int().min(1).max(365);
+export const recurrenceDay = z.number().int().min(0).max(6);
+
 export const difficultyEnum = z.enum(['easy', 'medium', 'hard']);
 
 export const mockStartSchema = z.object({

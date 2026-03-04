@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { Task, Collection, Tag, Priority, CollectionStatus } from '../types';
+import type { Task, Collection, Tag, Priority, RecurrenceUnit, CollectionStatus } from '../types';
 import {
   TOPICS,
   getTopicLabel,
@@ -12,6 +12,7 @@ import {
 import { updateTask, deleteTask, addNote, createTag } from '../api';
 import { logger } from '../logger';
 import TagPicker from './TagPicker';
+import RecurrencePicker from './RecurrencePicker';
 import NotesList from './NotesList';
 import ButtonSpinner from './ButtonSpinner';
 
@@ -41,6 +42,14 @@ export default function TaskEditModal({
   const [deadline, setDeadline] = useState(task.deadline ?? '');
   const [collectionId, setCollectionId] = useState<string>(task.collectionId ?? '');
   const [description, setDescription] = useState(task.description ?? '');
+  const [recurrenceInterval, setRecurrenceInterval] = useState<number | null>(
+    task.recurrenceInterval ?? null,
+  );
+  const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit | null>(
+    task.recurrenceUnit ?? null,
+  );
+  const [recurrenceDay, setRecurrenceDay] = useState<number | null>(task.recurrenceDay ?? null);
+  const [recurrenceEnd, setRecurrenceEnd] = useState(task.recurrenceEnd ?? '');
   const [tagIds, setTagIds] = useState<string[]>(task.tags?.map((t) => t.id) ?? []);
   const [notes, setNotes] = useState(task.notes);
   const [busy, setBusy] = useState(false);
@@ -74,6 +83,10 @@ export default function TaskEditModal({
         deadline: deadline || undefined,
         collectionId: collectionId || undefined,
         description: description || undefined,
+        recurrenceInterval: recurrenceInterval ?? undefined,
+        recurrenceUnit: recurrenceUnit ?? undefined,
+        recurrenceDay: recurrenceDay ?? undefined,
+        recurrenceEnd: recurrenceEnd || undefined,
         tagIds,
       } as Partial<Task> & { tagIds?: string[] });
       onSaved();
@@ -241,6 +254,25 @@ export default function TaskEditModal({
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Recurrence */}
+        <div>
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+            Recurrence
+          </label>
+          <RecurrencePicker
+            interval={recurrenceInterval}
+            unit={recurrenceUnit}
+            day={recurrenceDay}
+            endDate={recurrenceEnd}
+            onChange={({ interval, unit, day, endDate }) => {
+              setRecurrenceInterval(interval);
+              setRecurrenceUnit(unit);
+              setRecurrenceDay(day);
+              setRecurrenceEnd(endDate);
+            }}
+          />
         </div>
 
         {/* Tags */}

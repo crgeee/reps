@@ -11,6 +11,9 @@ import {
   uuidStr,
   statusEnum,
   priorityEnum,
+  recurrenceUnit,
+  recurrenceInterval,
+  recurrenceDay,
 } from '../validation.js';
 import type { Task, Note, Quality } from '../../src/types.js';
 
@@ -19,40 +22,68 @@ const tasks = new Hono<AppEnv>();
 
 // --- validation schemas ---
 
-const createTaskSchema = z.object({
-  topic: topicEnum,
-  title: z.string().min(1).max(500),
-  completed: z.boolean().optional(),
-  status: statusEnum.optional(),
-  deadline: dateStr.nullable().optional(),
-  repetitions: z.number().int().min(0).max(1000).optional(),
-  interval: z.number().int().min(1).max(365).optional(),
-  easeFactor: z.number().min(1.3).max(5.0).optional(),
-  nextReview: dateStr.optional(),
-  lastReviewed: dateStr.nullable().optional(),
-  createdAt: dateStr.optional(),
-  collectionId: uuidStr.nullable().optional(),
-  tagIds: z.array(uuidStr).optional(),
-  description: z.string().max(10000).nullable().optional(),
-  priority: priorityEnum.optional(),
-});
+const recurrenceRefine = (data: {
+  recurrenceInterval?: number | null;
+  recurrenceUnit?: string | null;
+  recurrenceDay?: number | null;
+}) => {
+  const hasInterval = data.recurrenceInterval != null;
+  const hasUnit = data.recurrenceUnit != null;
+  if (hasInterval !== hasUnit) return false;
+  if (data.recurrenceDay != null && data.recurrenceUnit !== 'week') return false;
+  return true;
+};
+const recurrenceRefineMsg = {
+  message:
+    'recurrenceInterval and recurrenceUnit must both be set or both null; recurrenceDay requires unit=week',
+};
 
-const patchTaskSchema = z.object({
-  topic: topicEnum.optional(),
-  title: z.string().min(1).max(500).optional(),
-  completed: z.boolean().optional(),
-  status: statusEnum.optional(),
-  deadline: dateStr.nullable().optional(),
-  repetitions: z.number().int().min(0).max(1000).optional(),
-  interval: z.number().int().min(1).max(365).optional(),
-  easeFactor: z.number().min(1.3).max(5.0).optional(),
-  nextReview: dateStr.optional(),
-  lastReviewed: dateStr.nullable().optional(),
-  tagIds: z.array(uuidStr).optional(),
-  collectionId: uuidStr.nullable().optional(),
-  description: z.string().max(10000).nullable().optional(),
-  priority: priorityEnum.optional(),
-});
+const createTaskSchema = z
+  .object({
+    topic: topicEnum,
+    title: z.string().min(1).max(500),
+    completed: z.boolean().optional(),
+    status: statusEnum.optional(),
+    deadline: dateStr.nullable().optional(),
+    repetitions: z.number().int().min(0).max(1000).optional(),
+    interval: z.number().int().min(1).max(365).optional(),
+    easeFactor: z.number().min(1.3).max(5.0).optional(),
+    nextReview: dateStr.optional(),
+    lastReviewed: dateStr.nullable().optional(),
+    createdAt: dateStr.optional(),
+    collectionId: uuidStr.nullable().optional(),
+    tagIds: z.array(uuidStr).optional(),
+    description: z.string().max(10000).nullable().optional(),
+    priority: priorityEnum.optional(),
+    recurrenceInterval: recurrenceInterval.nullable().optional(),
+    recurrenceUnit: recurrenceUnit.nullable().optional(),
+    recurrenceDay: recurrenceDay.nullable().optional(),
+    recurrenceEnd: dateStr.nullable().optional(),
+  })
+  .refine(recurrenceRefine, recurrenceRefineMsg);
+
+const patchTaskSchema = z
+  .object({
+    topic: topicEnum.optional(),
+    title: z.string().min(1).max(500).optional(),
+    completed: z.boolean().optional(),
+    status: statusEnum.optional(),
+    deadline: dateStr.nullable().optional(),
+    repetitions: z.number().int().min(0).max(1000).optional(),
+    interval: z.number().int().min(1).max(365).optional(),
+    easeFactor: z.number().min(1.3).max(5.0).optional(),
+    nextReview: dateStr.optional(),
+    lastReviewed: dateStr.nullable().optional(),
+    tagIds: z.array(uuidStr).optional(),
+    collectionId: uuidStr.nullable().optional(),
+    description: z.string().max(10000).nullable().optional(),
+    priority: priorityEnum.optional(),
+    recurrenceInterval: recurrenceInterval.nullable().optional(),
+    recurrenceUnit: recurrenceUnit.nullable().optional(),
+    recurrenceDay: recurrenceDay.nullable().optional(),
+    recurrenceEnd: dateStr.nullable().optional(),
+  })
+  .refine(recurrenceRefine, recurrenceRefineMsg);
 
 const addNoteSchema = z.object({
   text: z.string().min(1).max(10000),
@@ -106,6 +137,11 @@ export interface TaskRow {
   collection_id: string | null;
   description: string | null;
   priority: string;
+  recurrence_interval: number | null;
+  recurrence_unit: string | null;
+  recurrence_day: number | null;
+  recurrence_end: string | null;
+  recurrence_parent_id: string | null;
 }
 
 export interface NoteRow {
@@ -138,6 +174,11 @@ export function rowToTask(
   description?: string;
   priority: string;
   tags: { id: string; name: string; color: string | null }[];
+  recurrenceInterval?: number;
+  recurrenceUnit?: string;
+  recurrenceDay?: number;
+  recurrenceEnd?: string;
+  recurrenceParentId?: string;
 } {
   return {
     id: row.id,
@@ -155,6 +196,11 @@ export function rowToTask(
     collectionId: row.collection_id,
     description: row.description ?? undefined,
     priority: row.priority,
+    recurrenceInterval: row.recurrence_interval ?? undefined,
+    recurrenceUnit: row.recurrence_unit ?? undefined,
+    recurrenceDay: row.recurrence_day ?? undefined,
+    recurrenceEnd: toDateStr(row.recurrence_end) ?? undefined,
+    recurrenceParentId: row.recurrence_parent_id ?? undefined,
     notes,
     tags,
   };
@@ -210,6 +256,89 @@ async function fetchTagsByTaskIds(
   }
 
   return tagsByTask;
+}
+
+// --- recurrence helpers ---
+
+function calculateNextDate(from: Date, interval: number, unit: string, day: number | null): Date {
+  const next = new Date(from);
+  switch (unit) {
+    case 'day':
+      next.setDate(next.getDate() + interval);
+      break;
+    case 'week':
+      next.setDate(next.getDate() + interval * 7);
+      if (day != null) {
+        // Snap to the target day of week (0=Sun, 6=Sat)
+        const diff = (day - next.getDay() + 7) % 7;
+        if (diff > 0) next.setDate(next.getDate() + diff);
+      }
+      break;
+    case 'month':
+      next.setMonth(next.getMonth() + interval);
+      break;
+  }
+  return next;
+}
+
+async function spawnNextRecurrence(completedRow: TaskRow, userId: string | null): Promise<void> {
+  if (!completedRow.recurrence_interval || !completedRow.recurrence_unit) return;
+
+  const now = new Date();
+  const nextDate = calculateNextDate(
+    now,
+    completedRow.recurrence_interval,
+    completedRow.recurrence_unit,
+    completedRow.recurrence_day,
+  );
+  const nextDateStr = nextDate.toISOString().slice(0, 10);
+
+  // 1-year guard — never spawn more than a year out
+  const oneYearOut = new Date();
+  oneYearOut.setFullYear(oneYearOut.getFullYear() + 1);
+  if (nextDate > oneYearOut) return;
+
+  // Check recurrence_end
+  if (completedRow.recurrence_end) {
+    const endDate = new Date(completedRow.recurrence_end);
+    if (nextDate > endDate) return;
+  }
+
+  const newId = uuidv4();
+  const parentId = completedRow.recurrence_parent_id ?? completedRow.id;
+
+  await sql`
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id, recurrence_interval, recurrence_unit, recurrence_day, recurrence_end, recurrence_parent_id)
+    VALUES (
+      ${newId},
+      ${completedRow.topic},
+      ${completedRow.title},
+      false,
+      'todo',
+      ${completedRow.deadline},
+      0,
+      1,
+      2.5,
+      ${nextDateStr},
+      ${null},
+      ${today()},
+      ${completedRow.collection_id},
+      ${completedRow.description},
+      ${completedRow.priority},
+      ${userId},
+      ${completedRow.recurrence_interval},
+      ${completedRow.recurrence_unit},
+      ${completedRow.recurrence_day},
+      ${completedRow.recurrence_end},
+      ${parentId}
+    )
+  `;
+
+  // Copy tags from completed task to new task
+  await sql`
+    INSERT INTO task_tags (task_id, tag_id)
+    SELECT ${newId}, tag_id FROM task_tags WHERE task_id = ${completedRow.id}
+  `;
 }
 
 // --- routes ---
@@ -311,7 +440,7 @@ tasks.post('/', async (c) => {
   const now = today();
 
   const [row] = await sql<TaskRow[]>`
-    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id)
+    INSERT INTO tasks (id, topic, title, completed, status, deadline, repetitions, interval, ease_factor, next_review, last_reviewed, created_at, collection_id, description, priority, user_id, recurrence_interval, recurrence_unit, recurrence_day, recurrence_end)
     VALUES (
       ${id},
       ${body.topic},
@@ -328,7 +457,11 @@ tasks.post('/', async (c) => {
       ${body.collectionId ?? null},
       ${body.description ?? null},
       ${body.priority ?? 'none'},
-      ${userId ?? null}
+      ${userId ?? null},
+      ${body.recurrenceInterval ?? null},
+      ${body.recurrenceUnit ?? null},
+      ${body.recurrenceDay ?? null},
+      ${body.recurrenceEnd ?? null}
     )
     RETURNING *
   `;
@@ -380,6 +513,10 @@ tasks.patch('/:id', async (c) => {
     collectionId: 'collection_id',
     description: 'description',
     priority: 'priority',
+    recurrenceInterval: 'recurrence_interval',
+    recurrenceUnit: 'recurrence_unit',
+    recurrenceDay: 'recurrence_day',
+    recurrenceEnd: 'recurrence_end',
   });
 
   syncStatusCompleted(updates);
@@ -405,6 +542,15 @@ tasks.patch('/:id', async (c) => {
       return c.json({ error: 'Task not found' }, 404);
     }
     row = existing;
+  }
+
+  // Spawn next recurrence if task just became completed
+  const justCompleted =
+    row.completed &&
+    row.recurrence_interval != null &&
+    ('completed' in updates || 'status' in updates);
+  if (justCompleted) {
+    await spawnNextRecurrence(row, userId);
   }
 
   // Handle tag replacement if tagIds provided
