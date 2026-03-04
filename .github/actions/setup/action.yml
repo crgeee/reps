@@ -1,0 +1,17 @@
+name: Setup Node & Dependencies
+description: Install Node 22 and all project dependencies (checkout must happen before calling this action)
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+
+    - run: npm ci
+      shell: bash
+
+    - name: Install web dependencies
+      run: cd web && npm ci
+      shell: bash
