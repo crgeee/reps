@@ -239,5 +239,17 @@ describe('calculatePriorityScore', () => {
       expect(result.score).toBe(0);
       expect(result.factors.overdueUrgency).toBe(0);
     });
+
+    it('invalid deadline does not produce NaN', () => {
+      const result = calculatePriorityScore(baseTask({ deadline: 'TBD' }));
+      expect(Number.isNaN(result.score)).toBe(false);
+      expect(result.factors.deadlinePressure).toBe(0);
+    });
+
+    it('invalid lastReviewed does not produce NaN', () => {
+      const result = calculatePriorityScore(baseTask({ lastReviewed: 'soon' }));
+      expect(Number.isNaN(result.score)).toBe(false);
+      expect(result.factors.staleness).toBe(0);
+    });
   });
 });

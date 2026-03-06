@@ -2,7 +2,14 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../db/client.js', () => ({ default: {} }));
 
-import { toDateStr, rowToNote, groupNotes, rowToTask, syncStatusCompleted } from './tasks.js';
+import {
+  toDateStr,
+  rowToNote,
+  groupNotes,
+  rowToTask,
+  syncStatusCompleted,
+  calculateNextDate,
+} from './tasks.js';
 import type { NoteRow, TaskRow } from './tasks.js';
 
 describe('toDateStr', () => {
@@ -174,5 +181,87 @@ describe('syncStatusCompleted', () => {
     const updates: Record<string, unknown> = {};
     syncStatusCompleted(updates);
     expect(Object.keys(updates)).toHaveLength(0);
+  });
+});
+
+describe('calculateNextDate', () => {
+  // Use local dates (no timezone suffix) to match function behavior
+  function d(year: number, month: number, day: number): Date {
+    return new Date(year, month - 1, day);
+  }
+  function fmt(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  }
+
+  describe('day unit', () => {
+    it('advances by interval days', () => {
+      // Mar 10 + 3 = Mar 13
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 3, 'day', null))).toBe('2025-03-13');
+    });
+  });
+
+  describe('week unit without days', () => {
+    it('advances by interval weeks', () => {
+      // Mar 10 + 14 = Mar 24
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 2, 'week', null))).toBe('2025-03-24');
+    });
+  });
+
+  describe('week unit with single day', () => {
+    // 2025-03-10 is Monday (getDay()=1)
+    it('finds next matching day within the week', () => {
+      // From Monday, next Wednesday (day 3): +1=Tue, +1=Wed match
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 1, 'week', [3]))).toBe('2025-03-12');
+    });
+
+    it('wraps around to next week if day already passed', () => {
+      // From Wednesday (day 3), next Monday (day 1): Thu,Fri,Sat,Sun,Mon = +5
+      expect(fmt(calculateNextDate(d(2025, 3, 12), 1, 'week', [1]))).toBe('2025-03-17');
+    });
+  });
+
+  describe('week unit with multiple days', () => {
+    it('finds the nearest selected day', () => {
+      // From Monday (1), days=[1,3,5], +1=Tuesday(2) no, Wed(3) yes
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 1, 'week', [1, 3, 5]))).toBe('2025-03-12');
+    });
+
+    it('wraps around when remaining days are earlier in the week', () => {
+      // From Friday (5), days=[1,3], +1=Sat(6),Sun(0),Mon(1) match = Mar 17
+      expect(fmt(calculateNextDate(d(2025, 3, 14), 1, 'week', [1, 3]))).toBe('2025-03-17');
+    });
+  });
+
+  describe('week unit with interval > 1', () => {
+    it('skips ahead before finding next day', () => {
+      // From Monday Mar 10, every 2 weeks on Mon/Wed [1,3]
+      // skip (2-1)*7=7 -> Mar 17, +1 = Mar 18 (Tue=2), +1 = Mar 19 (Wed=3) match
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 2, 'week', [1, 3]))).toBe('2025-03-19');
+    });
+
+    it('does not find a match in the current week for interval > 1', () => {
+      // From Monday Mar 10, every 2 weeks on Wed [3]
+      // skip 7 -> Mar 17, +1 = Mar 18 (Tue), +1 = Mar 19 (Wed) match
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 2, 'week', [3]))).toBe('2025-03-19');
+    });
+  });
+
+  describe('week unit with empty days array', () => {
+    it('falls back to simple week advancement', () => {
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 1, 'week', []))).toBe('2025-03-17');
+    });
+  });
+
+  describe('month unit', () => {
+    it('advances by interval months', () => {
+      expect(fmt(calculateNextDate(d(2025, 3, 10), 1, 'month', null))).toBe('2025-04-10');
+    });
+
+    it('handles year boundary', () => {
+      expect(fmt(calculateNextDate(d(2025, 11, 15), 3, 'month', null))).toBe('2026-02-15');
+    });
   });
 });

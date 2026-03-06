@@ -6,6 +6,7 @@ import {
   tagSchema,
   templateSchema,
   priorityEnum,
+  recurrenceDay,
 } from './validation.js';
 
 describe('validateUuid', () => {
@@ -127,6 +128,44 @@ describe('templateSchema', () => {
       tasks: [{ title: 'Study', statusName: 'nonexistent' }],
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('recurrenceDay', () => {
+  it('valid day array passes', () => {
+    expect(recurrenceDay.safeParse([0, 3, 6]).success).toBe(true);
+  });
+
+  it('single day passes', () => {
+    expect(recurrenceDay.safeParse([1]).success).toBe(true);
+  });
+
+  it('all 7 days passes', () => {
+    expect(recurrenceDay.safeParse([0, 1, 2, 3, 4, 5, 6]).success).toBe(true);
+  });
+
+  it('empty array fails (min 1)', () => {
+    expect(recurrenceDay.safeParse([]).success).toBe(false);
+  });
+
+  it('more than 7 elements fails', () => {
+    expect(recurrenceDay.safeParse([0, 1, 2, 3, 4, 5, 6, 0]).success).toBe(false);
+  });
+
+  it('day > 6 fails', () => {
+    expect(recurrenceDay.safeParse([7]).success).toBe(false);
+  });
+
+  it('negative day fails', () => {
+    expect(recurrenceDay.safeParse([-1]).success).toBe(false);
+  });
+
+  it('non-array fails', () => {
+    expect(recurrenceDay.safeParse(3).success).toBe(false);
+  });
+
+  it('non-integer fails', () => {
+    expect(recurrenceDay.safeParse([1.5]).success).toBe(false);
   });
 });
 

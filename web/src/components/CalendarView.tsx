@@ -5,6 +5,18 @@ import { getTopicLabel } from '../types';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function getDayNumberColor(isToday: boolean, isOverdue: boolean): string {
+  if (isToday) return 'text-zinc-100';
+  if (isOverdue) return 'text-red-400';
+  return 'text-zinc-300';
+}
+
+function getCellStyle(isSelected: boolean, isToday: boolean): string {
+  if (isSelected) return 'border-zinc-400 bg-zinc-800';
+  if (isToday) return 'border-zinc-500 bg-zinc-800/60';
+  return 'border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900';
+}
 const MONTH_NAMES = [
   'January',
   'February',
@@ -141,7 +153,7 @@ export default function CalendarView() {
         {DAY_LABELS.map((d) => (
           <div
             key={d}
-            className="text-center text-[10px] text-zinc-600 uppercase tracking-wider py-1"
+            className="text-center text-[10px] text-zinc-400 uppercase tracking-wider py-1"
           >
             {d}
           </div>
@@ -167,19 +179,9 @@ export default function CalendarView() {
             <button
               key={dateStr}
               onClick={() => handleDayClick(day)}
-              className={`min-h-12 p-1.5 rounded-lg border text-left transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${
-                isSelected
-                  ? 'border-zinc-500 bg-zinc-800'
-                  : isToday
-                    ? 'border-zinc-600 bg-zinc-900/80'
-                    : 'border-transparent hover:border-zinc-700 hover:bg-zinc-900'
-              }`}
+              className={`min-h-12 p-1.5 rounded-lg border text-left transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${getCellStyle(isSelected, isToday)}`}
             >
-              <span
-                className={`text-xs font-medium ${
-                  isToday ? 'text-zinc-100' : isOverdue ? 'text-red-400' : 'text-zinc-400'
-                }`}
-              >
+              <span className={`text-xs font-medium ${getDayNumberColor(isToday, isOverdue)}`}>
                 {day}
               </span>
               {dots.length > 0 && (
@@ -193,7 +195,7 @@ export default function CalendarView() {
                     />
                   ))}
                   {dayTasks.length > 3 && (
-                    <span className="text-[8px] text-zinc-600">+{dayTasks.length - 3}</span>
+                    <span className="text-[8px] text-zinc-400">+{dayTasks.length - 3}</span>
                   )}
                 </div>
               )}
@@ -217,14 +219,14 @@ export default function CalendarView() {
               >
                 {task.title}
               </span>
-              <span className="text-xs text-zinc-600">{getTopicLabel(task.topic)}</span>
+              <span className="text-xs text-zinc-400">{getTopicLabel(task.topic)}</span>
             </div>
           ))}
         </div>
       )}
       {selectedDate && selectedTasks.length === 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-sm text-zinc-600">No tasks on {selectedDate}.</p>
+          <p className="text-sm text-zinc-400">No tasks on {selectedDate}.</p>
         </div>
       )}
 
@@ -233,7 +235,7 @@ export default function CalendarView() {
         {Object.entries(TOPIC_DOT_COLORS).map(([topic, color]) => (
           <div key={topic} className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-[10px] text-zinc-600">{getTopicLabel(topic)}</span>
+            <span className="text-[10px] text-zinc-400">{getTopicLabel(topic)}</span>
           </div>
         ))}
       </div>

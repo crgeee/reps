@@ -19,6 +19,29 @@ import type { AppEnv } from '../types.js';
 
 const agent = new Hono<AppEnv>();
 
+function isAiConfigError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return (
+      msg.includes('api key') ||
+      msg.includes('authentication') ||
+      err.constructor.name === 'AuthenticationError'
+    );
+  }
+  return false;
+}
+
+function aiErrorResponse(
+  c: { json: (body: unknown, status: number) => unknown },
+  message: string,
+  err: unknown,
+) {
+  if (isAiConfigError(err)) {
+    return c.json({ error: message, code: 'AI_NOT_CONFIGURED' }, 500);
+  }
+  return c.json({ error: message }, 500);
+}
+
 const evaluateSchema = z.object({
   taskId: uuidStr,
   answer: z.string().min(1).max(10000),
@@ -81,7 +104,7 @@ agent.post('/evaluate', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Evaluation failed');
-    return c.json({ error: 'Evaluation failed' }, 500);
+    return aiErrorResponse(c, 'Evaluation failed', err);
   }
 });
 
@@ -113,7 +136,7 @@ agent.get('/question/:taskId', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Question generation failed');
-    return c.json({ error: 'Question generation failed' }, 500);
+    return aiErrorResponse(c, 'Question generation failed', err);
   }
 });
 
@@ -164,7 +187,7 @@ agent.post('/mock/start', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to start mock interview');
-    return c.json({ error: 'Failed to start mock interview' }, 500);
+    return aiErrorResponse(c, 'Failed to start mock interview', err);
   }
 });
 
@@ -182,7 +205,7 @@ agent.post('/mock/respond', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to process mock response');
-    return c.json({ error: 'Failed to process response' }, 500);
+    return aiErrorResponse(c, 'Failed to process response', err);
   }
 });
 

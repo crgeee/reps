@@ -51,7 +51,7 @@ export default function AddTask() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [recurrenceInterval, setRecurrenceInterval] = useState<number | null>(null);
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit | null>(null);
-  const [recurrenceDay, setRecurrenceDay] = useState<number | null>(null);
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
   const [recurrenceEnd, setRecurrenceEnd] = useState('');
   const [customTopic, setCustomTopic] = useState('');
   const [showCustomTopic, setShowCustomTopic] = useState(false);
@@ -76,7 +76,7 @@ export default function AddTask() {
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         recurrenceInterval: recurrenceInterval ?? undefined,
         recurrenceUnit: recurrenceUnit ?? undefined,
-        recurrenceDay: recurrenceDay ?? undefined,
+        recurrenceDay: recurrenceDays.length > 0 ? recurrenceDays : undefined,
         recurrenceEnd: recurrenceEnd || undefined,
       });
       maybeCreateCustomTopic({
@@ -212,12 +212,12 @@ export default function AddTask() {
           <RecurrencePicker
             interval={recurrenceInterval}
             unit={recurrenceUnit}
-            day={recurrenceDay}
+            days={recurrenceDays}
             endDate={recurrenceEnd}
-            onChange={({ interval, unit, day, endDate }) => {
+            onChange={({ interval, unit, days, endDate }) => {
               setRecurrenceInterval(interval);
               setRecurrenceUnit(unit);
-              setRecurrenceDay(day);
+              setRecurrenceDays(days);
               setRecurrenceEnd(endDate);
             }}
           />
