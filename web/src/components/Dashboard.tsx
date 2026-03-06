@@ -6,7 +6,8 @@ import { getStreaks } from '../api';
 import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
-import { Flame, Info, Brain } from 'lucide-react';
+import { Flame, Brain } from 'lucide-react';
+import InfoTooltip from './InfoTooltip';
 
 function isOverdue(task: Task): boolean {
   return new Date(task.nextReview) < new Date(new Date().toISOString().split('T')[0]!);
@@ -150,12 +151,10 @@ export default function Dashboard() {
             <h2 className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium">
               Topics
             </h2>
-            <span className="group relative">
-              <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400 cursor-help transition-colors" />
-              <span className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] rounded-md shadow-lg whitespace-nowrap z-50">
-                Tasks grouped by topic. Click a row to filter your task list.
-              </span>
-            </span>
+            <InfoTooltip
+              content="Ease Factor (EF) from the SM-2 algorithm. Starts at 2.5 — drops when you struggle, rises when you nail it. Higher = more confident recall."
+              learnMoreHref="/how-it-works"
+            />
           </div>
           <button
             onClick={() => navigate('/progress')}
