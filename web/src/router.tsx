@@ -6,6 +6,7 @@ import LoginPage from './components/LoginPage';
 import DeviceApproval from './components/DeviceApproval';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import HowItWorks from './components/HowItWorks';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
 
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/privacy', element: <PrivacyPolicy /> },
       { path: '/terms', element: <TermsOfService /> },
+      { path: '/how-it-works', element: <HowItWorks /> },
     ],
   },
   // Protected routes
