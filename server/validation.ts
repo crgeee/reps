@@ -94,7 +94,7 @@ export const patchCollectionTopicSchema = z.object({
 
 export const recurrenceUnit = z.enum(['day', 'week', 'month']);
 export const recurrenceInterval = z.number().int().min(1).max(365);
-export const recurrenceDay = z.number().int().min(0).max(6);
+export const recurrenceDay = z.array(z.number().int().min(0).max(6)).min(1).max(7);
 
 export const difficultyEnum = z.enum(['easy', 'medium', 'hard']);
 

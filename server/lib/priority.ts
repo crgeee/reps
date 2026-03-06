@@ -70,7 +70,7 @@ export function calculatePriorityScore(
 
   // deadlinePressure: max(0, 100 - days_until_deadline * 10), 0 if no deadline
   let deadlinePressure = 0;
-  if (input.deadline !== null) {
+  if (input.deadline !== null && DATE_RE.test(input.deadline)) {
     const daysUntil = daysBetween(now, input.deadline);
     deadlinePressure = Math.min(100, Math.max(0, 100 - daysUntil * 10));
   }
@@ -81,7 +81,7 @@ export function calculatePriorityScore(
 
   // staleness: min(100, days_since_last_activity * 3.3)
   const lastActivity = input.lastReviewed ?? input.createdAt;
-  const daysSinceActivity = daysBetween(lastActivity, now);
+  const daysSinceActivity = DATE_RE.test(lastActivity) ? daysBetween(lastActivity, now) : 0;
   const staleness = Math.min(100, Math.max(0, daysSinceActivity * 3.3));
 
   // aiWeakness: 100 - avgScore * 20, 0 if no AI data
@@ -98,12 +98,10 @@ export function calculatePriorityScore(
     aiWeakness,
   };
 
-  const rawScore =
-    factors.overdueUrgency * WEIGHTS.overdueUrgency +
-    factors.deadlinePressure * WEIGHTS.deadlinePressure +
-    factors.difficulty * WEIGHTS.difficulty +
-    factors.staleness * WEIGHTS.staleness +
-    factors.aiWeakness * WEIGHTS.aiWeakness;
+  const rawScore = Object.entries(WEIGHTS).reduce(
+    (sum, [key, weight]) => sum + factors[key as keyof PriorityFactors] * weight,
+    0,
+  );
 
   const score = Math.round(Math.min(100, Math.max(0, rawScore)));
 

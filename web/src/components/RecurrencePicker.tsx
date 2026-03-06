@@ -4,12 +4,12 @@ import { RECURRENCE_UNITS, DAY_LABELS } from '../types';
 interface RecurrencePickerProps {
   interval: number | null;
   unit: RecurrenceUnit | null;
-  day: number | null;
+  days: number[];
   endDate: string;
   onChange: (values: {
     interval: number | null;
     unit: RecurrenceUnit | null;
-    day: number | null;
+    days: number[];
     endDate: string;
   }) => void;
 }
@@ -23,7 +23,7 @@ const MAX_INTERVALS: Record<RecurrenceUnit, number> = {
 export default function RecurrencePicker({
   interval,
   unit,
-  day,
+  days,
   endDate,
   onChange,
 }: RecurrencePickerProps) {
@@ -31,9 +31,9 @@ export default function RecurrencePicker({
 
   function handleToggle() {
     if (isActive) {
-      onChange({ interval: null, unit: null, day: null, endDate: '' });
+      onChange({ interval: null, unit: null, days: [], endDate: '' });
     } else {
-      onChange({ interval: 1, unit: 'day', day: null, endDate });
+      onChange({ interval: 1, unit: 'day', days: [], endDate });
     }
   }
 
@@ -42,7 +42,7 @@ export default function RecurrencePicker({
     if (!unit) return;
     const max = MAX_INTERVALS[unit];
     if (isNaN(n) || n < 1) return;
-    onChange({ interval: Math.min(n, max), unit, day, endDate });
+    onChange({ interval: Math.min(n, max), unit, days, endDate });
   }
 
   function handleUnitChange(newUnit: RecurrenceUnit) {
@@ -51,13 +51,14 @@ export default function RecurrencePicker({
     onChange({
       interval: clampedInterval,
       unit: newUnit,
-      day: newUnit === 'week' ? day : null,
+      days: newUnit === 'week' ? days : [],
       endDate,
     });
   }
 
   function handleDayToggle(d: number) {
-    onChange({ interval, unit, day: day === d ? null : d, endDate });
+    const next = days.includes(d) ? days.filter((x) => x !== d) : [...days, d];
+    onChange({ interval, unit, days: next, endDate });
   }
 
   return (
@@ -111,7 +112,7 @@ export default function RecurrencePicker({
               type="button"
               onClick={() => handleDayToggle(i)}
               className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
-                day === i
+                days.includes(i)
                   ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
                   : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
               }`}
@@ -129,7 +130,7 @@ export default function RecurrencePicker({
           <input
             type="date"
             value={endDate}
-            onChange={(e) => onChange({ interval, unit, day, endDate: e.target.value })}
+            onChange={(e) => onChange({ interval, unit, days, endDate: e.target.value })}
             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 [color-scheme:dark]"
           />
         </div>

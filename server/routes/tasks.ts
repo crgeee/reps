@@ -18,6 +18,7 @@ import {
 } from '../validation.js';
 import type { Task, Note, Quality } from '../../src/types.js';
 import type { AppEnv } from '../types.js';
+import { logger } from '../logger.js';
 
 const tasks = new Hono<AppEnv>();
 
@@ -26,7 +27,7 @@ const tasks = new Hono<AppEnv>();
 const recurrenceRefine = (data: {
   recurrenceInterval?: number | null;
   recurrenceUnit?: string | null;
-  recurrenceDay?: number | null;
+  recurrenceDay?: number[] | null;
 }) => {
   const hasInterval = data.recurrenceInterval != null;
   const hasUnit = data.recurrenceUnit != null;
@@ -140,7 +141,7 @@ export interface TaskRow {
   priority: string;
   recurrence_interval: number | null;
   recurrence_unit: string | null;
-  recurrence_day: number | null;
+  recurrence_day: number[] | null;
   recurrence_end: string | null;
   recurrence_parent_id: string | null;
 }
@@ -177,7 +178,7 @@ export function rowToTask(
   tags: { id: string; name: string; color: string | null }[];
   recurrenceInterval?: number;
   recurrenceUnit?: string;
-  recurrenceDay?: number;
+  recurrenceDay?: number[];
   recurrenceEnd?: string;
   recurrenceParentId?: string;
 } {
@@ -238,6 +239,22 @@ function today(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+function toPriorityInput(t: {
+  nextReview: string;
+  deadline?: string;
+  easeFactor: number;
+  lastReviewed?: string;
+  createdAt: string;
+}): import('../lib/priority.js').PriorityInput {
+  return {
+    nextReview: t.nextReview,
+    deadline: t.deadline ?? null,
+    easeFactor: t.easeFactor,
+    lastReviewed: t.lastReviewed ?? null,
+    createdAt: t.createdAt,
+  };
+}
+
 async function fetchTagsByTaskIds(
   taskIds: string[],
 ): Promise<Map<string, { id: string; name: string; color: string | null }[]>> {
@@ -261,18 +278,33 @@ async function fetchTagsByTaskIds(
 
 // --- recurrence helpers ---
 
-function calculateNextDate(from: Date, interval: number, unit: string, day: number | null): Date {
+export function calculateNextDate(
+  from: Date,
+  interval: number,
+  unit: string,
+  days: number[] | null,
+): Date {
   const next = new Date(from);
   switch (unit) {
     case 'day':
       next.setDate(next.getDate() + interval);
       break;
     case 'week':
-      next.setDate(next.getDate() + interval * 7);
-      if (day != null) {
-        // Snap to the target day of week (0=Sun, 6=Sat)
-        const diff = (day - next.getDay() + 7) % 7;
-        if (diff > 0) next.setDate(next.getDate() + diff);
+      if (days && days.length > 0) {
+        // Skip ahead for multi-week intervals, then find next matching day
+        if (interval > 1) {
+          next.setDate(next.getDate() + (interval - 1) * 7);
+        }
+        next.setDate(next.getDate() + 1);
+        for (let i = 0; i < 7; i++) {
+          if (days.includes(next.getDay())) return next;
+          next.setDate(next.getDate() + 1);
+        }
+        // Unreachable with valid days (0-6), but guard against bad data
+        next.setTime(from.getTime());
+        next.setDate(next.getDate() + interval * 7);
+      } else {
+        next.setDate(next.getDate() + interval * 7);
       }
       break;
     case 'month':
@@ -363,8 +395,8 @@ async function fetchAiScores(taskIds: string[]): Promise<Map<string, { avgScore:
     for (const r of rows) {
       map.set(r.task_id, { avgScore: Number(r.avg_score) });
     }
-  } catch {
-    // Malformed JSON in agent_logs.output — return empty map so callers degrade gracefully
+  } catch (err) {
+    logger.error({ err, taskIdCount: taskIds.length }, 'Failed to fetch AI scores for priority');
   }
   return map;
 }
@@ -410,16 +442,7 @@ tasks.get('/due', async (c) => {
   const aiScores = await fetchAiScores(taskIds);
   const withPriority = result.map((t) => ({
     ...t,
-    priorityScore: calculatePriorityScore(
-      {
-        nextReview: t.nextReview,
-        deadline: t.deadline ?? null,
-        easeFactor: t.easeFactor,
-        lastReviewed: t.lastReviewed ?? null,
-        createdAt: t.createdAt,
-      },
-      aiScores.get(t.id) ?? null,
-    ),
+    priorityScore: calculatePriorityScore(toPriorityInput(t), aiScores.get(t.id) ?? null),
   }));
   withPriority.sort((a, b) => b.priorityScore.score - a.priorityScore.score);
   return c.json(withPriority);
@@ -473,16 +496,7 @@ tasks.get('/', async (c) => {
   const aiScores = await fetchAiScores(filteredTaskIds);
   const withPriority = result.map((t) => ({
     ...t,
-    priorityScore: calculatePriorityScore(
-      {
-        nextReview: t.nextReview,
-        deadline: t.deadline ?? null,
-        easeFactor: t.easeFactor,
-        lastReviewed: t.lastReviewed ?? null,
-        createdAt: t.createdAt,
-      },
-      aiScores.get(t.id) ?? null,
-    ),
+    priorityScore: calculatePriorityScore(toPriorityInput(t), aiScores.get(t.id) ?? null),
   }));
   return c.json(withPriority);
 });

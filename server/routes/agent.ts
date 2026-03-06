@@ -19,6 +19,25 @@ import type { AppEnv } from '../types.js';
 
 const agent = new Hono<AppEnv>();
 
+function isAiConfigError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return (
+      msg.includes('api key') ||
+      msg.includes('authentication') ||
+      err.constructor.name === 'AuthenticationError'
+    );
+  }
+  return false;
+}
+
+function aiErrorBody(message: string, err: unknown): { error: string; code?: string } {
+  if (isAiConfigError(err)) {
+    return { error: message, code: 'AI_NOT_CONFIGURED' };
+  }
+  return { error: message };
+}
+
 const evaluateSchema = z.object({
   taskId: uuidStr,
   answer: z.string().min(1).max(10000),
@@ -81,7 +100,7 @@ agent.post('/evaluate', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Evaluation failed');
-    return c.json({ error: 'Evaluation failed' }, 500);
+    return c.json(aiErrorBody('Evaluation failed', err), 500);
   }
 });
 
@@ -113,7 +132,7 @@ agent.get('/question/:taskId', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Question generation failed');
-    return c.json({ error: 'Question generation failed' }, 500);
+    return c.json(aiErrorBody('Question generation failed', err), 500);
   }
 });
 
@@ -164,7 +183,7 @@ agent.post('/mock/start', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to start mock interview');
-    return c.json({ error: 'Failed to start mock interview' }, 500);
+    return c.json(aiErrorBody('Failed to start mock interview', err), 500);
   }
 });
 
@@ -182,7 +201,7 @@ agent.post('/mock/respond', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to process mock response');
-    return c.json({ error: 'Failed to process response' }, 500);
+    return c.json(aiErrorBody('Failed to process response', err), 500);
   }
 });
 

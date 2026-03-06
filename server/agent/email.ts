@@ -90,7 +90,7 @@ export async function sendDailyDigest(userId?: string, userEmail?: string): Prom
 
   try {
     await client.emails.send({
-      from: process.env.RESEND_FROM ?? 'reps <noreply@localhost>',
+      from: process.env.RESEND_FROM ?? 'reps <noreply@reps.sh>',
       to,
       subject,
       html,

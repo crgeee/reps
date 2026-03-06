@@ -24,6 +24,26 @@ import FocusTimer from './FocusTimer';
 import ScoreCard from './ScoreCard';
 import InfoTooltip from './InfoTooltip';
 
+function isAiKeyError(error: string | null): boolean {
+  if (!error) return false;
+  return error.includes('AI_NOT_CONFIGURED');
+}
+
+function AiErrorNotice() {
+  return (
+    <div className="text-red-300/80 text-xs space-y-1">
+      <p>
+        AI features require an API key from a supported provider (e.g. Anthropic Claude). Ask your
+        server admin to set <code className="bg-red-900/50 px-1 rounded">ANTHROPIC_API_KEY</code> in
+        the server environment.
+      </p>
+      <p className="text-red-400/60">
+        Your API keys are never stored in the browser or collected by reps.
+      </p>
+    </div>
+  );
+}
+
 export default function ReviewSession() {
   const { filteredDueTasks: dueTasks, fetchData } = useProtectedContext();
   const navigate = useNavigate();
@@ -62,6 +82,14 @@ const QUALITY_LABELS: Record<Quality, string> = {
   4: '4 - Correct, some hesitation',
   5: '5 - Perfect response',
 };
+
+function getQualityColor(q: Quality): string {
+  if (q >= 4)
+    return 'border-green-800/50 bg-green-950/30 hover:bg-green-950/50 text-green-300 focus:ring-green-700';
+  if (q >= 3)
+    return 'border-amber-800/50 bg-amber-950/30 hover:bg-amber-950/50 text-amber-300 focus:ring-amber-700';
+  return 'border-red-800/50 bg-red-950/30 hover:bg-red-950/50 text-red-300 focus:ring-red-700';
+}
 
 function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -187,9 +215,10 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
         {error && (
           <div
             role="alert"
-            className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm"
+            className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm space-y-2"
           >
-            {error}
+            <p>{error}</p>
+            {isAiKeyError(error) && <AiErrorNotice />}
           </div>
         )}
 
@@ -337,13 +366,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
                   key={q}
                   onClick={() => handleRate(q)}
                   disabled={loading}
-                  className={`text-left px-4 py-3 rounded-lg border transition-all duration-150 disabled:opacity-50 focus:outline-none focus:ring-1 ${
-                    q >= 4
-                      ? 'border-green-800/50 bg-green-950/30 hover:bg-green-950/50 text-green-300 focus:ring-green-700'
-                      : q >= 3
-                        ? 'border-amber-800/50 bg-amber-950/30 hover:bg-amber-950/50 text-amber-300 focus:ring-amber-700'
-                        : 'border-red-800/50 bg-red-950/30 hover:bg-red-950/50 text-red-300 focus:ring-red-700'
-                  }`}
+                  className={`text-left px-4 py-3 rounded-lg border transition-all duration-150 disabled:opacity-50 focus:outline-none focus:ring-1 ${getQualityColor(q)}`}
                 >
                   {QUALITY_LABELS[q]}
                 </button>
@@ -436,8 +459,9 @@ function PracticeMode() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm">
-          {error}
+        <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm space-y-2">
+          <p>{error}</p>
+          {isAiKeyError(error) && <AiErrorNotice />}
         </div>
       )}
 

@@ -62,7 +62,7 @@ export default function TaskEditModal({
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit | null>(
     task.recurrenceUnit ?? null,
   );
-  const [recurrenceDay, setRecurrenceDay] = useState<number | null>(task.recurrenceDay ?? null);
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>(task.recurrenceDay ?? []);
   const [recurrenceEnd, setRecurrenceEnd] = useState(task.recurrenceEnd ?? '');
   const [tagIds, setTagIds] = useState<string[]>(task.tags?.map((t) => t.id) ?? []);
   const [notes, setNotes] = useState(task.notes);
@@ -107,7 +107,7 @@ export default function TaskEditModal({
         description: description || undefined,
         recurrenceInterval: recurrenceInterval ?? undefined,
         recurrenceUnit: recurrenceUnit ?? undefined,
-        recurrenceDay: recurrenceDay ?? undefined,
+        recurrenceDay: recurrenceDays.length > 0 ? recurrenceDays : undefined,
         recurrenceEnd: recurrenceEnd || undefined,
         tagIds,
       } as Partial<Task> & { tagIds?: string[] });
@@ -316,12 +316,12 @@ export default function TaskEditModal({
           <RecurrencePicker
             interval={recurrenceInterval}
             unit={recurrenceUnit}
-            day={recurrenceDay}
+            days={recurrenceDays}
             endDate={recurrenceEnd}
-            onChange={({ interval, unit, day, endDate }) => {
+            onChange={({ interval, unit, days, endDate }) => {
               setRecurrenceInterval(interval);
               setRecurrenceUnit(unit);
-              setRecurrenceDay(day);
+              setRecurrenceDays(days);
               setRecurrenceEnd(endDate);
             }}
           />
