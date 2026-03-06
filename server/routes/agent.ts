@@ -31,15 +31,11 @@ function isAiConfigError(err: unknown): boolean {
   return false;
 }
 
-function aiErrorResponse(
-  c: { json: (body: unknown, status: number) => unknown },
-  message: string,
-  err: unknown,
-) {
+function aiErrorBody(message: string, err: unknown): { error: string; code?: string } {
   if (isAiConfigError(err)) {
-    return c.json({ error: message, code: 'AI_NOT_CONFIGURED' }, 500);
+    return { error: message, code: 'AI_NOT_CONFIGURED' };
   }
-  return c.json({ error: message }, 500);
+  return { error: message };
 }
 
 const evaluateSchema = z.object({
@@ -104,7 +100,7 @@ agent.post('/evaluate', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Evaluation failed');
-    return aiErrorResponse(c, 'Evaluation failed', err);
+    return c.json(aiErrorBody('Evaluation failed', err), 500);
   }
 });
 
@@ -136,7 +132,7 @@ agent.get('/question/:taskId', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Question generation failed');
-    return aiErrorResponse(c, 'Question generation failed', err);
+    return c.json(aiErrorBody('Question generation failed', err), 500);
   }
 });
 
@@ -187,7 +183,7 @@ agent.post('/mock/start', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to start mock interview');
-    return aiErrorResponse(c, 'Failed to start mock interview', err);
+    return c.json(aiErrorBody('Failed to start mock interview', err), 500);
   }
 });
 
@@ -205,7 +201,7 @@ agent.post('/mock/respond', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to process mock response');
-    return aiErrorResponse(c, 'Failed to process response', err);
+    return c.json(aiErrorBody('Failed to process response', err), 500);
   }
 });
 
