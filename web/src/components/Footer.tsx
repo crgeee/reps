@@ -9,17 +9,11 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} reps v{__APP_VERSION__}
         </span>
         <div className="flex items-center gap-3">
-          <Link
-            to="/how-it-works"
-            className="hover:text-zinc-400 transition-colors"
-          >
+          <Link to="/how-it-works" className="hover:text-zinc-400 transition-colors">
             How It Works
           </Link>
           <span className="text-zinc-700">|</span>
-          <Link
-            to="/blog"
-            className="hover:text-zinc-400 transition-colors"
-          >
+          <Link to="/blog" className="hover:text-zinc-400 transition-colors">
             Blog
           </Link>
           <span className="text-zinc-700">|</span>

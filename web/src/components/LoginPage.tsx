@@ -189,10 +189,7 @@ export default function LoginPage() {
             >
               How it works &rarr;
             </a>
-            <a
-              href="/blog"
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
+            <a href="/blog" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
               Blog &rarr;
             </a>
           </div>
