@@ -47,8 +47,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export function calculatePriorityScore(
   input: PriorityInput,
   aiScore?: AiScoreInput | null,
+  nowOverride?: string,
 ): PriorityResult {
-  const now = today();
+  const now = nowOverride ?? today();
 
   if (!DATE_RE.test(input.nextReview) || !DATE_RE.test(input.createdAt)) {
     return {

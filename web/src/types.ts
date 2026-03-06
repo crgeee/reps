@@ -37,15 +37,17 @@ export interface Task {
   recurrenceDay?: number;
   recurrenceEnd?: string;
   recurrenceParentId?: string;
-  priorityScore?: {
-    score: number;
-    factors: {
-      overdueUrgency: number;
-      deadlinePressure: number;
-      difficulty: number;
-      staleness: number;
-      aiWeakness: number;
-    };
+  priorityScore?: PriorityScore;
+}
+
+export interface PriorityScore {
+  score: number;
+  factors: {
+    overdueUrgency: number;
+    deadlinePressure: number;
+    difficulty: number;
+    staleness: number;
+    aiWeakness: number;
   };
 }
 
