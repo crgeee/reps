@@ -25,6 +25,7 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'next-review', label: 'Next Review' },
   { value: 'deadline', label: 'Deadline' },
   { value: 'ease-factor', label: 'Ease Factor' },
+  { value: 'priority', label: 'Priority' },
 ];
 
 export default function FilterBar({

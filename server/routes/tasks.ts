@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import sql from '../db/client.js';
 import { calculateSM2 } from '../../src/spaced-repetition.js';
+import { calculatePriorityScore } from '../lib/priority.js';
 import {
   validateUuid,
   buildUpdates,
@@ -341,6 +342,33 @@ async function spawnNextRecurrence(completedRow: TaskRow, userId: string | null)
   `;
 }
 
+async function fetchAiScores(taskIds: string[]): Promise<Map<string, { avgScore: number }>> {
+  const map = new Map<string, { avgScore: number }>();
+  if (taskIds.length === 0) return map;
+
+  try {
+    const rows = await sql<{ task_id: string; avg_score: number }[]>`
+      SELECT task_id, AVG(
+        (
+          COALESCE((output::json->>'clarity')::numeric, 3) +
+          COALESCE((output::json->>'specificity')::numeric, 3) +
+          COALESCE((output::json->>'missionAlignment')::numeric, 3)
+        ) / 3.0
+      ) as avg_score
+      FROM agent_logs
+      WHERE task_id = ANY(${taskIds}) AND type = 'evaluation'
+      GROUP BY task_id
+    `;
+
+    for (const r of rows) {
+      map.set(r.task_id, { avgScore: Number(r.avg_score) });
+    }
+  } catch {
+    // Malformed JSON in agent_logs.output — return empty map so callers degrade gracefully
+  }
+  return map;
+}
+
 // --- routes ---
 
 // GET /tasks/due must be registered before /tasks/:id to avoid route collision
@@ -378,7 +406,23 @@ tasks.get('/due', async (c) => {
   const result = rows.map((r) =>
     rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? []),
   );
-  return c.json(result);
+
+  const aiScores = await fetchAiScores(taskIds);
+  const withPriority = result.map((t) => ({
+    ...t,
+    priorityScore: calculatePriorityScore(
+      {
+        nextReview: t.nextReview,
+        deadline: t.deadline ?? null,
+        easeFactor: t.easeFactor,
+        lastReviewed: t.lastReviewed ?? null,
+        createdAt: t.createdAt,
+      },
+      aiScores.get(t.id) ?? null,
+    ),
+  }));
+  withPriority.sort((a, b) => b.priorityScore.score - a.priorityScore.score);
+  return c.json(withPriority);
 });
 
 // GET /tasks
@@ -424,7 +468,23 @@ tasks.get('/', async (c) => {
   const result = filteredRows.map((r) =>
     rowToTask(r, notesByTask.get(r.id) ?? [], tagsByTask.get(r.id) ?? []),
   );
-  return c.json(result);
+
+  const filteredTaskIds = filteredRows.map((r) => r.id);
+  const aiScores = await fetchAiScores(filteredTaskIds);
+  const withPriority = result.map((t) => ({
+    ...t,
+    priorityScore: calculatePriorityScore(
+      {
+        nextReview: t.nextReview,
+        deadline: t.deadline ?? null,
+        easeFactor: t.easeFactor,
+        lastReviewed: t.lastReviewed ?? null,
+        createdAt: t.createdAt,
+      },
+      aiScores.get(t.id) ?? null,
+    ),
+  }));
+  return c.json(withPriority);
 });
 
 // POST /tasks

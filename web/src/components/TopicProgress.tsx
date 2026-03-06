@@ -7,6 +7,7 @@ import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import Heatmap from './Heatmap';
 import BarChart from './BarChart';
+import InfoTooltip from './InfoTooltip';
 
 interface TopicStat {
   topic: string;
@@ -152,7 +153,15 @@ export default function TopicProgress() {
               <span className="w-12 text-right font-mono">Done</span>
               <span className="w-12 text-right font-mono hidden sm:inline">Due</span>
               <span className="w-14 text-right font-mono hidden sm:inline">Avg EF</span>
-              <span className="w-14 text-right hidden md:inline">Conf</span>
+              <span className="w-14 text-right hidden md:inline">
+                <span className="inline-flex items-center gap-0.5">
+                  Conf
+                  <InfoTooltip
+                    content="Based on average Ease Factor: Strong (2.5+), Moderate (2.0-2.5), Weak (1.5-2.0), Low (<1.5). Reflects how confidently you recall items in this topic."
+                    learnMoreHref="/how-it-works"
+                  />
+                </span>
+              </span>
               <span className="w-20 text-right font-mono hidden md:inline">Reviewed</span>
             </div>
             {topicStats.map((stat) => {

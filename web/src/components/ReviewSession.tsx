@@ -22,6 +22,7 @@ import { logger } from '../logger';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
 import FocusTimer from './FocusTimer';
 import ScoreCard from './ScoreCard';
+import InfoTooltip from './InfoTooltip';
 
 export default function ReviewSession() {
   const { filteredDueTasks: dueTasks, fetchData } = useProtectedContext();
@@ -279,10 +280,19 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
         {/* Step: Evaluation results */}
         {step === 'evaluation' && evaluation && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <ScoreCard label="Clarity" score={evaluation.clarity} />
-              <ScoreCard label="Specificity" score={evaluation.specificity} />
-              <ScoreCard label="Mission Align" score={evaluation.missionAlignment} />
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Scores</p>
+                <InfoTooltip
+                  content="Scored by Claude on clarity (1-5), specificity (1-5), and mission alignment (1-5). Low scores boost this task's priority score, ensuring weak areas surface more often."
+                  learnMoreHref="/how-it-works"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <ScoreCard label="Clarity" score={evaluation.clarity} />
+                <ScoreCard label="Specificity" score={evaluation.specificity} />
+                <ScoreCard label="Mission Align" score={evaluation.missionAlignment} />
+              </div>
             </div>
 
             <div className="p-4 bg-zinc-800 rounded-lg space-y-3">
@@ -312,9 +322,15 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
         {/* Step: SM-2 Rating */}
         {step === 'rating' && (
           <div className="space-y-4">
-            <p className="text-sm text-zinc-400">
-              How well did you recall/perform on this task? Rate your response quality:
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm text-zinc-400">
+                How well did you recall/perform on this task? Rate your response quality:
+              </p>
+              <InfoTooltip
+                content="SuperMemo-2 quality rating. 0-2: forgot (resets interval to 1 day). 3: hard recall. 4: good. 5: perfect response. Your rating determines when this task surfaces again."
+                learnMoreHref="/how-it-works"
+              />
+            </div>
             <div className="grid grid-cols-1 gap-2">
               {([0, 1, 2, 3, 4, 5] as Quality[]).map((q) => (
                 <button

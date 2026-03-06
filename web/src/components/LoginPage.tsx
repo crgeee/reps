@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router';
-import { Brain, Sparkles, ListTodo, Plug } from 'lucide-react';
+import { Navigate, Link } from 'react-router';
+import { Brain, Sparkles, Target, Plug } from 'lucide-react';
 import { sendMagicLink } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import Footer from './Footer';
@@ -19,19 +19,22 @@ function RepsLogo({ className = 'w-10 h-10' }: { className?: string }) {
 
 const FEATURES = [
   {
-    icon: ListTodo,
-    title: 'Organize',
-    description: 'Collections, boards, priorities, tags, and custom workflows.',
+    icon: Target,
+    title: 'Smart Prioritization',
+    description:
+      'A weighted algorithm scores every task on urgency, difficulty, staleness, and AI feedback. You always know what to work on next.',
   },
   {
     icon: Brain,
-    title: 'Remember',
-    description: 'SM-2 spaced repetition schedules reviews at the right time.',
+    title: 'Spaced Repetition',
+    description:
+      "SM-2 schedules reviews at the moment you're about to forget. Intervals grow from 1 day to months as you master topics.",
   },
   {
     icon: Sparkles,
-    title: 'Practice',
-    description: 'AI-generated interview questions with instant evaluation.',
+    title: 'AI Interview Coach',
+    description:
+      'Claude generates Anthropic-style questions, evaluates your answers on clarity, specificity, and mission alignment.',
   },
   {
     icon: Plug,
@@ -166,6 +169,33 @@ export default function LoginPage() {
               <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{f.description}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* How it works teaser */}
+      <section className="px-6 pb-12 relative z-10">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-4 text-sm text-zinc-400">
+            <span className="text-amber-500 font-medium">Schedule</span>
+            <span className="text-zinc-600">&rarr;</span>
+            <span className="text-amber-500 font-medium">Review</span>
+            <span className="text-zinc-600">&rarr;</span>
+            <span className="text-amber-500 font-medium">Improve</span>
+          </div>
+          <div className="mt-3 flex items-center justify-center gap-4">
+            <Link
+              to="/how-it-works"
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              How it works &rarr;
+            </Link>
+            <Link
+              to="/blog"
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Blog &rarr;
+            </Link>
+          </div>
         </div>
       </section>
 

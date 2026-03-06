@@ -6,7 +6,8 @@ import { getStreaks } from '../api';
 import { logger } from '../logger';
 import { useGroupedTasksByTopic } from '../hooks/useTaskTopics';
 import { useProtectedContext } from '../layouts/ProtectedLayout';
-import { Flame, Info, Brain } from 'lucide-react';
+import { Flame, Brain } from 'lucide-react';
+import InfoTooltip from './InfoTooltip';
 
 function isOverdue(task: Task): boolean {
   return new Date(task.nextReview) < new Date(new Date().toISOString().split('T')[0]!);
@@ -150,12 +151,10 @@ export default function Dashboard() {
             <h2 className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium">
               Topics
             </h2>
-            <span className="group relative">
-              <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400 cursor-help transition-colors" />
-              <span className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] rounded-md shadow-lg whitespace-nowrap z-50">
-                Tasks grouped by topic. Click a row to filter your task list.
-              </span>
-            </span>
+            <InfoTooltip
+              content="Ease Factor (EF) from the SM-2 algorithm. Starts at 2.5 — drops when you struggle, rises when you nail it. Higher = more confident recall."
+              learnMoreHref="/how-it-works"
+            />
           </div>
           <button
             onClick={() => navigate('/progress')}
@@ -236,6 +235,20 @@ export default function Dashboard() {
                   <div
                     className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(task.topic)}`}
                   />
+                  {task.priorityScore && (
+                    <span
+                      className={`font-mono tabular-nums text-[10px] px-1.5 py-0.5 rounded ${
+                        task.priorityScore.score >= 80
+                          ? 'bg-red-500/20 text-red-400'
+                          : task.priorityScore.score >= 50
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-green-500/20 text-green-400'
+                      }`}
+                      title={`Priority: ${task.priorityScore.score}`}
+                    >
+                      P{task.priorityScore.score}
+                    </span>
+                  )}
                   <span className="text-zinc-300 flex-1 truncate">{task.title}</span>
                   <span className="text-zinc-500 font-mono tabular-nums hidden sm:inline">
                     EF {task.easeFactor.toFixed(1)}
