@@ -22,61 +22,61 @@ function baseTask(overrides: Partial<PriorityInput> = {}): PriorityInput {
 }
 
 describe('calculatePriorityScore', () => {
-  // ── overdue_urgency (weight 0.30) ──────────────────────────────
+  // ── overdueUrgency (weight 0.30) ──────────────────────────────
 
-  describe('overdue_urgency factor', () => {
+  describe('overdueUrgency factor', () => {
     it('returns 0 when task is not overdue', () => {
       const result = calculatePriorityScore(baseTask({ nextReview: daysFromNow(3) }));
-      expect(result.factors.overdue_urgency).toBe(0);
+      expect(result.factors.overdueUrgency).toBe(0);
     });
 
     it('returns 0 when nextReview is today', () => {
       const result = calculatePriorityScore(baseTask({ nextReview: daysFromNow(0) }));
-      expect(result.factors.overdue_urgency).toBe(0);
+      expect(result.factors.overdueUrgency).toBe(0);
     });
 
     it('scales at 15 per day overdue', () => {
       const result = calculatePriorityScore(baseTask({ nextReview: daysFromNow(-2) }));
-      expect(result.factors.overdue_urgency).toBe(30);
+      expect(result.factors.overdueUrgency).toBe(30);
     });
 
     it('caps at 100 when highly overdue', () => {
       const result = calculatePriorityScore(baseTask({ nextReview: daysFromNow(-10) }));
-      expect(result.factors.overdue_urgency).toBe(100);
+      expect(result.factors.overdueUrgency).toBe(100);
     });
   });
 
-  // ── deadline_pressure (weight 0.25) ────────────────────────────
+  // ── deadlinePressure (weight 0.25) ────────────────────────────
 
-  describe('deadline_pressure factor', () => {
+  describe('deadlinePressure factor', () => {
     it('returns 0 when no deadline', () => {
       const result = calculatePriorityScore(baseTask({ deadline: null }));
-      expect(result.factors.deadline_pressure).toBe(0);
+      expect(result.factors.deadlinePressure).toBe(0);
     });
 
     it('returns 100 when deadline is today', () => {
       const result = calculatePriorityScore(baseTask({ deadline: daysFromNow(0) }));
-      expect(result.factors.deadline_pressure).toBe(100);
+      expect(result.factors.deadlinePressure).toBe(100);
     });
 
     it('returns 50 when deadline is 5 days away', () => {
       const result = calculatePriorityScore(baseTask({ deadline: daysFromNow(5) }));
-      expect(result.factors.deadline_pressure).toBe(50);
+      expect(result.factors.deadlinePressure).toBe(50);
     });
 
     it('returns 0 when deadline is 10+ days away', () => {
       const result = calculatePriorityScore(baseTask({ deadline: daysFromNow(10) }));
-      expect(result.factors.deadline_pressure).toBe(0);
+      expect(result.factors.deadlinePressure).toBe(0);
     });
 
     it('clamps to 0 when deadline is far in the future', () => {
       const result = calculatePriorityScore(baseTask({ deadline: daysFromNow(30) }));
-      expect(result.factors.deadline_pressure).toBe(0);
+      expect(result.factors.deadlinePressure).toBe(0);
     });
 
     it('returns 100 when deadline has passed', () => {
       const result = calculatePriorityScore(baseTask({ deadline: daysFromNow(-2) }));
-      expect(result.factors.deadline_pressure).toBe(100);
+      expect(result.factors.deadlinePressure).toBe(100);
     });
   });
 
@@ -131,27 +131,27 @@ describe('calculatePriorityScore', () => {
     });
   });
 
-  // ── ai_weakness (weight 0.10) ──────────────────────────────────
+  // ── aiWeakness (weight 0.10) ──────────────────────────────────
 
-  describe('ai_weakness factor', () => {
+  describe('aiWeakness factor', () => {
     it('returns 0 when no AI data', () => {
       const result = calculatePriorityScore(baseTask(), null);
-      expect(result.factors.ai_weakness).toBe(0);
+      expect(result.factors.aiWeakness).toBe(0);
     });
 
     it('returns 0 for perfect AI score (5.0)', () => {
       const result = calculatePriorityScore(baseTask(), { avgScore: 5.0 });
-      expect(result.factors.ai_weakness).toBe(0);
+      expect(result.factors.aiWeakness).toBe(0);
     });
 
     it('returns 40 for AI score of 3.0', () => {
       const result = calculatePriorityScore(baseTask(), { avgScore: 3.0 });
-      expect(result.factors.ai_weakness).toBe(40);
+      expect(result.factors.aiWeakness).toBe(40);
     });
 
     it('returns 100 for AI score of 0', () => {
       const result = calculatePriorityScore(baseTask(), { avgScore: 0 });
-      expect(result.factors.ai_weakness).toBe(100);
+      expect(result.factors.aiWeakness).toBe(100);
     });
   });
 
@@ -173,13 +173,13 @@ describe('calculatePriorityScore', () => {
           easeFactor: 1.3, // 100 difficulty
           lastReviewed: daysFromNow(-60), // 100 staleness
         }),
-        { avgScore: 0 }, // 100 ai_weakness
+        { avgScore: 0 }, // 100 aiWeakness
       );
       expect(result.score).toBe(100);
     });
 
     it('correctly weights factors', () => {
-      // Construct a scenario where only overdue_urgency is active
+      // Construct a scenario where only overdueUrgency is active
       const result = calculatePriorityScore(
         baseTask({
           nextReview: daysFromNow(-2), // 30 overdue
@@ -215,21 +215,29 @@ describe('calculatePriorityScore', () => {
   describe('edge cases', () => {
     it('handles ai score omitted (undefined)', () => {
       const result = calculatePriorityScore(baseTask());
-      expect(result.factors.ai_weakness).toBe(0);
+      expect(result.factors.aiWeakness).toBe(0);
     });
 
     it('returns all factor keys in result', () => {
       const result = calculatePriorityScore(baseTask());
-      expect(result.factors).toHaveProperty('overdue_urgency');
-      expect(result.factors).toHaveProperty('deadline_pressure');
+      expect(result.factors).toHaveProperty('overdueUrgency');
+      expect(result.factors).toHaveProperty('deadlinePressure');
       expect(result.factors).toHaveProperty('difficulty');
       expect(result.factors).toHaveProperty('staleness');
-      expect(result.factors).toHaveProperty('ai_weakness');
+      expect(result.factors).toHaveProperty('aiWeakness');
     });
 
     it('score is a rounded integer', () => {
       const result = calculatePriorityScore(baseTask());
       expect(Number.isInteger(result.score)).toBe(true);
+    });
+
+    it('returns score 0 for invalid date input', () => {
+      const result = calculatePriorityScore(
+        baseTask({ nextReview: 'not-a-date', createdAt: '2025-01-01' }),
+      );
+      expect(result.score).toBe(0);
+      expect(result.factors.overdueUrgency).toBe(0);
     });
   });
 });

@@ -346,21 +346,25 @@ async function fetchAiScores(taskIds: string[]): Promise<Map<string, { avgScore:
   const map = new Map<string, { avgScore: number }>();
   if (taskIds.length === 0) return map;
 
-  const rows = await sql<{ task_id: string; avg_score: number }[]>`
-    SELECT task_id, AVG(
-      (
-        COALESCE((output::json->>'clarity')::numeric, 3) +
-        COALESCE((output::json->>'specificity')::numeric, 3) +
-        COALESCE((output::json->>'missionAlignment')::numeric, 3)
-      ) / 3.0
-    ) as avg_score
-    FROM agent_logs
-    WHERE task_id = ANY(${taskIds}) AND type = 'evaluation'
-    GROUP BY task_id
-  `;
+  try {
+    const rows = await sql<{ task_id: string; avg_score: number }[]>`
+      SELECT task_id, AVG(
+        (
+          COALESCE((output::json->>'clarity')::numeric, 3) +
+          COALESCE((output::json->>'specificity')::numeric, 3) +
+          COALESCE((output::json->>'missionAlignment')::numeric, 3)
+        ) / 3.0
+      ) as avg_score
+      FROM agent_logs
+      WHERE task_id = ANY(${taskIds}) AND type = 'evaluation'
+      GROUP BY task_id
+    `;
 
-  for (const r of rows) {
-    map.set(r.task_id, { avgScore: Number(r.avg_score) });
+    for (const r of rows) {
+      map.set(r.task_id, { avgScore: Number(r.avg_score) });
+    }
+  } catch {
+    // Malformed JSON in agent_logs.output — return empty map so callers degrade gracefully
   }
   return map;
 }

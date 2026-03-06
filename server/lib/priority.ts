@@ -11,30 +11,30 @@ export interface AiScoreInput {
 }
 
 export interface PriorityFactors {
-  overdue_urgency: number;
-  deadline_pressure: number;
+  overdueUrgency: number;
+  deadlinePressure: number;
   difficulty: number;
   staleness: number;
-  ai_weakness: number;
+  aiWeakness: number;
 }
 
 export interface PriorityResult {
-  score: number;
-  factors: PriorityFactors;
+  readonly score: number;
+  readonly factors: Readonly<PriorityFactors>;
 }
 
-const WEIGHTS = {
-  overdue_urgency: 0.3,
-  deadline_pressure: 0.25,
+const WEIGHTS: Record<keyof PriorityFactors, number> = {
+  overdueUrgency: 0.3,
+  deadlinePressure: 0.25,
   difficulty: 0.2,
   staleness: 0.15,
-  ai_weakness: 0.1,
-} as const;
+  aiWeakness: 0.1,
+};
 
 /** Days between two date strings (positive = dateA is in the past). */
 function daysBetween(dateA: string, dateB: string): number {
-  const a = new Date(dateA + 'T00:00:00');
-  const b = new Date(dateB + 'T00:00:00');
+  const a = new Date(dateA + 'T00:00:00Z');
+  const b = new Date(dateB + 'T00:00:00Z');
   return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
 }
 
@@ -42,21 +42,36 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export function calculatePriorityScore(
   input: PriorityInput,
   aiScore?: AiScoreInput | null,
 ): PriorityResult {
   const now = today();
 
-  // overdue_urgency: min(100, days_overdue * 15), 0 if not overdue
-  const daysOverdue = daysBetween(input.nextReview, now);
-  const overdue_urgency = daysOverdue > 0 ? Math.min(100, daysOverdue * 15) : 0;
+  if (!DATE_RE.test(input.nextReview) || !DATE_RE.test(input.createdAt)) {
+    return {
+      score: 0,
+      factors: {
+        overdueUrgency: 0,
+        deadlinePressure: 0,
+        difficulty: 0,
+        staleness: 0,
+        aiWeakness: 0,
+      },
+    };
+  }
 
-  // deadline_pressure: max(0, 100 - days_until_deadline * 10), 0 if no deadline
-  let deadline_pressure = 0;
+  // overdueUrgency: min(100, days_overdue * 15), 0 if not overdue
+  const daysOverdue = daysBetween(input.nextReview, now);
+  const overdueUrgency = daysOverdue > 0 ? Math.min(100, daysOverdue * 15) : 0;
+
+  // deadlinePressure: max(0, 100 - days_until_deadline * 10), 0 if no deadline
+  let deadlinePressure = 0;
   if (input.deadline !== null) {
     const daysUntil = daysBetween(now, input.deadline);
-    deadline_pressure = Math.min(100, Math.max(0, 100 - daysUntil * 10));
+    deadlinePressure = Math.min(100, Math.max(0, 100 - daysUntil * 10));
   }
 
   // difficulty: min(100, (3.0 - easeFactor) / 1.7 * 100), EF 1.3 = 100, EF 3.0+ = 0
@@ -68,26 +83,26 @@ export function calculatePriorityScore(
   const daysSinceActivity = daysBetween(lastActivity, now);
   const staleness = Math.min(100, Math.max(0, daysSinceActivity * 3.3));
 
-  // ai_weakness: 100 - avgScore * 20, 0 if no AI data
-  let ai_weakness = 0;
+  // aiWeakness: 100 - avgScore * 20, 0 if no AI data
+  let aiWeakness = 0;
   if (aiScore) {
-    ai_weakness = Math.max(0, 100 - aiScore.avgScore * 20);
+    aiWeakness = Math.max(0, 100 - aiScore.avgScore * 20);
   }
 
   const factors: PriorityFactors = {
-    overdue_urgency,
-    deadline_pressure,
+    overdueUrgency,
+    deadlinePressure,
     difficulty,
     staleness,
-    ai_weakness,
+    aiWeakness,
   };
 
   const rawScore =
-    factors.overdue_urgency * WEIGHTS.overdue_urgency +
-    factors.deadline_pressure * WEIGHTS.deadline_pressure +
+    factors.overdueUrgency * WEIGHTS.overdueUrgency +
+    factors.deadlinePressure * WEIGHTS.deadlinePressure +
     factors.difficulty * WEIGHTS.difficulty +
     factors.staleness * WEIGHTS.staleness +
-    factors.ai_weakness * WEIGHTS.ai_weakness;
+    factors.aiWeakness * WEIGHTS.aiWeakness;
 
   const score = Math.round(Math.min(100, Math.max(0, rawScore)));
 

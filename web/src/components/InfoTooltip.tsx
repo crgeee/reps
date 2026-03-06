@@ -24,7 +24,10 @@ export default function InfoTooltip({ content, learnMoreHref }: InfoTooltipProps
   return (
     <span className="relative inline-flex" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
         className="text-zinc-600 hover:text-zinc-400 transition-colors"
         aria-label="More info"
         type="button"

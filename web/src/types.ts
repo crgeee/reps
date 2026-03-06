@@ -40,11 +40,11 @@ export interface Task {
   priorityScore?: {
     score: number;
     factors: {
-      overdue_urgency: number;
-      deadline_pressure: number;
+      overdueUrgency: number;
+      deadlinePressure: number;
       difficulty: number;
       staleness: number;
-      ai_weakness: number;
+      aiWeakness: number;
     };
   };
 }

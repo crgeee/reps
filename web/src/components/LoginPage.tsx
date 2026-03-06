@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, Link } from 'react-router';
 import { Brain, Sparkles, Target, Plug } from 'lucide-react';
 import { sendMagicLink } from '../api';
 import { useAuth } from '../hooks/useAuth';
@@ -183,15 +183,18 @@ export default function LoginPage() {
             <span className="text-amber-500 font-medium">Improve</span>
           </div>
           <div className="mt-3 flex items-center justify-center gap-4">
-            <a
-              href="/how-it-works"
+            <Link
+              to="/how-it-works"
               className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               How it works &rarr;
-            </a>
-            <a href="/blog" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            </Link>
+            <Link
+              to="/blog"
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
               Blog &rarr;
-            </a>
+            </Link>
           </div>
         </div>
       </section>
