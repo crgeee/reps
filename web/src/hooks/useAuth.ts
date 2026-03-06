@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import type { User } from '../types';
 import { getMe, logout as apiLogout, updateProfile } from '../api';
 import { detectBrowserTimezone } from '../utils/timezone';
@@ -9,7 +9,18 @@ interface AuthState {
   error: string | null;
 }
 
-export function useAuth() {
+interface AuthContextValue extends AuthState {
+  isAuthenticated: boolean;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+  setUser: (user: User) => void;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export { AuthContext };
+
+export function useAuthProvider(): AuthContextValue {
   const [state, setState] = useState<AuthState>({
     user: null,
     loading: true,
@@ -67,4 +78,12 @@ export function useAuth() {
     refresh: checkAuth,
     setUser,
   };
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return ctx;
 }
