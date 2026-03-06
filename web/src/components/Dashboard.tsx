@@ -236,6 +236,20 @@ export default function Dashboard() {
                   <div
                     className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getTopicColor(task.topic)}`}
                   />
+                  {task.priorityScore && (
+                    <span
+                      className={`font-mono tabular-nums text-[10px] px-1.5 py-0.5 rounded ${
+                        task.priorityScore.score >= 80
+                          ? 'bg-red-500/20 text-red-400'
+                          : task.priorityScore.score >= 50
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-green-500/20 text-green-400'
+                      }`}
+                      title={`Priority: ${task.priorityScore.score}`}
+                    >
+                      P{task.priorityScore.score}
+                    </span>
+                  )}
                   <span className="text-zinc-300 flex-1 truncate">{task.title}</span>
                   <span className="text-zinc-500 font-mono tabular-nums hidden sm:inline">
                     EF {task.easeFactor.toFixed(1)}

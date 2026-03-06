@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from 'react';
 import type { Task } from '../types';
 
 export type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-deadline';
-export type SortField = 'created' | 'next-review' | 'deadline' | 'ease-factor';
+export type SortField = 'created' | 'next-review' | 'deadline' | 'ease-factor' | 'priority';
 export type SortDir = 'asc' | 'desc';
 export type GroupBy = 'none' | 'status' | 'topic';
 
@@ -82,6 +82,9 @@ function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
         break;
       case 'ease-factor':
         cmp = a.easeFactor - b.easeFactor;
+        break;
+      case 'priority':
+        cmp = (a.priorityScore?.score ?? 0) - (b.priorityScore?.score ?? 0);
         break;
     }
     return dir === 'asc' ? cmp : -cmp;
