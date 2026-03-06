@@ -37,6 +37,16 @@ export interface Task {
   recurrenceDay?: number;
   recurrenceEnd?: string;
   recurrenceParentId?: string;
+  priorityScore?: {
+    score: number;
+    factors: {
+      overdue_urgency: number;
+      deadline_pressure: number;
+      difficulty: number;
+      staleness: number;
+      ai_weakness: number;
+    };
+  };
 }
 
 export interface Collection {
