@@ -23,3 +23,25 @@ jobs:
         run: |
           sleep 5
           curl -sf "$APP_URL/health" || exit 1
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$NOTIFY_EMAIL" ]; then
+            echo "Resend not configured — skipping failure notification"
+            exit 0
+          fi
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"reps <noreply@reps.sh>\",
+              \"to\": \"$NOTIFY_EMAIL\",
+              \"subject\": \"reps deploy failed\",
+              \"html\": \"<p>Deploy failed for commit <code>${COMMIT_SHA:0:7}</code>.</p><p><a href='$RUN_URL'>View logs</a></p>\"
+            }"
