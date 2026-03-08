@@ -106,8 +106,12 @@ export default function TaskEditModal({
 
   const handleDeleteAlert = async (alertId: string) => {
     if (!task) return;
-    await deleteTaskAlert(task.id, alertId);
-    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+    try {
+      await deleteTaskAlert(task.id, alertId);
+      setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+    } catch {
+      // Alert stays in list if delete fails
+    }
   };
 
   // Derive statuses from collection

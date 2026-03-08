@@ -42,7 +42,8 @@ async function checkTaskAlerts(): Promise<void> {
     SELECT ta.id, ta.user_id, ta.task_id, t.title AS task_title
     FROM task_alerts ta
     JOIN tasks t ON t.id = ta.task_id
-    WHERE ta.sent = false AND ta.alert_at <= NOW()
+    JOIN users u ON u.id = ta.user_id
+    WHERE ta.sent = false AND ta.alert_at <= NOW() AND u.notify_task_alerts = true
     LIMIT 100
   `;
 

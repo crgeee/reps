@@ -825,6 +825,16 @@ interface AlertRow {
   created_at: string;
 }
 
+function rowToAlert(row: AlertRow) {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    alertAt: row.alert_at,
+    sent: row.sent,
+    createdAt: row.created_at,
+  };
+}
+
 // POST /tasks/:id/alerts
 tasks.post('/:id/alerts', async (c) => {
   const userId = c.get('userId') as string;
@@ -871,7 +881,7 @@ tasks.post('/:id/alerts', async (c) => {
     RETURNING *
   `;
 
-  return c.json(row, 201);
+  return c.json(rowToAlert(row), 201);
 });
 
 // GET /tasks/:id/alerts
@@ -886,7 +896,7 @@ tasks.get('/:id/alerts', async (c) => {
     ORDER BY alert_at ASC
   `;
 
-  return c.json(rows);
+  return c.json(rows.map(rowToAlert));
 });
 
 // DELETE /tasks/:id/alerts/:alertId
