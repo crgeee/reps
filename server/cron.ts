@@ -4,6 +4,7 @@ import { dailyBriefing, weeklyInsight } from './agent/coach.js';
 import { sendDailyDigest } from './agent/email.js';
 import { cleanExpiredSessions } from './auth/sessions.js';
 import { cleanExpiredDeviceCodes } from './auth/device-flow.js';
+import { cleanExpiredAiKeys } from './auth/ai-keys.js';
 import { logger } from './logger.js';
 import type { AiCredentials } from './agent/provider.js';
 
@@ -23,15 +24,17 @@ async function getNotifiableUsers(
   `;
 }
 
+function getServerCredentials(): AiCredentials | undefined {
+  const key = process.env.ANTHROPIC_API_KEY;
+  return key ? { provider: 'anthropic', apiKey: key } : undefined;
+}
+
 export function startCronJobs(): void {
   // Daily briefing + email digest at 8:00 AM every day
   cron.schedule('0 8 * * *', async () => {
     logger.info('Running daily briefings');
     try {
-      const serverKey = process.env.ANTHROPIC_API_KEY;
-      const credentials: AiCredentials | undefined = serverKey
-        ? { provider: 'anthropic', apiKey: serverKey }
-        : undefined;
+      const credentials = getServerCredentials();
       const users = await getNotifiableUsers('notify_daily');
       for (const user of users) {
         try {
@@ -51,10 +54,7 @@ export function startCronJobs(): void {
   cron.schedule('0 20 * * 0', async () => {
     logger.info('Running weekly insights');
     try {
-      const serverKey = process.env.ANTHROPIC_API_KEY;
-      const credentials: AiCredentials | undefined = serverKey
-        ? { provider: 'anthropic', apiKey: serverKey }
-        : undefined;
+      const credentials = getServerCredentials();
       const users = await getNotifiableUsers('notify_weekly');
       for (const user of users) {
         try {
@@ -74,9 +74,13 @@ export function startCronJobs(): void {
     try {
       const sessionCount = await cleanExpiredSessions();
       const deviceCount = await cleanExpiredDeviceCodes();
-      logger.info({ sessionCount, deviceCount }, 'Cleaned expired sessions and device codes');
+      const aiKeyCount = await cleanExpiredAiKeys();
+      logger.info(
+        { sessionCount, deviceCount, aiKeyCount },
+        'Cleaned expired sessions, device codes, and AI keys',
+      );
     } catch (err) {
-      logger.error({ err }, 'Session cleanup failed');
+      logger.error({ err }, 'Cleanup failed');
     }
   });
 

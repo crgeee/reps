@@ -1,4 +1,5 @@
-import { getAiConfig } from './ai-config';
+import { request, BASE_URL } from './api-client';
+import type { SavedAiKeyInfo } from './ai-config';
 import type {
   Task,
   CreateTaskInput,
@@ -28,47 +29,6 @@ import type {
   LogErrorSummary,
   NginxErrorEntry,
 } from './types';
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
-
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const aiHeaders: Record<string, string> = {};
-  if (path.startsWith('/agent/')) {
-    const aiConfig = getAiConfig();
-    if (aiConfig) {
-      aiHeaders['X-AI-Key'] = aiConfig.apiKey;
-      aiHeaders['X-AI-Provider'] = aiConfig.provider;
-    }
-  }
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...aiHeaders,
-      ...options.headers,
-    },
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`API error ${res.status}: ${body}`);
-  }
-
-  if (res.status === 204) {
-    return undefined as T;
-  }
-
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    throw new Error(
-      `Expected JSON response but got ${contentType || 'unknown content type'} (${res.status})`,
-    );
-  }
-
-  return res.json() as Promise<T>;
-}
 
 // Auth
 
@@ -617,4 +577,30 @@ export function getNginxErrors(
   const query = new URLSearchParams({ hours: String(hours) });
   if (search) query.set('search', search);
   return request<{ entries: NginxErrorEntry[] }>(`/logs/nginx-errors?${query}`);
+}
+
+// Server AI Key Storage
+
+export async function getServerAiKey(): Promise<SavedAiKeyInfo> {
+  return request<SavedAiKeyInfo>('/users/me/ai-key');
+}
+
+export async function saveServerAiKey(input: {
+  provider: string;
+  apiKey: string;
+  model?: string | null;
+  expiryDays: number;
+}): Promise<SavedAiKeyInfo> {
+  return request<SavedAiKeyInfo>('/users/me/ai-key', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteServerAiKey(): Promise<void> {
+  await request<unknown>('/users/me/ai-key', { method: 'DELETE' });
+}
+
+export async function getAiKeyStorageStatus(): Promise<{ encryptionAvailable: boolean }> {
+  return request<{ encryptionAvailable: boolean }>('/users/me/ai-key/status');
 }

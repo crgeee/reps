@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { setAiConfig, clearAiConfig, type AiProvider } from '../ai-config';
 import { testAiKey } from '../api';
+import ProviderPicker from './ProviderPicker';
 
 interface Props {
   onClose: () => void;
@@ -15,7 +16,7 @@ export default function AiKeyModal({ onClose, onConfigured }: Props) {
 
   async function handleSubmit() {
     if (!apiKey.trim()) return;
-    setAiConfig({ provider, apiKey: apiKey.trim() });
+    setAiConfig({ provider, apiKey: apiKey.trim(), storageMode: 'browser' });
     setStatus('testing');
     setError('');
     try {
@@ -34,28 +35,11 @@ export default function AiKeyModal({ onClose, onConfigured }: Props) {
         <div>
           <h2 className="text-lg font-semibold text-zinc-100">Connect AI Provider</h2>
           <p className="text-sm text-zinc-400 mt-1">
-            AI features require your own API key. It's stored in your browser only.
+            AI features require your own API key. It&apos;s stored in your browser only.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          {(['anthropic', 'openai'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setProvider(p)}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                provider === p
-                  ? 'border-zinc-500 bg-zinc-800'
-                  : 'border-zinc-700 hover:border-zinc-600'
-              }`}
-            >
-              <p className="text-sm font-medium text-zinc-200">
-                {p === 'anthropic' ? 'Anthropic' : 'OpenAI'}
-              </p>
-              <p className="text-xs text-zinc-500">{p === 'anthropic' ? 'Claude' : 'GPT-4o'}</p>
-            </button>
-          ))}
-        </div>
+        <ProviderPicker value={provider} onChange={setProvider} />
 
         <input
           type="password"

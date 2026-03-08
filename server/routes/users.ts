@@ -5,6 +5,8 @@ import { getUserById, updateUserProfile, adminUpdateUser } from '../auth/users.j
 import { getUserSessions, deleteSession } from '../auth/sessions.js';
 import { validateUuid } from '../validation.js';
 import { createMcpKey, listMcpKeys, revokeMcpKey } from '../mcp/keys.js';
+import { saveAiKey, getAiKeyInfo, deleteAiKey } from '../auth/ai-keys.js';
+import { isEncryptionAvailable } from '../auth/encryption.js';
 import type { AppEnv } from '../types.js';
 
 const users = new Hono<AppEnv>();
@@ -146,6 +148,63 @@ users.delete('/me/topics/:id', async (c) => {
   `;
   if (!row) return c.json({ error: 'Topic not found' }, 404);
   return c.json({ deleted: true, id });
+});
+
+// --- AI Key Storage ---
+
+const saveAiKeySchema = z.object({
+  provider: z.enum(['anthropic', 'openai']),
+  apiKey: z.string().min(1).max(256),
+  model: z.string().nullish(),
+  expiryDays: z.union([z.literal(30), z.literal(90), z.literal(365)]),
+});
+
+// GET /users/me/ai-key
+users.get('/me/ai-key', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const info = await getAiKeyInfo(userId);
+  if (!info) return c.json({ error: 'No saved AI key' }, 404);
+  return c.json(info);
+});
+
+// POST /users/me/ai-key
+users.post('/me/ai-key', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  if (!isEncryptionAvailable()) {
+    return c.json({ error: 'Server-side key storage is not configured' }, 503);
+  }
+
+  const raw = await c.req.json();
+  const parsed = saveAiKeySchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  const { provider, apiKey, model, expiryDays } = parsed.data;
+  const info = await saveAiKey(userId, provider, apiKey, model ?? null, expiryDays);
+  return c.json(info, 201);
+});
+
+// DELETE /users/me/ai-key
+users.delete('/me/ai-key', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  const deleted = await deleteAiKey(userId);
+  if (!deleted) return c.json({ error: 'No saved AI key' }, 404);
+  return c.json({ deleted: true });
+});
+
+// GET /users/me/ai-key/status — check if encryption is available
+users.get('/me/ai-key/status', async (c) => {
+  const userId = c.get('userId') as string;
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+
+  return c.json({ encryptionAvailable: isEncryptionAvailable() });
 });
 
 // --- Admin routes ---
