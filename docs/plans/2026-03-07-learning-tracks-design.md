@@ -109,25 +109,24 @@ CREATE INDEX idx_submissions_user ON submissions(user_id);
 
 Pre-built module progression (exercises AI-generated within each):
 
-| Order | Module        | Concepts                                         | Exercise Types      |
-| ----- | ------------- | ------------------------------------------------ | ------------------- |
-| 1     | Hello Flask   | App creation, running server, basic routes       | code, knowledge     |
-| 2     | Routing       | URL parameters, methods, URL building            | code, knowledge     |
-| 3     | Templates     | Jinja2, template inheritance, filters            | code, mini-app      |
-| 4     | Forms & Input | Request data, form handling, validation          | code, knowledge     |
-| 5     | Database      | SQLAlchemy basics, models, CRUD                  | code, mini-app      |
-| 6     | Auth          | Sessions, login/logout, decorators               | code, mini-app      |
-| 7     | REST APIs     | JSON responses, request parsing, error handling  | code, knowledge     |
-| 8     | Blueprints    | App structure, blueprint registration            | code, mini-app      |
-| 9     | Testing       | pytest, test client, fixtures                    | code                |
-| 10    | Deployment    | Gunicorn, config management, production patterns | knowledge, mini-app |
+| Order | Module | Concepts | Exercise Types |
+|-------|--------|----------|----------------|
+| 1 | Hello Flask | App creation, running server, basic routes | code, knowledge |
+| 2 | Routing | URL parameters, methods, URL building | code, knowledge |
+| 3 | Templates | Jinja2, template inheritance, filters | code, mini-app |
+| 4 | Forms & Input | Request data, form handling, validation | code, knowledge |
+| 5 | Database | SQLAlchemy basics, models, CRUD | code, mini-app |
+| 6 | Auth | Sessions, login/logout, decorators | code, mini-app |
+| 7 | REST APIs | JSON responses, request parsing, error handling | code, knowledge |
+| 8 | Blueprints | App structure, blueprint registration | code, mini-app |
+| 9 | Testing | pytest, test client, fixtures | code |
+| 10 | Deployment | Gunicorn, config management, production patterns | knowledge, mini-app |
 
 Each module has ~5-8 exercises. Modules unlock sequentially (prerequisites enforced).
 
 ### Adding New Tracks
 
 To add a new track (e.g., Kubernetes, GraphQL):
-
 1. Insert track + modules into DB (migration or seed script)
 2. Create a Docker base image for the technology
 3. No code changes needed — exercise generation is AI-driven based on module concepts
@@ -139,7 +138,6 @@ To add a new track (e.g., Kubernetes, GraphQL):
 ### Docker Setup
 
 **Base image** (`reps-runner-python`):
-
 ```dockerfile
 FROM python:3.12-slim@sha256:<pinned-digest>
 RUN pip install --no-cache-dir flask==3.1 sqlalchemy pytest
@@ -210,19 +208,19 @@ Client submits code
 
 ### Code Execution Sandbox
 
-| Protection              | Implementation                                                 |
-| ----------------------- | -------------------------------------------------------------- |
-| Network isolation       | `--network=none`                                               |
-| Memory limit            | `--memory=128m`                                                |
-| CPU limit               | `--cpus=0.5`                                                   |
-| Read-only filesystem    | `--read-only` + small tmpfs                                    |
-| No privilege escalation | `--no-new-privileges`, `--cap-drop=ALL`                        |
-| Process limit           | `--pids-limit=50`                                              |
-| File size limit         | `--ulimit fsize=10MB`                                          |
-| Time limit              | `timeout 30` inside container + `docker kill` at 35s from host |
-| Seccomp                 | Default Docker seccomp profile                                 |
-| Non-root                | `--user 1000:1000`                                             |
-| Code mounted read-only  | `-v ...:/app/code.py:ro`                                       |
+| Protection | Implementation |
+|-----------|---------------|
+| Network isolation | `--network=none` |
+| Memory limit | `--memory=128m` |
+| CPU limit | `--cpus=0.5` |
+| Read-only filesystem | `--read-only` + small tmpfs |
+| No privilege escalation | `--no-new-privileges`, `--cap-drop=ALL` |
+| Process limit | `--pids-limit=50` |
+| File size limit | `--ulimit fsize=10MB` |
+| Time limit | `timeout 30` inside container + `docker kill` at 35s from host |
+| Seccomp | Default Docker seccomp profile |
+| Non-root | `--user 1000:1000` |
+| Code mounted read-only | `-v ...:/app/code.py:ro` |
 
 ### API Security
 
@@ -246,18 +244,17 @@ Client submits code
 
 ### Current State
 
-| Resource | Value                       |
-| -------- | --------------------------- |
-| CPU      | 3 vCPUs (AMD EPYC)          |
-| RAM      | 3.7GB total, ~3GB available |
-| Disk     | 75GB, 4% used               |
-| Swap     | None                        |
-| Docker   | Not installed               |
+| Resource | Value |
+|----------|-------|
+| CPU | 3 vCPUs (AMD EPYC) |
+| RAM | 3.7GB total, ~3GB available |
+| Disk | 75GB, 4% used |
+| Swap | None |
+| Docker | Not installed |
 
 ### Pre-requisites (before deploying this feature)
 
 1. **Add swap (safety net against OOM):**
-
    ```bash
    fallocate -l 2G /swapfile
    chmod 600 /swapfile
@@ -267,20 +264,17 @@ Client submits code
    ```
 
 2. **Install Docker:**
-
    ```bash
    curl -fsSL https://get.docker.com | sh
    usermod -aG docker chris
    ```
 
 3. **Build and pull base image:**
-
    ```bash
    docker build -t reps-runner-python -f deploy/Dockerfile.runner-python .
    ```
 
 4. **Add Docker cleanup cron:**
-
    ```bash
    # /etc/cron.d/reps-docker-cleanup
    0 3 * * * chris docker system prune -f >> /var/log/reps/docker-cleanup.log 2>&1
@@ -294,15 +288,15 @@ Client submits code
 
 ### Resource Budget
 
-| Component                           | RAM        | CPU          |
-| ----------------------------------- | ---------- | ------------ |
-| Node.js (reps)                      | ~140MB     | <1% idle     |
-| PostgreSQL                          | ~100MB     | <1% idle     |
-| Nginx                               | ~10MB      | <1%          |
-| Docker daemon                       | ~50MB      | <1% idle     |
-| Docker container (during execution) | 128MB max  | 0.5 CPU max  |
-| **Total peak**                      | **~430MB** | **~0.6 CPU** |
-| **Available**                       | **3GB+**   | **3 CPUs**   |
+| Component | RAM | CPU |
+|-----------|-----|-----|
+| Node.js (reps) | ~140MB | <1% idle |
+| PostgreSQL | ~100MB | <1% idle |
+| Nginx | ~10MB | <1% |
+| Docker daemon | ~50MB | <1% idle |
+| Docker container (during execution) | 128MB max | 0.5 CPU max |
+| **Total peak** | **~430MB** | **~0.6 CPU** |
+| **Available** | **3GB+** | **3 CPUs** |
 
 Plenty of headroom. Single concurrent execution ensures this stays safe.
 
@@ -344,7 +338,6 @@ location /api/learn/ {
 ### Exercise Generation
 
 **System prompt (generation):**
-
 > You are a programming instructor creating exercises for learning {track.title}.
 > The student is working on the module "{module.title}" which covers: {module.concepts}.
 > Generate a {type} exercise at difficulty level {difficulty}/3.
@@ -360,7 +353,6 @@ location /api/learn/ {
 ### Answer Evaluation
 
 **System prompt (evaluation — separate from generation to prevent prompt injection):**
-
 > You are a programming instructor evaluating a student's code for a {track.title} exercise.
 >
 > Exercise: {exercise.prompt}
@@ -384,12 +376,12 @@ location /api/learn/ {
 
 ### New Views
 
-| View          | Route                             | Description                                       |
-| ------------- | --------------------------------- | ------------------------------------------------- |
-| Track List    | `/learn`                          | Grid of available tracks with progress indicators |
-| Track Detail  | `/learn/:slug`                    | Module list with lock/active/completed states     |
-| Exercise View | `/learn/:slug/:moduleSlug`        | Split pane: editor + output/feedback              |
-| Module Review | `/learn/:slug/:moduleSlug/review` | SM-2 review flow for completed modules            |
+| View | Route | Description |
+|------|-------|-------------|
+| Track List | `/learn` | Grid of available tracks with progress indicators |
+| Track Detail | `/learn/:slug` | Module list with lock/active/completed states |
+| Exercise View | `/learn/:slug/:moduleSlug` | Split pane: editor + output/feedback |
+| Module Review | `/learn/:slug/:moduleSlug/review` | SM-2 review flow for completed modules |
 
 ### Exercise View Layout
 
@@ -426,7 +418,6 @@ location /api/learn/ {
 ## CSP Update
 
 The Content-Security-Policy header needs updating for Monaco editor:
-
 - Add `'unsafe-eval'` to `script-src` (already present)
 - Monaco loads workers via blob URLs — add `blob:` to `worker-src`
 
@@ -435,7 +426,6 @@ The Content-Security-Policy header needs updating for Monaco editor:
 ## Feature Flag
 
 Gate the entire feature behind a feature flag:
-
 - Server: check `FEATURE_LEARNING_TRACKS=true` env var, return 404 if disabled
 - Frontend: conditionally render "Learn" nav item based on `/learn/tracks` response
 
@@ -447,16 +437,16 @@ Add a "Learning Tracks" section to the existing admin/settings page:
 
 ### Admin Panel Fields
 
-| Setting                   | Type             | Description                                                                |
-| ------------------------- | ---------------- | -------------------------------------------------------------------------- |
-| Feature enabled           | Toggle           | Enable/disable learning tracks (maps to `FEATURE_LEARNING_TRACKS` env var) |
-| Max execution time        | Number (seconds) | Docker container timeout, default 30s                                      |
-| Max memory                | Number (MB)      | Docker container memory limit, default 128MB                               |
-| Max concurrent executions | Number           | Execution queue limit, default 1                                           |
-| Circuit breaker threshold | Number           | Consecutive failures before pause, default 5                               |
-| Circuit breaker cooldown  | Number (minutes) | Pause duration after threshold hit, default 5                              |
-| Docker image              | Text (read-only) | Current runner image and digest                                            |
-| Execution stats           | Read-only        | Today's executions, success rate, avg execution time                       |
+| Setting | Type | Description |
+|---------|------|-------------|
+| Feature enabled | Toggle | Enable/disable learning tracks (maps to `FEATURE_LEARNING_TRACKS` env var) |
+| Max execution time | Number (seconds) | Docker container timeout, default 30s |
+| Max memory | Number (MB) | Docker container memory limit, default 128MB |
+| Max concurrent executions | Number | Execution queue limit, default 1 |
+| Circuit breaker threshold | Number | Consecutive failures before pause, default 5 |
+| Circuit breaker cooldown | Number (minutes) | Pause duration after threshold hit, default 5 |
+| Docker image | Text (read-only) | Current runner image and digest |
+| Execution stats | Read-only | Today's executions, success rate, avg execution time |
 
 ### Admin API Routes
 
@@ -471,7 +461,6 @@ DELETE /admin/learn/tracks/:id   — remove a track
 ### Settings Storage
 
 Runtime config stored in a `settings` table (key-value):
-
 ```sql
 CREATE TABLE IF NOT EXISTS settings (
   key        TEXT PRIMARY KEY,
@@ -495,30 +484,24 @@ Every code execution is logged with structured data (via existing Pino logger):
 logger.info({ executionId, exerciseId, moduleSlug, trackSlug }, 'code-execution:start');
 
 // On execution complete
-logger.info(
-  {
-    executionId,
-    exerciseId,
-    durationMs,
-    exitCode,
-    outputBytes: stdout.length + stderr.length,
-    passed,
-    containerId,
-  },
-  'code-execution:complete',
-);
+logger.info({
+  executionId,
+  exerciseId,
+  durationMs,
+  exitCode,
+  outputBytes: stdout.length + stderr.length,
+  passed,
+  containerId,
+}, 'code-execution:complete');
 
 // On execution failure
-logger.error(
-  {
-    executionId,
-    exerciseId,
-    error: err.message,
-    durationMs,
-    containerId,
-  },
-  'code-execution:error',
-);
+logger.error({
+  executionId,
+  exerciseId,
+  error: err.message,
+  durationMs,
+  containerId,
+}, 'code-execution:error');
 
 // Circuit breaker state changes
 logger.warn({ consecutiveFailures, cooldownMinutes }, 'code-execution:circuit-breaker:open');
@@ -555,21 +538,17 @@ logger.error({ moduleId, error: err.message, rawResponse }, 'learn:ai:error');
 Add a periodic health check (every 60s) that logs Docker daemon status:
 
 ```typescript
-logger.info(
-  {
-    dockerRunning: boolean,
-    containersActive: number,
-    diskUsage: string, // from docker system df
-    imagePresent: boolean, // reps-runner-python exists
-  },
-  'docker:health',
-);
+logger.info({
+  dockerRunning: boolean,
+  containersActive: number,
+  diskUsage: string,      // from docker system df
+  imagePresent: boolean,  // reps-runner-python exists
+}, 'docker:health');
 ```
 
 ### Log Aggregation
 
 All learning track logs use the `learn:` or `code-execution:` prefix for easy filtering:
-
 - `grep "code-execution:" /var/log/reps/app.log` — all execution events
 - `grep "circuit-breaker:" /var/log/reps/app.log` — circuit breaker events
 - `grep "learn:ai:" /var/log/reps/app.log` — AI-related events
@@ -577,7 +556,6 @@ All learning track logs use the `learn:` or `code-execution:` prefix for easy fi
 ### Alerts
 
 Log patterns that should trigger attention (via existing log monitoring or future alerting):
-
 - `code-execution:circuit-breaker:open` — executions paused
 - `docker:health` with `dockerRunning: false` — Docker daemon down
 - `code-execution:error` count > 10 in 5 minutes — something is wrong
