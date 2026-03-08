@@ -1,3 +1,4 @@
+import { getAiConfig } from './ai-config';
 import type {
   Task,
   CreateTaskInput,
@@ -31,11 +32,21 @@ import type {
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const aiHeaders: Record<string, string> = {};
+  if (path.startsWith('/agent/')) {
+    const aiConfig = getAiConfig();
+    if (aiConfig) {
+      aiHeaders['X-AI-Key'] = aiConfig.apiKey;
+      aiHeaders['X-AI-Provider'] = aiConfig.provider;
+    }
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...aiHeaders,
       ...options.headers,
     },
   });
@@ -417,6 +428,10 @@ export async function summarizePaper(taskId: string): Promise<void> {
 
 export async function triggerBriefing(): Promise<{ message: string }> {
   return request<{ message: string }>('/agent/briefing', { method: 'POST' });
+}
+
+export async function testAiKey(): Promise<{ status: string; provider: string }> {
+  return request<{ status: string; provider: string }>('/agent/test-key');
 }
 
 // Export & Calendar
