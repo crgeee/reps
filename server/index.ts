@@ -22,6 +22,8 @@ import statsRoutes from './routes/stats.js';
 import usersRoutes from './routes/users.js';
 import { calendarFeed, exportRoutes } from './routes/export.js';
 import logsRoutes from './routes/logs.js';
+import learn from './routes/learn.js';
+import learnAdmin from './routes/learn-admin.js';
 import mcpRoute from './mcp/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -92,6 +94,7 @@ app.use('/*', etag);
 
 // Extract AI credentials from BYOK headers
 app.use('/agent/*', aiCredentialsMiddleware);
+app.use('/learn/*', aiCredentialsMiddleware);
 
 // Stricter rate limit for agent routes — 10 req/min
 app.use('/agent/*', rateLimiter(10, 60_000));
@@ -106,6 +109,8 @@ app.route('/stats', statsRoutes);
 app.route('/users', usersRoutes);
 app.route('/export', exportRoutes);
 app.route('/logs', logsRoutes);
+app.route('/learn', learn);
+app.route('/admin/learn', learnAdmin);
 
 const port = parseInt(process.env.PORT || '3000', 10);
 

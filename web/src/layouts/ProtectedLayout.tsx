@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Outlet, Navigate, NavLink, Link, useOutletContext } from 'react-router';
+import { Outlet, Navigate, NavLink, Link, useOutletContext, useLocation } from 'react-router';
 import type { Task, Collection, Tag, User, CollectionStatus, CustomTopic } from '../types';
 import { formatStatusLabel } from '../types';
 import { getTasks, getCollections, getTags, getCustomTopics } from '../api';
@@ -9,7 +9,7 @@ import Spinner from '../components/Spinner';
 import CollectionSwitcher from '../components/CollectionSwitcher';
 import FocusWidget from '../components/FocusWidget';
 import Footer from '../components/Footer';
-import { Home, ListTodo, Plus, BarChart3 } from 'lucide-react';
+import { Home, ListTodo, Plus, BarChart3, BookOpen } from 'lucide-react';
 
 export interface ProtectedContext {
   tasks: Task[];
@@ -46,12 +46,14 @@ const NAV_ITEMS: { path: string; label: string; end?: boolean }[] = [
   { path: '/', label: 'Dashboard', end: true },
   { path: '/tasks', label: 'Tasks' },
   { path: '/progress', label: 'Progress' },
+  { path: '/learn', label: 'Learn' },
   { path: '/calendar', label: 'Calendar' },
 ];
 
 const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home; end?: boolean }[] = [
   { path: '/', label: 'Home', Icon: Home, end: true },
   { path: '/tasks', label: 'Tasks', Icon: ListTodo },
+  { path: '/learn', label: 'Learn', Icon: BookOpen },
   { path: '/add', label: 'Add', Icon: Plus },
   { path: '/progress', label: 'Progress', Icon: BarChart3 },
 ];
@@ -71,6 +73,12 @@ export default function ProtectedLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [initialTopicFilter, setInitialTopicFilter] = useState<string | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const { pathname } = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   const handleCollectionChange = useCallback((id: string | null) => {
     if (id) {
