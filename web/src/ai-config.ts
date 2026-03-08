@@ -71,6 +71,7 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
     label: 'Anthropic',
     models: [
       { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Best balance' },
+      { value: 'claude-opus-4-6', label: 'Claude Opus 4.6', description: 'Most capable' },
       {
         value: 'claude-haiku-4-5-20251001',
         label: 'Claude Haiku 4.5',
