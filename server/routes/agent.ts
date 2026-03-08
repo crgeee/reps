@@ -121,7 +121,7 @@ agent.post('/evaluate', async (c) => {
     }
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Evaluation failed');
-    return c.json(aiErrorBody('Evaluation failed', err), 500);
+    return c.json({ error: 'Evaluation failed' }, 500);
   }
 });
 
@@ -157,7 +157,7 @@ agent.get('/question/:taskId', async (c) => {
     }
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Question generation failed');
-    return c.json(aiErrorBody('Question generation failed', err), 500);
+    return c.json({ error: 'Question generation failed' }, 500);
   }
 });
 
@@ -220,7 +220,7 @@ agent.post('/mock/start', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to start mock interview');
-    return c.json(aiErrorBody('Failed to start mock interview', err), 500);
+    return c.json({ error: 'Failed to start mock interview' }, 500);
   }
 });
 
@@ -239,7 +239,7 @@ agent.post('/mock/respond', async (c) => {
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to process mock response');
-    return c.json(aiErrorBody('Failed to process response', err), 500);
+    return c.json({ error: 'Failed to process response' }, 500);
   }
 });
 
