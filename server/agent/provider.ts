@@ -38,7 +38,10 @@ async function callAnthropic(opts: CompletionOpts): Promise<string> {
   });
 
   const block = response.content[0];
-  return block?.type === 'text' ? block.text : '';
+  if (!block || block.type !== 'text') {
+    throw new Error(`Anthropic returned unexpected content type: ${block?.type ?? 'empty'}`);
+  }
+  return block.text;
 }
 
 async function callOpenAI(opts: CompletionOpts): Promise<string> {
@@ -51,7 +54,13 @@ async function callOpenAI(opts: CompletionOpts): Promise<string> {
     messages: [{ role: 'system' as const, content: opts.system }, ...opts.messages],
   });
 
-  return response.choices[0]?.message?.content ?? '';
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error(
+      `OpenAI returned no content (finish_reason: ${response.choices[0]?.finish_reason ?? 'unknown'})`,
+    );
+  }
+  return content;
 }
 
 export async function createCompletion(opts: CompletionOpts): Promise<string> {

@@ -42,6 +42,7 @@ export default function AiSettings() {
       await testAiKey();
       setTestStatus('success');
     } catch (err) {
+      clearAiConfig();
       setTestStatus('error');
       setTestError(err instanceof Error ? err.message : 'Test failed');
     }

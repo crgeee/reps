@@ -5,6 +5,7 @@ import { sendDailyDigest } from './agent/email.js';
 import { cleanExpiredSessions } from './auth/sessions.js';
 import { cleanExpiredDeviceCodes } from './auth/device-flow.js';
 import { logger } from './logger.js';
+import type { AiCredentials } from './agent/provider.js';
 
 interface NotifiableUser {
   id: string;
@@ -27,10 +28,14 @@ export function startCronJobs(): void {
   cron.schedule('0 8 * * *', async () => {
     logger.info('Running daily briefings');
     try {
+      const serverKey = process.env.ANTHROPIC_API_KEY;
+      const credentials: AiCredentials | undefined = serverKey
+        ? { provider: 'anthropic', apiKey: serverKey }
+        : undefined;
       const users = await getNotifiableUsers('notify_daily');
       for (const user of users) {
         try {
-          await dailyBriefing(user.id);
+          await dailyBriefing(user.id, credentials);
           await sendDailyDigest(user.id, user.email);
         } catch (err) {
           logger.error({ err, userId: user.id }, 'Daily briefing failed for user');
@@ -46,10 +51,14 @@ export function startCronJobs(): void {
   cron.schedule('0 20 * * 0', async () => {
     logger.info('Running weekly insights');
     try {
+      const serverKey = process.env.ANTHROPIC_API_KEY;
+      const credentials: AiCredentials | undefined = serverKey
+        ? { provider: 'anthropic', apiKey: serverKey }
+        : undefined;
       const users = await getNotifiableUsers('notify_weekly');
       for (const user of users) {
         try {
-          await weeklyInsight(user.id);
+          await weeklyInsight(user.id, credentials);
         } catch (err) {
           logger.error({ err, userId: user.id }, 'Weekly insight failed for user');
         }

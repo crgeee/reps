@@ -163,7 +163,7 @@ export function registerAgentTools(
       const denied = checkScope(scopes, 'ai');
       if (denied) return denied;
       try {
-        const message = await dailyBriefing(userId);
+        const message = await dailyBriefing(userId, getServerCredentials());
 
         await logMcpAudit(keyId, userId, 'get-daily-briefing', true);
         return {

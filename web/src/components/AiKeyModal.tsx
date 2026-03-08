@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { setAiConfig, type AiProvider } from '../ai-config';
+import { setAiConfig, clearAiConfig, type AiProvider } from '../ai-config';
 import { testAiKey } from '../api';
 
 interface Props {
@@ -22,6 +22,7 @@ export default function AiKeyModal({ onClose, onConfigured }: Props) {
       await testAiKey();
       onConfigured();
     } catch (err) {
+      clearAiConfig();
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Validation failed');
     }

@@ -99,8 +99,12 @@ agent.get('/test-key', async (c) => {
     });
     return c.json({ status: 'ok', provider: credentials.provider });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return c.json({ error: `Key validation failed: ${message}`, code: 'AI_KEY_INVALID' }, 401);
+    const log = c.get('logger') ?? logger;
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'AI key validation failed',
+    );
+    return c.json({ error: 'Key validation failed', code: 'AI_KEY_INVALID' }, 401);
   }
 });
 
@@ -120,7 +124,7 @@ agent.post('/evaluate', async (c) => {
       return c.json({ error: 'AI key required', code: 'AI_NOT_CONFIGURED' }, 401);
     }
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Evaluation failed');
+    log.error({ error: err instanceof Error ? err.message : String(err) }, 'Evaluation failed');
     return c.json({ error: 'Evaluation failed' }, 500);
   }
 });
@@ -156,7 +160,10 @@ agent.get('/question/:taskId', async (c) => {
       return c.json({ error: 'AI key required', code: 'AI_NOT_CONFIGURED' }, 401);
     }
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Question generation failed');
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Question generation failed',
+    );
     return c.json({ error: 'Question generation failed' }, 500);
   }
 });
@@ -173,7 +180,7 @@ agent.post('/summarize/:taskId', async (c) => {
       return c.json({ error: 'AI key required', code: 'AI_NOT_CONFIGURED' }, 401);
     }
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Summarization failed');
+    log.error({ error: err instanceof Error ? err.message : String(err) }, 'Summarization failed');
     return c.json({ error: 'Summarization failed' }, 500);
   }
 });
@@ -186,7 +193,7 @@ agent.post('/briefing', async (c) => {
     return c.json({ message });
   } catch (err) {
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Briefing failed');
+    log.error({ error: err instanceof Error ? err.message : String(err) }, 'Briefing failed');
     return c.json({ error: 'Briefing failed' }, 500);
   }
 });
@@ -219,7 +226,10 @@ agent.post('/mock/start', async (c) => {
     return c.json(result, 201);
   } catch (err) {
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Failed to start mock interview');
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Failed to start mock interview',
+    );
     return c.json({ error: 'Failed to start mock interview' }, 500);
   }
 });
@@ -238,7 +248,10 @@ agent.post('/mock/respond', async (c) => {
     return c.json(result);
   } catch (err) {
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Failed to process mock response');
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Failed to process mock response',
+    );
     return c.json({ error: 'Failed to process response' }, 500);
   }
 });
@@ -255,7 +268,10 @@ agent.get('/mock', async (c) => {
     return c.json(sessions);
   } catch (err) {
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Failed to list mock sessions');
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Failed to list mock sessions',
+    );
     return c.json({ error: 'Failed to list mock sessions' }, 500);
   }
 });
@@ -273,7 +289,10 @@ agent.get('/mock/:id', async (c) => {
     return c.json(session);
   } catch (err) {
     const log = c.get('logger') ?? logger;
-    log.error({ err }, 'Failed to get mock session');
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Failed to get mock session',
+    );
     return c.json({ error: 'Failed to get mock session' }, 500);
   }
 });
