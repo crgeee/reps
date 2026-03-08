@@ -3,10 +3,16 @@ import { z } from 'zod';
 import sql from '../db/client.js';
 import { calculateSM2 } from '../../src/spaced-repetition.js';
 import { validateUuid } from '../validation.js';
+import { runCode, ExecutionQueue, CircuitBreaker } from '../learn/docker-runner.js';
+import { createCompletion } from '../agent/provider.js';
+import { logger } from '../logger.js';
 import type { AppEnv } from '../types.js';
 import type { Quality } from '../../src/types.js';
 
 const learn = new Hono<AppEnv>();
+
+const executionQueue = new ExecutionQueue({ maxConcurrent: 1 });
+const circuitBreaker = new CircuitBreaker({ threshold: 5, cooldownMs: 5 * 60 * 1000 });
 
 // --- converter functions ---
 
@@ -217,7 +223,9 @@ learn.post('/modules/:id/review', async (c) => {
     repetitions: progress.repetitions as number,
     interval: progress.interval as number,
     easeFactor: progress.ease_factor as number,
-    nextReview: progress.next_review ? String(progress.next_review) : new Date().toISOString().split('T')[0],
+    nextReview: progress.next_review
+      ? String(progress.next_review)
+      : new Date().toISOString().split('T')[0],
     createdAt: String(progress.created_at),
   };
 
@@ -303,6 +311,322 @@ learn.get('/submissions/:exerciseId', async (c) => {
       executionMs: s.execution_ms,
       createdAt: String(s.created_at),
     })),
+  );
+});
+
+// --- exercise generation & execution routes ---
+
+const generateSchema = z.object({
+  moduleId: z.string().uuid(),
+  difficulty: z.number().int().min(1).max(3).optional().default(1),
+  type: z.enum(['code', 'knowledge', 'mini-app']).optional().default('code'),
+});
+
+const codeSchema = z.object({
+  code: z.string().min(1).max(65536),
+});
+
+// POST /exercises/generate — AI-generated exercise for a module
+learn.post('/exercises/generate', async (c) => {
+  const log = c.get('logger') ?? logger;
+
+  const raw = await c.req.json();
+  const parsed = generateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  const { moduleId, difficulty, type } = parsed.data;
+
+  const [mod] = await sql`
+    SELECT m.*, t.title AS track_title, t.slug AS track_slug
+    FROM modules m
+    JOIN tracks t ON t.id = m.track_id
+    WHERE m.id = ${moduleId}
+  `;
+  if (!mod) {
+    return c.json({ error: 'Module not found' }, 404);
+  }
+
+  const credentials = c.get('aiCredentials');
+  if (!credentials?.apiKey) {
+    return c.json(
+      { error: 'AI API key required to generate exercises', code: 'AI_NOT_CONFIGURED' },
+      400,
+    );
+  }
+
+  const difficultyLabel = ['beginner', 'intermediate', 'advanced'][difficulty - 1];
+  const concepts = (mod.concepts as string[]).join(', ');
+
+  try {
+    const aiResponse = await createCompletion({
+      credentials,
+      system: `You are a programming instructor creating exercises for a learning track called "${mod.track_title}". The current module is "${mod.title}" covering: ${concepts}. Generate a ${difficultyLabel} difficulty ${type} exercise. Return JSON only: { "prompt": "exercise description", "starterCode": "code template or null", "testCode": "test code or null", "hints": ["hint1", "hint2"] }`,
+      messages: [
+        {
+          role: 'user',
+          content: `Generate a ${difficultyLabel} ${type} exercise for the "${mod.title}" module.`,
+        },
+      ],
+      maxTokens: 1000,
+    });
+
+    let exerciseData: {
+      prompt: string;
+      starterCode: string | null;
+      testCode: string | null;
+      hints: string[];
+    };
+    try {
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      exerciseData = JSON.parse(jsonMatch ? jsonMatch[0] : aiResponse);
+    } catch {
+      log.error({ response: aiResponse.slice(0, 500) }, 'Failed to parse AI exercise response');
+      return c.json({ error: 'Failed to parse AI response' }, 502);
+    }
+
+    const [exercise] = await sql`
+      INSERT INTO exercises (module_id, type, prompt, starter_code, test_code, difficulty, generated_by)
+      VALUES (${moduleId}, ${type}, ${exerciseData.prompt}, ${exerciseData.starterCode ?? null}, ${exerciseData.testCode ?? null}, ${difficulty}, 'ai')
+      RETURNING *
+    `;
+
+    log.info({ exerciseId: exercise.id, moduleId, type, difficulty }, 'learn:exercise:generated');
+
+    return c.json(
+      {
+        id: exercise.id,
+        moduleId: exercise.module_id,
+        type: exercise.type,
+        prompt: exercise.prompt,
+        starterCode: exercise.starter_code,
+        testCode: exercise.test_code,
+        difficulty: exercise.difficulty,
+        hints: exerciseData.hints ?? [],
+        generatedBy: exercise.generated_by,
+        createdAt: String(exercise.created_at),
+      },
+      201,
+    );
+  } catch (err) {
+    log.error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Exercise generation failed',
+    );
+    return c.json({ error: 'Exercise generation failed' }, 500);
+  }
+});
+
+// POST /exercises/:id/run — execute code in Docker sandbox
+learn.post('/exercises/:id/run', async (c) => {
+  const log = c.get('logger') ?? logger;
+  const exerciseId = c.req.param('id');
+  if (!validateUuid(exerciseId)) return c.json({ error: 'Invalid exercise ID' }, 400);
+
+  const raw = await c.req.json();
+  const parsed = codeSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  if (circuitBreaker.isOpen) {
+    return c.json({ error: 'Code execution temporarily unavailable', code: 'CIRCUIT_OPEN' }, 503);
+  }
+
+  if (!executionQueue.acquire()) {
+    return c.json({ error: 'Execution queue full, try again shortly', code: 'QUEUE_FULL' }, 429);
+  }
+
+  // Load timeout/memory settings
+  const [timeoutSetting] =
+    await sql`SELECT value FROM settings WHERE key = 'learn.executionTimeoutSeconds'`;
+  const [memorySetting] =
+    await sql`SELECT value FROM settings WHERE key = 'learn.executionMemoryMb'`;
+  const timeoutSeconds = typeof timeoutSetting?.value === 'number' ? timeoutSetting.value : 30;
+  const memoryMb = typeof memorySetting?.value === 'number' ? memorySetting.value : 128;
+
+  log.info({ exerciseId }, 'code-execution:start');
+
+  try {
+    const result = await runCode({
+      code: parsed.data.code,
+      timeoutSeconds,
+      memoryMb,
+    });
+
+    if (result.exitCode !== 0 && !result.timedOut) {
+      circuitBreaker.recordFailure();
+    } else {
+      circuitBreaker.recordSuccess();
+    }
+
+    log.info(
+      { exerciseId, exitCode: result.exitCode, durationMs: result.durationMs },
+      'code-execution:complete',
+    );
+
+    return c.json(result);
+  } catch (err) {
+    circuitBreaker.recordFailure();
+    log.error(
+      { exerciseId, error: err instanceof Error ? err.message : String(err) },
+      'code-execution:error',
+    );
+    return c.json({ error: 'Code execution failed' }, 500);
+  } finally {
+    executionQueue.release();
+  }
+});
+
+// POST /exercises/:id/submit — run code + AI evaluation + save submission
+learn.post('/exercises/:id/submit', async (c) => {
+  const log = c.get('logger') ?? logger;
+  const userId = c.get('userId');
+  const exerciseId = c.req.param('id');
+  if (!validateUuid(exerciseId)) return c.json({ error: 'Invalid exercise ID' }, 400);
+
+  const raw = await c.req.json();
+  const parsed = codeSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  // Load exercise with module + track context
+  const [exercise] = await sql`
+    SELECT e.*, m.title AS module_title, m.concepts, t.title AS track_title
+    FROM exercises e
+    JOIN modules m ON m.id = e.module_id
+    JOIN tracks t ON t.id = m.track_id
+    WHERE e.id = ${exerciseId}
+  `;
+  if (!exercise) {
+    return c.json({ error: 'Exercise not found' }, 404);
+  }
+
+  let stdout: string | null = null;
+  let stderr: string | null = null;
+  let passed: boolean | null = null;
+  let executionMs: number | null = null;
+
+  // Run code for code/mini-app types
+  const exerciseType = exercise.type as string;
+  if (exerciseType === 'code' || exerciseType === 'mini-app') {
+    if (circuitBreaker.isOpen) {
+      return c.json({ error: 'Code execution temporarily unavailable', code: 'CIRCUIT_OPEN' }, 503);
+    }
+    if (!executionQueue.acquire()) {
+      return c.json({ error: 'Execution queue full, try again shortly', code: 'QUEUE_FULL' }, 429);
+    }
+
+    try {
+      // Append test code if present
+      const codeToRun = exercise.test_code
+        ? `${parsed.data.code}\n\n${exercise.test_code}`
+        : parsed.data.code;
+
+      const [timeoutSetting] =
+        await sql`SELECT value FROM settings WHERE key = 'learn.executionTimeoutSeconds'`;
+      const [memorySetting] =
+        await sql`SELECT value FROM settings WHERE key = 'learn.executionMemoryMb'`;
+      const timeoutSeconds = typeof timeoutSetting?.value === 'number' ? timeoutSetting.value : 30;
+      const memoryMb = typeof memorySetting?.value === 'number' ? memorySetting.value : 128;
+
+      const result = await runCode({
+        code: codeToRun,
+        timeoutSeconds,
+        memoryMb,
+      });
+
+      stdout = result.stdout;
+      stderr = result.stderr;
+      passed = result.exitCode === 0;
+      executionMs = result.durationMs;
+
+      if (result.exitCode !== 0 && !result.timedOut) {
+        circuitBreaker.recordFailure();
+      } else {
+        circuitBreaker.recordSuccess();
+      }
+    } catch (err) {
+      circuitBreaker.recordFailure();
+      log.error(
+        { exerciseId, error: err instanceof Error ? err.message : String(err) },
+        'code-execution:error',
+      );
+      stderr = err instanceof Error ? err.message : 'Execution failed';
+      passed = false;
+    } finally {
+      executionQueue.release();
+    }
+  }
+
+  // AI evaluation (non-fatal)
+  let aiFeedback: string | null = null;
+  let score: number | null = null;
+
+  const credentials = c.get('aiCredentials');
+  if (credentials?.apiKey) {
+    try {
+      const concepts = (exercise.concepts as string[]).join(', ');
+      const aiResponse = await createCompletion({
+        credentials,
+        system: `You are an expert programming instructor evaluating a student submission for the "${exercise.track_title}" learning track, module "${exercise.module_title}" (concepts: ${concepts}). The exercise prompt was: "${exercise.prompt}". Evaluate the code. Return JSON only: { "correctness": 1-5, "codeQuality": 1-5, "completeness": 1-5, "feedback": "string", "hints": ["improvement hints"] }`,
+        messages: [
+          {
+            role: 'user',
+            content: `Student code:\n\`\`\`\n${parsed.data.code}\n\`\`\`\n${stdout ? `\nExecution output:\n${stdout}` : ''}${stderr ? `\nErrors:\n${stderr}` : ''}`,
+          },
+        ],
+        maxTokens: 800,
+      });
+
+      try {
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        const evalData = JSON.parse(jsonMatch ? jsonMatch[0] : aiResponse);
+        aiFeedback = JSON.stringify(evalData);
+        const avg =
+          ((evalData.correctness ?? 0) +
+            (evalData.codeQuality ?? 0) +
+            (evalData.completeness ?? 0)) /
+          3;
+        score = Math.round(avg);
+      } catch {
+        aiFeedback = aiResponse;
+      }
+
+      log.info({ exerciseId, score }, 'learn:evaluation:complete');
+    } catch (err) {
+      log.error(
+        { exerciseId, error: err instanceof Error ? err.message : String(err) },
+        'learn:ai:error',
+      );
+      // Non-fatal: continue without AI feedback
+    }
+  }
+
+  // Save submission
+  const [submission] = await sql`
+    INSERT INTO submissions (exercise_id, user_id, user_code, stdout, stderr, passed, ai_feedback, score, execution_ms)
+    VALUES (${exerciseId}, ${userId}, ${parsed.data.code}, ${stdout}, ${stderr}, ${passed}, ${aiFeedback}, ${score}, ${executionMs})
+    RETURNING *
+  `;
+
+  return c.json(
+    {
+      id: submission.id,
+      exerciseId: submission.exercise_id,
+      userId: submission.user_id,
+      userCode: submission.user_code,
+      stdout: submission.stdout,
+      stderr: submission.stderr,
+      passed: submission.passed,
+      aiFeedback: submission.ai_feedback,
+      score: submission.score,
+      executionMs: submission.execution_ms,
+      createdAt: String(submission.created_at),
+    },
+    201,
   );
 });
 
