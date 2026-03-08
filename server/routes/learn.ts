@@ -5,14 +5,35 @@ import { calculateSM2 } from '../../src/spaced-repetition.js';
 import { validateUuid } from '../validation.js';
 import { runCode, ExecutionQueue, CircuitBreaker } from '../learn/docker-runner.js';
 import { createCompletion } from '../agent/provider.js';
+import { getUserById } from '../auth/users.js';
 import { logger } from '../logger.js';
 import type { AppEnv } from '../types.js';
 import type { Quality } from '../../src/types.js';
 
 const learn = new Hono<AppEnv>();
 
-const executionQueue = new ExecutionQueue({ maxConcurrent: 1 });
+const executionQueue = new ExecutionQueue({ maxConcurrent: 4 });
 const circuitBreaker = new CircuitBreaker({ threshold: 5, cooldownMs: 5 * 60 * 1000 });
+
+// --- settings cache (60s TTL) ---
+
+interface CachedValue<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const CACHE_TTL_MS = 60_000;
+const settingsCache = new Map<string, CachedValue<unknown>>();
+
+async function getCachedSetting<T>(key: string, fallback: T): Promise<T> {
+  const cached = settingsCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.value as T;
+
+  const [row] = await sql`SELECT value FROM settings WHERE key = ${key}`;
+  const value = row?.value ?? fallback;
+  settingsCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+  return value as T;
+}
 
 // --- converter functions ---
 
@@ -57,14 +78,17 @@ export function toProgress(row: Record<string, unknown>) {
   };
 }
 
-// --- feature flag middleware ---
+// --- feature flag + admin gating middleware ---
 
 learn.use('/*', async (c, next) => {
-  const [row] = await sql`SELECT value FROM settings WHERE key = 'learn.featureEnabled'`;
-  // JSONB value may be boolean true or string "true"
-  const enabled = row?.value === true || row?.value === 'true';
+  const raw = await getCachedSetting<boolean | string>('learn.featureEnabled', false);
+  const enabled = raw === true || raw === 'true';
   if (!enabled) {
-    return c.json({ error: 'Learning tracks feature is not enabled' }, 404);
+    // When feature is off, only admins can access
+    const user = await getUserById(c.get('userId'));
+    if (!user?.isAdmin) {
+      return c.json({ error: 'Learning tracks is in preview — admin access only' }, 403);
+    }
   }
   await next();
 });
@@ -444,13 +468,8 @@ learn.post('/exercises/:id/run', async (c) => {
     return c.json({ error: 'Execution queue full, try again shortly', code: 'QUEUE_FULL' }, 429);
   }
 
-  // Load timeout/memory settings
-  const [timeoutSetting] =
-    await sql`SELECT value FROM settings WHERE key = 'learn.executionTimeoutSeconds'`;
-  const [memorySetting] =
-    await sql`SELECT value FROM settings WHERE key = 'learn.executionMemoryMb'`;
-  const timeoutSeconds = typeof timeoutSetting?.value === 'number' ? timeoutSetting.value : 30;
-  const memoryMb = typeof memorySetting?.value === 'number' ? memorySetting.value : 128;
+  const timeoutSeconds = await getCachedSetting<number>('learn.executionTimeoutSeconds', 30);
+  const memoryMb = await getCachedSetting<number>('learn.executionMemoryMb', 128);
 
   log.info({ exerciseId }, 'code-execution:start');
 
@@ -532,12 +551,8 @@ learn.post('/exercises/:id/submit', async (c) => {
         ? `${parsed.data.code}\n\n${exercise.test_code}`
         : parsed.data.code;
 
-      const [timeoutSetting] =
-        await sql`SELECT value FROM settings WHERE key = 'learn.executionTimeoutSeconds'`;
-      const [memorySetting] =
-        await sql`SELECT value FROM settings WHERE key = 'learn.executionMemoryMb'`;
-      const timeoutSeconds = typeof timeoutSetting?.value === 'number' ? timeoutSetting.value : 30;
-      const memoryMb = typeof memorySetting?.value === 'number' ? memorySetting.value : 128;
+      const timeoutSeconds = await getCachedSetting<number>('learn.executionTimeoutSeconds', 30);
+      const memoryMb = await getCachedSetting<number>('learn.executionMemoryMb', 128);
 
       const result = await runCode({
         code: codeToRun,

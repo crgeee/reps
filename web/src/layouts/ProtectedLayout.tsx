@@ -42,18 +42,29 @@ export function useProtectedContext() {
   return useOutletContext<ProtectedContext>();
 }
 
-const NAV_ITEMS: { path: string; label: string; end?: boolean }[] = [
+interface NavItem {
+  path: string;
+  label: string;
+  end?: boolean;
+  adminOnly?: boolean;
+}
+
+interface BottomNavItem extends NavItem {
+  Icon: typeof Home;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { path: '/', label: 'Dashboard', end: true },
   { path: '/tasks', label: 'Tasks' },
   { path: '/progress', label: 'Progress' },
-  { path: '/learn', label: 'Learn' },
+  { path: '/learn', label: 'Learn', adminOnly: true },
   { path: '/calendar', label: 'Calendar' },
 ];
 
-const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home; end?: boolean }[] = [
+const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   { path: '/', label: 'Home', Icon: Home, end: true },
   { path: '/tasks', label: 'Tasks', Icon: ListTodo },
-  { path: '/learn', label: 'Learn', Icon: BookOpen },
+  { path: '/learn', label: 'Learn', Icon: BookOpen, adminOnly: true },
   { path: '/add', label: 'Add', Icon: Plus },
   { path: '/progress', label: 'Progress', Icon: BarChart3 },
 ];
@@ -346,22 +357,24 @@ export default function ProtectedLayout() {
             aria-label="Main navigation"
             className="hidden md:flex items-center gap-1 flex-1 justify-center"
           >
-            {NAV_ITEMS.map(({ path, label, end }) => (
-              <NavLink
-                key={path}
-                to={path}
-                end={end}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                  }`
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
+            {NAV_ITEMS.filter((item) => !item.adminOnly || user.isAdmin).map(
+              ({ path, label, end }) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  end={end}
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                      isActive
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`
+                  }
+                >
+                  {label}
+                </NavLink>
+              ),
+            )}
             {filteredDueTasks.length > 0 && (
               <NavLink
                 to="/review"
@@ -465,23 +478,25 @@ export default function ProtectedLayout() {
                 aria-label="Mobile navigation"
                 className="anim-slide-down absolute top-full right-0 mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl py-1 z-50"
               >
-                {NAV_ITEMS.map(({ path, label, end }) => (
-                  <NavLink
-                    key={path}
-                    to={path}
-                    end={end}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `w-full text-left px-4 py-2.5 text-sm transition-colors block ${
-                        isActive
-                          ? 'bg-zinc-800 text-zinc-100'
-                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                      }`
-                    }
-                  >
-                    {label}
-                  </NavLink>
-                ))}
+                {NAV_ITEMS.filter((item) => !item.adminOnly || user.isAdmin).map(
+                  ({ path, label, end }) => (
+                    <NavLink
+                      key={path}
+                      to={path}
+                      end={end}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `w-full text-left px-4 py-2.5 text-sm transition-colors block ${
+                          isActive
+                            ? 'bg-zinc-800 text-zinc-100'
+                            : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                        }`
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ),
+                )}
                 {filteredDueTasks.length > 0 && (
                   <NavLink
                     to="/review"
@@ -579,21 +594,23 @@ export default function ProtectedLayout() {
         className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-800 z-40 safe-area-bottom"
       >
         <div className="flex items-stretch justify-around">
-          {BOTTOM_NAV_ITEMS.map(({ path, label, Icon, end }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={end}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 flex-1 py-2 pt-2.5 transition-colors ${
-                  isActive ? 'text-amber-400' : 'text-zinc-500 active:text-zinc-300'
-                }`
-              }
-            >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{label}</span>
-            </NavLink>
-          ))}
+          {BOTTOM_NAV_ITEMS.filter((item) => !item.adminOnly || user.isAdmin).map(
+            ({ path, label, Icon, end }) => (
+              <NavLink
+                key={path}
+                to={path}
+                end={end}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-0.5 flex-1 py-2 pt-2.5 transition-colors ${
+                    isActive ? 'text-amber-400' : 'text-zinc-500 active:text-zinc-300'
+                  }`
+                }
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px] font-medium">{label}</span>
+              </NavLink>
+            ),
+          )}
         </div>
       </nav>
     </div>

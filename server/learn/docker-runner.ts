@@ -130,7 +130,7 @@ export async function runCode(options: RunCodeOptions): Promise<ExecutionResult>
         '--read-only',
         '--tmpfs',
         '/tmp:size=10m,noexec,nosuid',
-        '--no-new-privileges',
+        '--security-opt=no-new-privileges',
         '--cap-drop=ALL',
         '--pids-limit=50',
         '--ulimit',
