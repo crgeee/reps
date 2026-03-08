@@ -83,6 +83,7 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
     value: 'openai',
     label: 'OpenAI',
     models: [
+      { value: 'gpt-5', label: 'GPT-5', description: 'Most capable' },
       { value: 'gpt-4o', label: 'GPT-4o', description: 'Best balance' },
       { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Fastest & cheapest' },
     ],
