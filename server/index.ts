@@ -25,6 +25,7 @@ import logsRoutes from './routes/logs.js';
 import learn from './routes/learn.js';
 import learnAdmin from './routes/learn-admin.js';
 import mcpRoute from './mcp/index.js';
+import notifications from './routes/notifications.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
@@ -86,6 +87,13 @@ app.route('/export', calendarFeed);
 // MCP endpoint — own auth middleware, before REST auth middleware
 app.route('/mcp', mcpRoute);
 
+// VAPID public key — no auth needed
+app.get('/notifications/vapid-key', (c) => {
+  const key = process.env.VAPID_PUBLIC_KEY;
+  if (!key) return c.json({ error: 'Push not configured' }, 503);
+  return c.json({ publicKey: key });
+});
+
 // Apply auth middleware to all protected routes
 app.use('/*', authMiddleware);
 
@@ -111,6 +119,7 @@ app.route('/export', exportRoutes);
 app.route('/logs', logsRoutes);
 app.route('/learn', learn);
 app.route('/admin/learn', learnAdmin);
+app.route('/notifications', notifications);
 
 const port = parseInt(process.env.PORT || '3000', 10);
 
