@@ -11,6 +11,10 @@ export interface User {
   theme: string;
   notifyDaily: boolean;
   notifyWeekly: boolean;
+  notifyReviewDue: boolean;
+  notifyStreak: boolean;
+  notifyAiComplete: boolean;
+  notifyTaskAlerts: boolean;
   dailyReviewGoal: number;
   timeFormat: string;
   dateFormat: string;
@@ -32,6 +36,10 @@ interface UserRow {
   theme: string;
   notify_daily: boolean;
   notify_weekly: boolean;
+  notify_review_due: boolean;
+  notify_streak: boolean;
+  notify_ai_complete: boolean;
+  notify_task_alerts: boolean;
   daily_review_goal: number;
   time_format: string;
   date_format: string;
@@ -54,6 +62,10 @@ function rowToUser(row: UserRow): User {
     theme: row.theme,
     notifyDaily: row.notify_daily,
     notifyWeekly: row.notify_weekly,
+    notifyReviewDue: row.notify_review_due,
+    notifyStreak: row.notify_streak,
+    notifyAiComplete: row.notify_ai_complete,
+    notifyTaskAlerts: row.notify_task_alerts,
     dailyReviewGoal: row.daily_review_goal,
     timeFormat: row.time_format,
     dateFormat: row.date_format,
@@ -94,6 +106,10 @@ export async function updateUserProfile(
     theme?: string;
     notifyDaily?: boolean;
     notifyWeekly?: boolean;
+    notifyReviewDue?: boolean;
+    notifyStreak?: boolean;
+    notifyAiComplete?: boolean;
+    notifyTaskAlerts?: boolean;
     dailyReviewGoal?: number;
     timeFormat?: string;
     dateFormat?: string;
@@ -107,6 +123,10 @@ export async function updateUserProfile(
     theme: 'theme',
     notifyDaily: 'notify_daily',
     notifyWeekly: 'notify_weekly',
+    notifyReviewDue: 'notify_review_due',
+    notifyStreak: 'notify_streak',
+    notifyAiComplete: 'notify_ai_complete',
+    notifyTaskAlerts: 'notify_task_alerts',
     dailyReviewGoal: 'daily_review_goal',
     timeFormat: 'time_format',
     dateFormat: 'date_format',
