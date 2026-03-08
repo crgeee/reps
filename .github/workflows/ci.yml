@@ -37,6 +37,32 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+  migrate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: reps
+          POSTGRES_PASSWORD: reps
+          POSTGRES_DB: reps
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U reps"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://reps:reps@localhost:5432/reps
+        run: |
+          touch .env
+          npm run migrate
+
   build:
     runs-on: ubuntu-latest
     steps:
