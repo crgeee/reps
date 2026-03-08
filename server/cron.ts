@@ -5,6 +5,7 @@ import { sendDailyDigest } from './agent/email.js';
 import { cleanExpiredSessions } from './auth/sessions.js';
 import { cleanExpiredDeviceCodes } from './auth/device-flow.js';
 import { cleanExpiredAiKeys } from './auth/ai-keys.js';
+import { send } from './agent/notify.js';
 import { logger } from './logger.js';
 import type { AiCredentials } from './agent/provider.js';
 
@@ -27,6 +28,58 @@ async function getNotifiableUsers(
 function getServerCredentials(): AiCredentials | undefined {
   const key = process.env.ANTHROPIC_API_KEY;
   return key ? { provider: 'anthropic', apiKey: key } : undefined;
+}
+
+interface DueAlert {
+  id: string;
+  user_id: string;
+  task_id: string;
+  task_title: string;
+}
+
+async function checkTaskAlerts(): Promise<void> {
+  const dueAlerts = await sql<DueAlert[]>`
+    SELECT ta.id, ta.user_id, ta.task_id, t.title AS task_title
+    FROM task_alerts ta
+    JOIN tasks t ON t.id = ta.task_id
+    WHERE ta.sent = false AND ta.alert_at <= NOW()
+    LIMIT 100
+  `;
+
+  if (dueAlerts.length === 0) return;
+
+  // Group by user to batch notifications
+  const byUser = new Map<string, DueAlert[]>();
+  for (const alert of dueAlerts) {
+    const list = byUser.get(alert.user_id) ?? [];
+    list.push(alert);
+    byUser.set(alert.user_id, list);
+  }
+
+  for (const [userId, alerts] of byUser) {
+    try {
+      if (alerts.length === 1) {
+        await send(userId, 'reps — reminder', alerts[0].task_title, {
+          url: `/tasks?highlight=${alerts[0].task_id}`,
+          tag: 'task-alert',
+          ttl: 3600,
+        });
+      } else {
+        const titles = alerts.map((a) => a.task_title).join(', ');
+        await send(userId, 'reps — reminders', `${alerts.length} tasks: ${titles}`, {
+          url: '/tasks',
+          tag: 'task-alert',
+          ttl: 3600,
+        });
+      }
+    } catch (err) {
+      logger.error({ err, userId }, 'Failed to send task alerts');
+    }
+  }
+
+  const alertIds = dueAlerts.map((a) => a.id);
+  await sql`UPDATE task_alerts SET sent = true WHERE id = ANY(${alertIds})`;
+  logger.info({ count: dueAlerts.length }, 'Task alerts processed');
 }
 
 export function startCronJobs(): void {
@@ -84,7 +137,16 @@ export function startCronJobs(): void {
     }
   });
 
+  // Check task alerts every minute
+  cron.schedule('* * * * *', async () => {
+    try {
+      await checkTaskAlerts();
+    } catch (err) {
+      logger.error({ err }, 'Task alert check failed');
+    }
+  });
+
   logger.info(
-    'Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM)',
+    'Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM), task alerts (every min)',
   );
 }
