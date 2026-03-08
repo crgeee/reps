@@ -141,6 +141,7 @@ export default function AiSettings() {
     setTestStatus('testing');
     setTestError('');
     try {
+      // Temporarily set browser config so testAiKey sends the key via headers
       setAiConfig({ provider, apiKey: apiKey.trim(), model, storageMode: 'browser' });
       await testAiKey();
       const info = await saveServerAiKey({
