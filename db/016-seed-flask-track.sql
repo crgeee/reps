@@ -18,8 +18,8 @@ INSERT INTO modules (id, track_id, slug, title, description, sort_order, concept
 ON CONFLICT DO NOTHING;
 
 INSERT INTO settings (key, value) VALUES
-  ('learn.maxExecutionTime', '30'),
-  ('learn.maxMemoryMb', '128'),
+  ('learn.executionTimeoutSeconds', '30'),
+  ('learn.executionMemoryMb', '128'),
   ('learn.maxConcurrent', '1'),
   ('learn.circuitBreakerThreshold', '5'),
   ('learn.circuitBreakerCooldownMin', '5'),

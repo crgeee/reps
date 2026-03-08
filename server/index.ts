@@ -94,6 +94,7 @@ app.use('/*', etag);
 
 // Extract AI credentials from BYOK headers
 app.use('/agent/*', aiCredentialsMiddleware);
+app.use('/learn/*', aiCredentialsMiddleware);
 
 // Stricter rate limit for agent routes — 10 req/min
 app.use('/agent/*', rateLimiter(10, 60_000));

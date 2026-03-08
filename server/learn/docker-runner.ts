@@ -3,6 +3,7 @@ import { writeFile, mkdir, rm } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { logger } from '../logger.js';
 
 export interface ExecutionResult {
   stdout: string;
@@ -10,6 +11,8 @@ export interface ExecutionResult {
   exitCode: number;
   durationMs: number;
   timedOut: boolean;
+  /** True when Docker itself failed (not a user code error) */
+  infrastructureError?: boolean;
 }
 
 export interface QueueConfig {
@@ -187,10 +190,13 @@ export async function runCode(options: RunCodeOptions): Promise<ExecutionResult>
           exitCode: 1,
           durationMs: Date.now() - start,
           timedOut: false,
+          infrastructureError: true,
         });
       });
     });
   } finally {
-    await rm(codeDir, { recursive: true, force: true }).catch(() => {});
+    await rm(codeDir, { recursive: true, force: true }).catch((err) => {
+      logger.warn({ dir: codeDir, error: String(err) }, 'Failed to clean up temp code dir');
+    });
   }
 }

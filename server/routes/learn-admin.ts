@@ -1,10 +1,18 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import sql from '../db/client.js';
+import { getUserById } from '../auth/users.js';
 import { validateUuid } from '../validation.js';
 import type { AppEnv } from '../types.js';
 
 const learnAdmin = new Hono<AppEnv>();
+
+// Admin gate middleware
+learnAdmin.use('*', async (c, next) => {
+  const user = await getUserById(c.get('userId'));
+  if (!user?.isAdmin) return c.json({ error: 'Forbidden' }, 403);
+  await next();
+});
 
 // --- validation schemas ---
 

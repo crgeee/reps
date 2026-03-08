@@ -20,11 +20,15 @@ export interface Module {
   createdAt: string;
 }
 
+export type ModuleStatus = 'locked' | 'active' | 'completed';
+export type ExerciseType = 'code' | 'knowledge' | 'mini-app';
+export type ExerciseDifficulty = 1 | 2 | 3;
+
 export interface ModuleProgress {
   id: string;
   userId: string;
   moduleId: string;
-  status: string;
+  status: ModuleStatus;
   repetitions: number;
   interval: number;
   easeFactor: number;
@@ -44,12 +48,12 @@ export interface TrackDetail extends Track {
 export interface Exercise {
   id: string;
   moduleId: string;
-  type: string;
+  type: ExerciseType;
   prompt: string;
   starterCode: string | null;
   testCode: string | null;
-  difficulty: number;
-  generatedBy: string;
+  difficulty: ExerciseDifficulty;
+  generatedBy: 'ai' | 'manual';
   createdAt: string;
   hints?: string[];
 }

@@ -61,7 +61,9 @@ export function toProgress(row: Record<string, unknown>) {
 
 learn.use('/*', async (c, next) => {
   const [row] = await sql`SELECT value FROM settings WHERE key = 'learn.featureEnabled'`;
-  if (!row || row.value !== true) {
+  // JSONB value may be boolean true or string "true"
+  const enabled = row?.value === true || row?.value === 'true';
+  if (!enabled) {
     return c.json({ error: 'Learning tracks feature is not enabled' }, 404);
   }
   await next();
@@ -455,7 +457,8 @@ learn.post('/exercises/:id/run', async (c) => {
       memoryMb,
     });
 
-    if (result.exitCode !== 0 && !result.timedOut) {
+    // Only trip circuit breaker on infrastructure failures, not user code errors
+    if (result.infrastructureError) {
       circuitBreaker.recordFailure();
     } else {
       circuitBreaker.recordSuccess();
@@ -543,7 +546,8 @@ learn.post('/exercises/:id/submit', async (c) => {
       passed = result.exitCode === 0;
       executionMs = result.durationMs;
 
-      if (result.exitCode !== 0 && !result.timedOut) {
+      // Only trip circuit breaker on infrastructure failures, not user code errors
+      if (result.infrastructureError) {
         circuitBreaker.recordFailure();
       } else {
         circuitBreaker.recordSuccess();
@@ -592,6 +596,10 @@ learn.post('/exercises/:id/submit', async (c) => {
           3;
         score = Math.round(avg);
       } catch {
+        log.warn(
+          { exerciseId, response: aiResponse.slice(0, 200) },
+          'learn:ai:parse-failed, using raw response',
+        );
         aiFeedback = aiResponse;
       }
 
