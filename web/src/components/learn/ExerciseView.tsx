@@ -85,7 +85,9 @@ export default function ExerciseView() {
       setCode(ex.starterCode ?? '');
     } catch (e) {
       const msg = String(e);
-      if (msg.includes('429')) {
+      if (msg.includes('AI_NOT_CONFIGURED')) {
+        setError('AI is not configured. Add your API key in Settings to generate exercises.');
+      } else if (msg.includes('429')) {
         setError('Exercise generation queue is full. Try again in a moment.');
       } else if (msg.includes('503')) {
         setError('Exercise generation is temporarily unavailable.');

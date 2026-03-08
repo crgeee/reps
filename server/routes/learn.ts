@@ -353,7 +353,11 @@ learn.post('/exercises/generate', async (c) => {
   const credentials = c.get('aiCredentials');
   if (!credentials?.apiKey) {
     return c.json(
-      { error: 'AI API key required to generate exercises', code: 'AI_NOT_CONFIGURED' },
+      {
+        error:
+          'AI not configured. Set ANTHROPIC_API_KEY on the server or provide X-AI-Key/X-AI-Provider headers.',
+        code: 'AI_NOT_CONFIGURED',
+      },
       400,
     );
   }
