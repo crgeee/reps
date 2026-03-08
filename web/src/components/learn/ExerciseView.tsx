@@ -4,10 +4,10 @@ import {
   ArrowLeft,
   Play,
   Send,
-  RefreshCw,
   Loader2,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   CheckCircle2,
   XCircle,
   Lightbulb,
@@ -15,7 +15,7 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { getTrack, generateExercise, runCode, submitCode } from '../../learn-api.js';
+import { getTrack, getModule, generateExercise, runCode, submitCode } from '../../learn-api.js';
 import type {
   Exercise,
   ExecutionResult,
@@ -55,7 +55,8 @@ export default function ExerciseView() {
 
   // Data state
   const [track, setTrack] = useState<TrackDetail | null>(null);
-  const [exercise, setExercise] = useState<Exercise | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exerciseIndex, setExerciseIndex] = useState(0);
   const [code, setCode] = useState('');
   const [output, setOutput] = useState<ExecutionResult | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);
@@ -63,6 +64,7 @@ export default function ExerciseView() {
 
   // UI state
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -71,33 +73,34 @@ export default function ExerciseView() {
   const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const moduleId = track?.modules.find((m) => m.slug === moduleSlug)?.id;
+  const exercise = exercises[exerciseIndex] ?? null;
 
-  const fetchExercise = useCallback(async (modId: string) => {
+  const loadExercises = useCallback(async (modId: string) => {
     setLoading(true);
     setError(null);
-    setOutput(null);
-    setSubmission(null);
-    setAiFeedback(null);
-    setHintsOpen(false);
     try {
-      const ex = await generateExercise(modId);
-      setExercise(ex);
-      setCode(ex.starterCode ?? '');
-    } catch (e) {
-      const msg = String(e);
-      if (msg.includes('AI_NOT_CONFIGURED')) {
-        setError('AI is not configured. Add your API key in Settings to generate exercises.');
-      } else if (msg.includes('429')) {
-        setError('Exercise generation queue is full. Try again in a moment.');
-      } else if (msg.includes('503')) {
-        setError('Exercise generation is temporarily unavailable.');
-      } else {
-        setError(msg);
+      const mod = await getModule(modId);
+      setExercises(mod.exercises);
+      setExerciseIndex(0);
+      if (mod.exercises.length > 0) {
+        setCode(mod.exercises[0]!.starterCode ?? '');
       }
+    } catch (e) {
+      setError(String(e));
     } finally {
       setLoading(false);
     }
   }, []);
+
+  function selectExercise(index: number) {
+    setExerciseIndex(index);
+    setCode(exercises[index]?.starterCode ?? '');
+    setOutput(null);
+    setSubmission(null);
+    setAiFeedback(null);
+    setHintsOpen(false);
+    setError(null);
+  }
 
   useEffect(() => {
     if (!slug) return;
@@ -110,15 +113,42 @@ export default function ExerciseView() {
 
   useEffect(() => {
     if (moduleId) {
-      void fetchExercise(moduleId);
+      void loadExercises(moduleId);
     }
-  }, [moduleId, fetchExercise]);
+  }, [moduleId, loadExercises]);
 
   useEffect(() => {
     return () => {
       if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
     };
   }, []);
+
+  async function handleGenerateAI() {
+    if (!moduleId || generating) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const ex = await generateExercise(moduleId);
+      setExercises((prev) => [...prev, ex]);
+      setExerciseIndex(exercises.length); // point to the newly added one
+      setCode(ex.starterCode ?? '');
+      setOutput(null);
+      setSubmission(null);
+      setAiFeedback(null);
+      setHintsOpen(false);
+    } catch (e) {
+      const msg = String(e);
+      if (msg.includes('AI_NOT_CONFIGURED')) {
+        setError('AI not configured. Add your API key in Settings to generate exercises.');
+      } else if (msg.includes('429')) {
+        setError('Generation queue is full. Try again in a moment.');
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function handleRun() {
     if (!exercise || running || runCooldown) return;
@@ -179,24 +209,18 @@ export default function ExerciseView() {
     }
   }
 
-  function handleNewExercise() {
-    if (moduleId) {
-      void fetchExercise(moduleId);
-    }
-  }
-
-  if (loading && !exercise) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 4rem)' }}>
         <div className="text-center space-y-3">
           <Loader2 className="w-6 h-6 text-zinc-500 animate-spin mx-auto" />
-          <p className="text-xs text-zinc-500">Generating exercise...</p>
+          <p className="text-xs text-zinc-500">Loading exercises...</p>
         </div>
       </div>
     );
   }
 
-  if (error && !exercise) {
+  if (error && exercises.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 4rem)' }}>
         <div className="text-center space-y-3">
@@ -212,20 +236,47 @@ export default function ExerciseView() {
     );
   }
 
-  const difficultyLabel = exercise
-    ? exercise.difficulty <= 2
+  if (exercises.length === 0) {
+    return (
+      <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 4rem)' }}>
+        <div className="text-center space-y-4">
+          <p className="text-zinc-400 text-sm">No exercises available for this module yet.</p>
+          <button
+            onClick={handleGenerateAI}
+            disabled={generating}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-300 bg-blue-900/30 hover:bg-blue-800/40 border border-blue-800/50 rounded-md transition-colors disabled:opacity-50 mx-auto"
+          >
+            {generating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            Generate with AI
+          </button>
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+          <button
+            onClick={() => navigate(-1)}
+            className="text-xs text-zinc-500 hover:text-zinc-300 underline transition-colors"
+          >
+            Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const difficultyLabel =
+    exercise && exercise.difficulty === 1
       ? 'Easy'
-      : exercise.difficulty <= 4
+      : exercise && exercise.difficulty === 2
         ? 'Medium'
-        : 'Hard'
-    : '';
-  const difficultyColor = exercise
-    ? exercise.difficulty <= 2
+        : 'Hard';
+  const difficultyColor =
+    exercise && exercise.difficulty === 1
       ? 'text-green-400'
-      : exercise.difficulty <= 4
+      : exercise && exercise.difficulty === 2
         ? 'text-yellow-400'
-        : 'text-red-400'
-    : '';
+        : 'text-red-400';
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
@@ -245,17 +296,54 @@ export default function ExerciseView() {
               </span>
               <span className="text-zinc-700">|</span>
               <span className={`text-xs font-medium ${difficultyColor}`}>{difficultyLabel}</span>
+              {exercise.generatedBy === 'ai' && (
+                <>
+                  <span className="text-zinc-700">|</span>
+                  <span className="text-[10px] text-blue-400 flex items-center gap-0.5">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    AI
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
-        <button
-          onClick={handleNewExercise}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          New Exercise
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Exercise navigation */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => selectExercise(exerciseIndex - 1)}
+              disabled={exerciseIndex === 0}
+              className="p-1 text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-zinc-500 font-mono min-w-[3ch] text-center">
+              {exerciseIndex + 1}/{exercises.length}
+            </span>
+            <button
+              onClick={() => selectExercise(exerciseIndex + 1)}
+              disabled={exerciseIndex >= exercises.length - 1}
+              className="p-1 text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          {/* Generate AI exercise */}
+          <button
+            onClick={handleGenerateAI}
+            disabled={generating}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-300 bg-blue-900/30 hover:bg-blue-800/40 border border-blue-800/50 rounded-md transition-colors disabled:opacity-50"
+            title="Generate a new exercise with AI"
+          >
+            {generating ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Sparkles className="w-3 h-3" />
+            )}
+            AI Exercise
+          </button>
+        </div>
       </div>
 
       {/* Problem statement */}
