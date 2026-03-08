@@ -68,10 +68,7 @@ export async function startModule(moduleId: string): Promise<ModuleProgress> {
   });
 }
 
-export async function reviewModule(
-  moduleId: string,
-  quality: number,
-): Promise<ModuleProgress> {
+export async function reviewModule(moduleId: string, quality: number): Promise<ModuleProgress> {
   return request<ModuleProgress>(`/learn/modules/${moduleId}/review`, {
     method: 'POST',
     body: JSON.stringify({ quality }),
@@ -81,9 +78,7 @@ export async function reviewModule(
 export async function getModule(
   moduleId: string,
 ): Promise<ModuleWithProgress & { exercises: Exercise[] }> {
-  return request<ModuleWithProgress & { exercises: Exercise[] }>(
-    `/learn/modules/${moduleId}`,
-  );
+  return request<ModuleWithProgress & { exercises: Exercise[] }>(`/learn/modules/${moduleId}`);
 }
 
 // --- Exercises ---
@@ -98,20 +93,14 @@ export async function generateExercise(
   });
 }
 
-export async function runCode(
-  exerciseId: string,
-  code: string,
-): Promise<ExecutionResult> {
+export async function runCode(exerciseId: string, code: string): Promise<ExecutionResult> {
   return request<ExecutionResult>(`/learn/exercises/${exerciseId}/run`, {
     method: 'POST',
     body: JSON.stringify({ code }),
   });
 }
 
-export async function submitCode(
-  exerciseId: string,
-  code: string,
-): Promise<Submission> {
+export async function submitCode(exerciseId: string, code: string): Promise<Submission> {
   return request<Submission>(`/learn/exercises/${exerciseId}/submit`, {
     method: 'POST',
     body: JSON.stringify({ code }),
@@ -120,10 +109,7 @@ export async function submitCode(
 
 // --- Submissions ---
 
-export async function getSubmissions(
-  exerciseId: string,
-  offset?: number,
-): Promise<Submission[]> {
+export async function getSubmissions(exerciseId: string, offset?: number): Promise<Submission[]> {
   const qs = offset ? `?offset=${offset}` : '';
   return request<Submission[]>(`/learn/submissions/${exerciseId}${qs}`);
 }
@@ -138,9 +124,7 @@ export async function getLearnConfig(): Promise<LearnConfig> {
   return request<LearnConfig>('/admin/learn/config');
 }
 
-export async function updateLearnConfig(
-  config: LearnConfig,
-): Promise<{ updated: number }> {
+export async function updateLearnConfig(config: LearnConfig): Promise<{ updated: number }> {
   return request<{ updated: number }>('/admin/learn/config', {
     method: 'POST',
     body: JSON.stringify(config),

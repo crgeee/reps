@@ -1,13 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import {
-  ArrowLeft,
-  Lock,
-  PlayCircle,
-  CheckCircle2,
-  Loader2,
-  BookOpen,
-} from 'lucide-react';
+import { ArrowLeft, Lock, PlayCircle, CheckCircle2, Loader2, BookOpen } from 'lucide-react';
 import { getTrack, startModule } from '../../learn-api.js';
 import type { TrackDetail as TrackDetailType, ModuleWithProgress } from '../../learn-types.js';
 
@@ -75,9 +68,7 @@ export default function TrackDetail() {
 
   if (!track) return null;
 
-  const completedCount = track.modules.filter(
-    (m) => moduleStatus(m) === 'completed',
-  ).length;
+  const completedCount = track.modules.filter((m) => moduleStatus(m) === 'completed').length;
   const totalCount = track.modules.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -159,11 +150,7 @@ function ModuleCard({
       ? 'border-blue-900/50'
       : 'border-zinc-800';
 
-  const bgColor = isCompleted
-    ? 'bg-green-950/20'
-    : isActive
-      ? 'bg-blue-950/20'
-      : 'bg-zinc-900/40';
+  const bgColor = isCompleted ? 'bg-green-950/20' : isActive ? 'bg-blue-950/20' : 'bg-zinc-900/40';
 
   function handleClick() {
     if (starting) return;
@@ -179,9 +166,7 @@ function ModuleCard({
       onClick={handleClick}
       disabled={starting}
       className={`w-full text-left flex items-start gap-3 px-4 py-3 border rounded-lg transition-colors group ${borderColor} ${bgColor} ${
-        isLocked
-          ? 'opacity-60 hover:opacity-80'
-          : 'hover:bg-zinc-800/50 cursor-pointer'
+        isLocked ? 'opacity-60 hover:opacity-80' : 'hover:bg-zinc-800/50 cursor-pointer'
       } disabled:cursor-wait`}
     >
       <div className="flex-shrink-0 mt-0.5">
@@ -209,7 +194,9 @@ function ModuleCard({
         </div>
 
         {mod.description && (
-          <p className={`text-xs mt-1 line-clamp-2 ${isLocked ? 'text-zinc-600' : 'text-zinc-500'}`}>
+          <p
+            className={`text-xs mt-1 line-clamp-2 ${isLocked ? 'text-zinc-600' : 'text-zinc-500'}`}
+          >
             {mod.description}
           </p>
         )}
@@ -220,9 +207,7 @@ function ModuleCard({
               <span
                 key={concept}
                 className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                  isLocked
-                    ? 'bg-zinc-800/50 text-zinc-600'
-                    : 'bg-zinc-800 text-zinc-400'
+                  isLocked ? 'bg-zinc-800/50 text-zinc-600' : 'bg-zinc-800 text-zinc-400'
                 }`}
               >
                 {concept}

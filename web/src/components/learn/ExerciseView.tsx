@@ -15,12 +15,7 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import {
-  getTrack,
-  generateExercise,
-  runCode,
-  submitCode,
-} from '../../learn-api.js';
+import { getTrack, generateExercise, runCode, submitCode } from '../../learn-api.js';
 import type {
   Exercise,
   ExecutionResult,
@@ -77,33 +72,30 @@ export default function ExerciseView() {
 
   const moduleId = track?.modules.find((m) => m.slug === moduleSlug)?.id;
 
-  const fetchExercise = useCallback(
-    async (modId: string) => {
-      setLoading(true);
-      setError(null);
-      setOutput(null);
-      setSubmission(null);
-      setAiFeedback(null);
-      setHintsOpen(false);
-      try {
-        const ex = await generateExercise(modId);
-        setExercise(ex);
-        setCode(ex.starterCode ?? '');
-      } catch (e) {
-        const msg = String(e);
-        if (msg.includes('429')) {
-          setError('Exercise generation queue is full. Try again in a moment.');
-        } else if (msg.includes('503')) {
-          setError('Exercise generation is temporarily unavailable.');
-        } else {
-          setError(msg);
-        }
-      } finally {
-        setLoading(false);
+  const fetchExercise = useCallback(async (modId: string) => {
+    setLoading(true);
+    setError(null);
+    setOutput(null);
+    setSubmission(null);
+    setAiFeedback(null);
+    setHintsOpen(false);
+    try {
+      const ex = await generateExercise(modId);
+      setExercise(ex);
+      setCode(ex.starterCode ?? '');
+    } catch (e) {
+      const msg = String(e);
+      if (msg.includes('429')) {
+        setError('Exercise generation queue is full. Try again in a moment.');
+      } else if (msg.includes('503')) {
+        setError('Exercise generation is temporarily unavailable.');
+      } else {
+        setError(msg);
       }
-    },
-    [],
-  );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -328,9 +320,7 @@ export default function ExerciseView() {
               )}
               Submit
             </button>
-            {error && (
-              <span className="text-xs text-red-400 ml-auto truncate">{error}</span>
-            )}
+            {error && <span className="text-xs text-red-400 ml-auto truncate">{error}</span>}
           </div>
           {/* Monaco */}
           <div className="flex-1 min-h-0">

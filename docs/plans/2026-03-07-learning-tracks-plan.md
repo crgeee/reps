@@ -13,6 +13,7 @@
 ### Task 1: Database Migration — Core Tables
 
 **Files:**
+
 - Create: `db/015-learning-tracks.sql`
 
 **Step 1: Write the migration SQL**
@@ -112,6 +113,7 @@ git commit -m "feat: add learning tracks database schema"
 ### Task 2: Seed Flask Track Data
 
 **Files:**
+
 - Create: `db/016-seed-flask-track.sql`
 
 **Step 1: Write the seed migration**
@@ -162,6 +164,7 @@ git commit -m "feat: seed Flask track with modules and default settings"
 ### Task 3: Docker Runner Infrastructure
 
 **Files:**
+
 - Create: `deploy/Dockerfile.runner-python`
 - Create: `server/learn/docker-runner.ts`
 - Create: `server/learn/docker-runner.test.ts`
@@ -248,7 +251,7 @@ describe('CircuitBreaker', () => {
 describe('sanitizeOutput', () => {
   it('escapes HTML entities', () => {
     expect(sanitizeOutput('<script>alert("xss")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
     );
   });
 
@@ -378,12 +381,7 @@ export interface RunCodeOptions {
 }
 
 export async function runCode(options: RunCodeOptions): Promise<ExecutionResult> {
-  const {
-    code,
-    timeoutSeconds = 30,
-    memoryMb = 128,
-    image = 'reps-runner-python',
-  } = options;
+  const { code, timeoutSeconds = 30, memoryMb = 128, image = 'reps-runner-python' } = options;
 
   const executionId = randomUUID();
   const codeDir = join(tmpdir(), `reps-code-${executionId}`);
@@ -397,22 +395,31 @@ export async function runCode(options: RunCodeOptions): Promise<ExecutionResult>
   try {
     return await new Promise<ExecutionResult>((resolve) => {
       const args = [
-        'run', '--rm',
+        'run',
+        '--rm',
         '--network=none',
         `--memory=${memoryMb}m`,
         '--cpus=0.5',
         '--read-only',
-        '--tmpfs', '/tmp:size=10m,noexec,nosuid',
+        '--tmpfs',
+        '/tmp:size=10m,noexec,nosuid',
         '--no-new-privileges',
         '--cap-drop=ALL',
         '--pids-limit=50',
-        '--ulimit', 'nproc=64:64',
-        '--ulimit', 'fsize=10485760:10485760',
+        '--ulimit',
+        'nproc=64:64',
+        '--ulimit',
+        'fsize=10485760:10485760',
         '--security-opt=seccomp=default',
-        '--user', '1000:1000',
-        '-v', `${codePath}:/app/code.py:ro`,
+        '--user',
+        '1000:1000',
+        '-v',
+        `${codePath}:/app/code.py:ro`,
         image,
-        'timeout', String(timeoutSeconds), 'python', '/app/code.py',
+        'timeout',
+        String(timeoutSeconds),
+        'python',
+        '/app/code.py',
       ];
 
       const proc = spawn('docker', args);
@@ -428,10 +435,13 @@ export async function runCode(options: RunCodeOptions): Promise<ExecutionResult>
         if (stderr.length < 65536) stderr += data.toString();
       });
 
-      const killTimer = setTimeout(() => {
-        timedOut = true;
-        proc.kill('SIGKILL');
-      }, (timeoutSeconds + 5) * 1000);
+      const killTimer = setTimeout(
+        () => {
+          timedOut = true;
+          proc.kill('SIGKILL');
+        },
+        (timeoutSeconds + 5) * 1000,
+      );
 
       proc.on('close', (exitCode) => {
         clearTimeout(killTimer);
@@ -479,6 +489,7 @@ git commit -m "feat: add Docker code runner with queue, circuit breaker, and out
 ### Task 4: Learning Tracks API — Read Routes
 
 **Files:**
+
 - Create: `server/routes/learn.ts`
 - Create: `server/routes/learn.test.ts`
 - Modify: `server/index.ts` (add route registration)
@@ -496,25 +507,83 @@ import { toTrack, toModule, toProgress } from './learn.js';
 
 describe('toTrack', () => {
   it('converts DB row to Track', () => {
-    const row = { id: '123', slug: 'flask', title: 'Flask', description: 'Learn Flask', image_url: null, created_at: '2026-01-01', module_count: '10' };
+    const row = {
+      id: '123',
+      slug: 'flask',
+      title: 'Flask',
+      description: 'Learn Flask',
+      image_url: null,
+      created_at: '2026-01-01',
+      module_count: '10',
+    };
     const result = toTrack(row);
-    expect(result).toEqual({ id: '123', slug: 'flask', title: 'Flask', description: 'Learn Flask', imageUrl: null, createdAt: '2026-01-01', moduleCount: 10 });
+    expect(result).toEqual({
+      id: '123',
+      slug: 'flask',
+      title: 'Flask',
+      description: 'Learn Flask',
+      imageUrl: null,
+      createdAt: '2026-01-01',
+      moduleCount: 10,
+    });
   });
 });
 
 describe('toModule', () => {
   it('converts DB row to Module', () => {
-    const row = { id: '456', track_id: '123', slug: 'routing', title: 'Routing', description: 'URL rules', sort_order: 2, prerequisites: [], concepts: ['routes', 'url_for'], created_at: '2026-01-01' };
+    const row = {
+      id: '456',
+      track_id: '123',
+      slug: 'routing',
+      title: 'Routing',
+      description: 'URL rules',
+      sort_order: 2,
+      prerequisites: [],
+      concepts: ['routes', 'url_for'],
+      created_at: '2026-01-01',
+    };
     const result = toModule(row);
-    expect(result).toEqual({ id: '456', trackId: '123', slug: 'routing', title: 'Routing', description: 'URL rules', sortOrder: 2, prerequisites: [], concepts: ['routes', 'url_for'], createdAt: '2026-01-01' });
+    expect(result).toEqual({
+      id: '456',
+      trackId: '123',
+      slug: 'routing',
+      title: 'Routing',
+      description: 'URL rules',
+      sortOrder: 2,
+      prerequisites: [],
+      concepts: ['routes', 'url_for'],
+      createdAt: '2026-01-01',
+    });
   });
 });
 
 describe('toProgress', () => {
   it('converts DB row to UserProgress', () => {
-    const row = { id: '789', user_id: 'u1', module_id: '456', status: 'active', repetitions: 2, interval: 6, ease_factor: 2.5, next_review: '2026-01-07', last_reviewed: '2026-01-01', created_at: '2026-01-01' };
+    const row = {
+      id: '789',
+      user_id: 'u1',
+      module_id: '456',
+      status: 'active',
+      repetitions: 2,
+      interval: 6,
+      ease_factor: 2.5,
+      next_review: '2026-01-07',
+      last_reviewed: '2026-01-01',
+      created_at: '2026-01-01',
+    };
     const result = toProgress(row);
-    expect(result).toEqual({ id: '789', userId: 'u1', moduleId: '456', status: 'active', repetitions: 2, interval: 6, easeFactor: 2.5, nextReview: '2026-01-07', lastReviewed: '2026-01-01', createdAt: '2026-01-01' });
+    expect(result).toEqual({
+      id: '789',
+      userId: 'u1',
+      moduleId: '456',
+      status: 'active',
+      repetitions: 2,
+      interval: 6,
+      easeFactor: 2.5,
+      nextReview: '2026-01-07',
+      lastReviewed: '2026-01-01',
+      createdAt: '2026-01-01',
+    });
   });
 });
 ```
@@ -527,6 +596,7 @@ Expected: FAIL — module not found.
 **Step 3: Implement the routes**
 
 Create `server/routes/learn.ts` — full Hono router with:
+
 - Feature flag middleware checking `settings` table for `learn.featureEnabled`
 - `GET /tracks` — list all tracks with module count
 - `GET /tracks/:slug` — track detail with modules and user progress
@@ -565,11 +635,13 @@ git commit -m "feat: add learning tracks API routes (tracks, modules, progress)"
 ### Task 5: Exercise Generation & Code Execution Routes
 
 **Files:**
+
 - Modify: `server/routes/learn.ts` (add exercise generation, run, submit routes)
 
 **Step 1: Add routes to `server/routes/learn.ts`**
 
 Add before `export default learn`:
+
 - `POST /exercises/generate` — AI-generated exercise using BYOK credentials and `createCompletion` from `../agent/provider.js`
 - `POST /exercises/:id/run` — run code in Docker (no evaluation), uses ExecutionQueue and CircuitBreaker singletons
 - `POST /exercises/:id/submit` — run code + AI evaluation, save submission to DB
@@ -595,12 +667,14 @@ git commit -m "feat: add exercise generation, code execution, and submission rou
 ### Task 6: Admin Settings Routes
 
 **Files:**
+
 - Create: `server/routes/learn-admin.ts`
 - Modify: `server/index.ts` (register admin routes)
 
 **Step 1: Implement admin routes**
 
 Create `server/routes/learn-admin.ts`:
+
 - `GET /stats` — execution stats (today, total, avg time, success rate)
 - `GET /config` — current settings (all `learn.*` keys)
 - `POST /config` — update settings
@@ -629,11 +703,13 @@ git commit -m "feat: add admin routes for learning tracks config and stats"
 ### Task 7: Nginx Configuration Update
 
 **Files:**
+
 - Modify: `deploy/nginx.conf`
 
 **Step 1: Add location blocks**
 
 After the existing `/api/agent/` location block, add:
+
 - `/api/learn/` — proxied to backend with `proxy_read_timeout 45s` for Docker execution, reuses `agent` rate limit zone
 - `/api/admin/learn/` — proxied to backend with standard rate limits
 
@@ -653,6 +729,7 @@ git commit -m "feat: add nginx config for learning tracks and Monaco CSP"
 ### Task 8: Frontend — API Layer & Types
 
 **Files:**
+
 - Create: `web/src/learn-types.ts`
 - Create: `web/src/learn-api.ts`
 
@@ -678,6 +755,7 @@ git commit -m "feat: add learning tracks frontend types and API layer"
 ### Task 9: Frontend — Track List Page
 
 **Files:**
+
 - Create: `web/src/components/learn/TrackList.tsx`
 
 **Step 1: Implement the track list view**
@@ -698,6 +776,7 @@ git commit -m "feat: add TrackList page component"
 ### Task 10: Frontend — Track Detail Page
 
 **Files:**
+
 - Create: `web/src/components/learn/TrackDetail.tsx`
 
 **Step 1: Implement the track detail view**
@@ -718,6 +797,7 @@ git commit -m "feat: add TrackDetail page with module progression"
 ### Task 11: Frontend — Exercise View with Monaco Editor
 
 **Files:**
+
 - Create: `web/src/components/learn/ExerciseView.tsx`
 
 **Step 1: Install Monaco editor**
@@ -729,6 +809,7 @@ cd web && npm install @monaco-editor/react && cd ..
 **Step 2: Implement exercise view**
 
 Split-pane layout: Monaco editor (left) + output/feedback (right). Features:
+
 - Lazy-loaded Monaco with Python syntax highlighting
 - "Run Code" button with 2s debounce cooldown
 - "Submit" button for AI evaluation
@@ -752,6 +833,7 @@ git commit -m "feat: add ExerciseView with Monaco editor and split-pane output"
 ### Task 12: Frontend — Route Registration & Navigation
 
 **Files:**
+
 - Modify: `web/src/router.tsx` (add learn routes)
 - Modify: `web/src/layouts/ProtectedLayout.tsx` (add nav item)
 
@@ -764,6 +846,7 @@ const ExerciseView = lazy(() => import('./components/learn/ExerciseView.js'));
 ```
 
 Add routes inside protected layout children:
+
 ```typescript
 { path: '/learn', element: <TrackList /> },
 { path: '/learn/:slug', element: <TrackDetail /> },
@@ -791,11 +874,13 @@ git commit -m "feat: add Learn routes and navigation item"
 ### Task 13: Frontend — Admin Settings Section
 
 **Files:**
+
 - Modify: `web/src/components/settings/AdminSettings.tsx`
 
 **Step 1: Add learning tracks admin section**
 
 Add a "Learning Tracks" section with:
+
 - Stats display (executions today, total, avg time, success rate) from `getLearnStats()`
 - Config fields: feature enabled toggle, max execution time, max memory, max concurrent
 - Save button calling `updateLearnConfig()`
@@ -818,12 +903,14 @@ git commit -m "feat: add learning tracks admin settings section"
 ### Task 14: Hetzner VPS Preparation Script
 
 **Files:**
+
 - Create: `deploy/setup-docker.sh`
 - Create: `deploy/Dockerfile.runner-python` (if not already created in Task 3)
 
 **Step 1: Write the setup script**
 
 Create `deploy/setup-docker.sh` that:
+
 1. Adds 2GB swap if not present
 2. Installs Docker if not installed
 3. Builds the `reps-runner-python` image
