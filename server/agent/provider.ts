@@ -23,7 +23,7 @@ export interface CompletionOpts {
 
 const DEFAULT_MODELS: Record<AiProvider, string> = {
   anthropic: 'claude-sonnet-4-6',
-  openai: 'gpt-4o',
+  openai: 'gpt-5.4',
 };
 
 async function callAnthropic(opts: CompletionOpts): Promise<string> {

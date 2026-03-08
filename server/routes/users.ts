@@ -152,12 +152,23 @@ users.delete('/me/topics/:id', async (c) => {
 
 // --- AI Key Storage ---
 
+const VALID_MODELS: Record<string, string[]> = {
+  anthropic: ['claude-sonnet-4-6', 'claude-opus-4-6', 'claude-haiku-4-5-20251001'],
+  openai: ['gpt-5.4', 'gpt-5-mini'],
+};
+
 const saveAiKeySchema = z.object({
   provider: z.enum(['anthropic', 'openai']),
   apiKey: z.string().min(1).max(256),
   model: z.string().nullish(),
   expiryDays: z.union([z.literal(30), z.literal(90), z.literal(365)]),
 });
+
+function isValidModel(provider: string, model: string | null | undefined): boolean {
+  if (!model) return true;
+  const allowed = VALID_MODELS[provider];
+  return allowed ? allowed.includes(model) : false;
+}
 
 // GET /users/me/ai-key
 users.get('/me/ai-key', async (c) => {
@@ -185,6 +196,9 @@ users.post('/me/ai-key', async (c) => {
   }
 
   const { provider, apiKey, model, expiryDays } = parsed.data;
+  if (!isValidModel(provider, model)) {
+    return c.json({ error: `Invalid model for ${provider}` }, 400);
+  }
   const info = await saveAiKey(userId, provider, apiKey, model ?? null, expiryDays);
   return c.json(info, 201);
 });

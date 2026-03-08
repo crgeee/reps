@@ -19,7 +19,7 @@ export default function ProviderPicker({ value, onChange }: Props) {
           }`}
         >
           <p className="text-sm font-medium text-zinc-200">{opt.label}</p>
-          <p className="text-xs text-zinc-500">{opt.description}</p>
+          <p className="text-xs text-zinc-500">{opt.models[0].label}</p>
         </button>
       ))}
     </div>

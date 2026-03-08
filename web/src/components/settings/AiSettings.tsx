@@ -3,6 +3,8 @@ import {
   getAiConfig,
   setAiConfig,
   clearAiConfig,
+  getProviderConfig,
+  getDefaultModel,
   type AiProvider,
   type AiStorageMode,
   type SavedAiKeyInfo,
@@ -34,6 +36,9 @@ export default function AiSettings() {
   const existing = getAiConfig();
   const [storageMode, setStorageMode] = useState<AiStorageMode>(existing?.storageMode ?? 'browser');
   const [provider, setProvider] = useState<AiProvider>(existing?.provider ?? 'anthropic');
+  const [model, setModel] = useState(
+    existing?.model ?? getDefaultModel(existing?.provider ?? 'anthropic'),
+  );
   const [apiKey, setApiKey] = useState(
     existing?.storageMode === 'server' ? '' : (existing?.apiKey ?? ''),
   );
@@ -61,6 +66,7 @@ export default function AiSettings() {
 
   function handleProviderChange(newProvider: AiProvider) {
     setProvider(newProvider);
+    setModel(getDefaultModel(newProvider));
     setSaved(false);
     setTestStatus('idle');
   }
@@ -92,7 +98,7 @@ export default function AiSettings() {
 
   async function handleSaveBrowser() {
     if (!apiKey.trim()) return;
-    setAiConfig({ provider, apiKey: apiKey.trim(), storageMode: 'browser' });
+    setAiConfig({ provider, apiKey: apiKey.trim(), model, storageMode: 'browser' });
     setSaved(true);
     setTestStatus('testing');
     setTestError('');
@@ -114,16 +120,17 @@ export default function AiSettings() {
     setTestError('');
     try {
       // Temporarily set browser config so testAiKey sends the key via headers
-      setAiConfig({ provider, apiKey: apiKey.trim(), storageMode: 'browser' });
+      setAiConfig({ provider, apiKey: apiKey.trim(), model, storageMode: 'browser' });
       await testAiKey();
       // Key works — now encrypt and store on server
       const info = await saveServerAiKey({
         provider,
         apiKey: apiKey.trim(),
+        model,
         expiryDays,
       });
       setServerKeyInfo(info);
-      setAiConfig({ provider, apiKey: '', storageMode: 'server' });
+      setAiConfig({ provider, apiKey: '', model, storageMode: 'server' });
       setSaved(true);
       setApiKey('');
       setTestStatus('success');
@@ -245,6 +252,31 @@ export default function AiSettings() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-400">Provider</label>
               <ProviderPicker value={provider} onChange={handleProviderChange} />
+            </div>
+
+            {/* Model selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-400">Model</label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {getProviderConfig(provider).models.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => {
+                      setModel(m.value);
+                      setSaved(false);
+                      setTestStatus('idle');
+                    }}
+                    className={`p-3 rounded-lg border text-left transition-colors ${
+                      model === m.value
+                        ? 'border-zinc-500 bg-zinc-800'
+                        : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-zinc-200">{m.label}</p>
+                    <p className="text-xs text-zinc-500">{m.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Expiry selection (server mode only) */}
