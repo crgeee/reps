@@ -59,7 +59,9 @@ jobs:
       - name: Run migrations
         env:
           DATABASE_URL: postgresql://reps:reps@localhost:5432/reps
-        run: npm run migrate
+        run: |
+          touch .env
+          npm run migrate
 
   build:
     runs-on: ubuntu-latest
