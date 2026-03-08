@@ -87,10 +87,10 @@ export default function TermsOfService() {
         <p className="text-zinc-400">
           Questions about these terms? Reach out at{' '}
           <a
-            href="mailto:legal@reps-prep.duckdns.org"
+            href="mailto:legal@reps.sh"
             className="text-amber-500 hover:text-amber-400 transition-colors"
           >
-            legal@reps-prep.duckdns.org
+            legal@reps.sh
           </a>
         </p>
       </section>
