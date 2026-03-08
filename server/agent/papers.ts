@@ -1,9 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
 import { logger } from '../logger.js';
-
-const anthropic = new Anthropic();
-const MODEL = 'claude-sonnet-4-6';
+import { createCompletion, type AiCredentials } from './provider.js';
 
 export interface PaperSummary {
   summary: string;
@@ -36,7 +33,10 @@ export function isBlockedHost(host: string): boolean {
   return false;
 }
 
-export async function summarizePaper(taskId: string): Promise<PaperSummary> {
+export async function summarizePaper(
+  taskId: string,
+  credentials: AiCredentials,
+): Promise<PaperSummary> {
   const [task] = await sql<{ id: string; title: string }[]>`
     SELECT id, title FROM tasks WHERE id = ${taskId}
   `;
@@ -108,15 +108,12 @@ Do not include any text outside the JSON object.`;
   let result: PaperSummary;
 
   try {
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 1000,
+    const text = await createCompletion({
+      credentials,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
+      maxTokens: 1000,
     });
-
-    const firstBlock = response.content[0];
-    const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);

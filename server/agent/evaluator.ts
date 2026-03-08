@@ -1,9 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
 import sql from '../db/client.js';
 import { logger } from '../logger.js';
-
-const anthropic = new Anthropic();
-const MODEL = 'claude-sonnet-4-6';
+import { createCompletion, type AiCredentials } from './provider.js';
 
 export interface EvaluationResult {
   clarity: number;
@@ -28,7 +25,11 @@ interface NoteRow {
   created_at: string;
 }
 
-export async function evaluateAnswer(taskId: string, answer: string): Promise<EvaluationResult> {
+export async function evaluateAnswer(
+  taskId: string,
+  answer: string,
+  credentials: AiCredentials,
+): Promise<EvaluationResult> {
   const [task] = await sql<TaskRow[]>`
     SELECT id, topic, title FROM tasks WHERE id = ${taskId}
   `;
@@ -67,15 +68,12 @@ Do not include any text outside the JSON object.`;
   let result: EvaluationResult;
 
   try {
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 800,
+    const text = await createCompletion({
+      credentials,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
+      maxTokens: 800,
     });
-
-    const firstBlock = response.content[0];
-    const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
     try {
       // Extract JSON from response — handle possible markdown fences

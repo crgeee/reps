@@ -4,8 +4,17 @@ import sql from '../../db/client.js';
 import { generateQuestion } from '../../agent/questions.js';
 import { evaluateAnswer } from '../../agent/evaluator.js';
 import { dailyBriefing } from '../../agent/coach.js';
+import type { AiCredentials } from '../../agent/provider.js';
 import type { Task, Note, Topic } from '../../../src/types.js';
 import { logMcpAudit } from '../audit.js';
+
+function getServerCredentials(): AiCredentials {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error('AI features require ANTHROPIC_API_KEY in server environment for MCP access');
+  }
+  return { provider: 'anthropic', apiKey };
+}
 
 function checkScope(scopes: string[], required: string) {
   const msg = `MCP key missing required scope: ${required}`;
@@ -75,7 +84,7 @@ export function registerAgentTools(
           ),
         };
 
-        const question = await generateQuestion(task);
+        const question = await generateQuestion(task, getServerCredentials());
 
         await logMcpAudit(keyId, userId, 'generate-question', true);
         return {
@@ -122,7 +131,7 @@ export function registerAgentTools(
           };
         }
 
-        const result = await evaluateAnswer(taskId, answer);
+        const result = await evaluateAnswer(taskId, answer, getServerCredentials());
 
         await logMcpAudit(keyId, userId, 'evaluate-answer', true);
         return {
@@ -154,7 +163,7 @@ export function registerAgentTools(
       const denied = checkScope(scopes, 'ai');
       if (denied) return denied;
       try {
-        const message = await dailyBriefing(userId);
+        const message = await dailyBriefing(userId, getServerCredentials());
 
         await logMcpAudit(keyId, userId, 'get-daily-briefing', true);
         return {

@@ -23,23 +23,25 @@ import { useProtectedContext } from '../layouts/ProtectedLayout';
 import FocusTimer from './FocusTimer';
 import ScoreCard from './ScoreCard';
 import InfoTooltip from './InfoTooltip';
+import AiKeyModal from './AiKeyModal';
 
 function isAiKeyError(error: string | null): boolean {
   if (!error) return false;
   return error.includes('AI_NOT_CONFIGURED');
 }
 
-function AiErrorNotice() {
+function AiSetupPrompt({ onSetup }: { onSetup: () => void }) {
   return (
-    <div className="text-red-300/80 text-xs space-y-1">
-      <p>
-        AI features require an API key from a supported provider (e.g. Anthropic Claude). Ask your
-        server admin to set <code className="bg-red-900/50 px-1 rounded">ANTHROPIC_API_KEY</code> in
-        the server environment.
+    <div className="text-sm space-y-2">
+      <p className="text-zinc-400">
+        AI features require an API key to generate questions and evaluate answers.
       </p>
-      <p className="text-red-400/60">
-        Your API keys are never stored in the browser or collected by reps.
-      </p>
+      <button
+        onClick={onSetup}
+        className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+      >
+        Connect your AI provider
+      </button>
     </div>
   );
 }
@@ -100,6 +102,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [questionLoaded, setQuestionLoaded] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   const task = dueTasks[currentIndex];
 
@@ -218,7 +221,7 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
             className="mb-4 p-3 bg-red-950 border border-red-800 rounded text-red-200 text-sm space-y-2"
           >
             <p>{error}</p>
-            {isAiKeyError(error) && <AiErrorNotice />}
+            {isAiKeyError(error) && <AiSetupPrompt onSetup={() => setShowAiModal(true)} />}
           </div>
         )}
 
@@ -375,6 +378,13 @@ function SpacedReview({ dueTasks, onComplete }: { dueTasks: Task[]; onComplete: 
           </div>
         )}
       </div>
+
+      {showAiModal && (
+        <AiKeyModal
+          onClose={() => setShowAiModal(false)}
+          onConfigured={() => setShowAiModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -399,6 +409,7 @@ function PracticeMode() {
   const [score, setScore] = useState<MockScore | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   function surpriseMe() {
     const randomTopic = TOPICS[Math.floor(Math.random() * TOPICS.length)]!;
@@ -461,7 +472,7 @@ function PracticeMode() {
       {error && (
         <div className="p-3 bg-red-950 border border-red-800 rounded-lg text-red-200 text-sm space-y-2">
           <p>{error}</p>
-          {isAiKeyError(error) && <AiErrorNotice />}
+          {isAiKeyError(error) && <AiSetupPrompt onSetup={() => setShowAiModal(true)} />}
         </div>
       )}
 
@@ -665,6 +676,13 @@ function PracticeMode() {
             New Interview
           </button>
         </div>
+      )}
+
+      {showAiModal && (
+        <AiKeyModal
+          onClose={() => setShowAiModal(false)}
+          onConfigured={() => setShowAiModal(false)}
+        />
       )}
     </div>
   );
