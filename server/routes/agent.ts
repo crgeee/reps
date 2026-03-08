@@ -13,6 +13,7 @@ import {
   getInterleaveTopicForMock,
 } from '../agent/mock.js';
 import { createCompletion } from '../agent/provider.js';
+import type { AiCredentials } from '../agent/provider.js';
 import { validateUuid, uuidStr, mockStartSchema, mockRespondSchema } from '../validation.js';
 import type { Task, Note } from '../../src/types.js';
 import { logger } from '../logger.js';
@@ -20,23 +21,16 @@ import type { AppEnv } from '../types.js';
 
 const agent = new Hono<AppEnv>();
 
-function isAiConfigError(err: unknown): boolean {
-  if (err instanceof Error) {
-    const msg = err.message.toLowerCase();
-    return (
-      msg.includes('api key') ||
-      msg.includes('authentication') ||
-      err.constructor.name === 'AuthenticationError'
-    );
+class AiNotConfiguredError extends Error {
+  constructor() {
+    super('AI key required');
   }
-  return false;
 }
 
-function aiErrorBody(message: string, err: unknown): { error: string; code?: string } {
-  if (isAiConfigError(err)) {
-    return { error: message, code: 'AI_NOT_CONFIGURED' };
-  }
-  return { error: message };
+function requireAiCredentials(c: any): AiCredentials {
+  const credentials = c.get('aiCredentials');
+  if (!credentials) throw new AiNotConfiguredError();
+  return credentials;
 }
 
 const evaluateSchema = z.object({
@@ -110,23 +104,28 @@ agent.get('/test-key', async (c) => {
 
 agent.post('/evaluate', async (c) => {
   try {
+    const credentials = requireAiCredentials(c);
     const raw = await c.req.json();
     const parsed = evaluateSchema.safeParse(raw);
     if (!parsed.success) {
       return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
     }
 
-    const result = await evaluateAnswer(parsed.data.taskId, parsed.data.answer);
+    const result = await evaluateAnswer(parsed.data.taskId, parsed.data.answer, credentials);
     return c.json(result);
   } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ error: 'AI key required', code: 'AI_NOT_CONFIGURED' }, 401);
+    }
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Evaluation failed');
-    return c.json(aiErrorBody('Evaluation failed', err), 500);
+    return c.json({ error: 'Evaluation failed' }, 500);
   }
 });
 
 agent.get('/question/:taskId', async (c) => {
   try {
+    const credentials = requireAiCredentials(c);
     const taskId = c.req.param('taskId');
     if (!validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
 
@@ -147,23 +146,30 @@ agent.get('/question/:taskId', async (c) => {
     }));
 
     const task = rowToTask(taskRow, notes);
-    const question = await generateQuestion(task);
+    const question = await generateQuestion(task, credentials);
 
     return c.json({ question });
   } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ error: 'AI key required', code: 'AI_NOT_CONFIGURED' }, 401);
+    }
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Question generation failed');
-    return c.json(aiErrorBody('Question generation failed', err), 500);
+    return c.json({ error: 'Question generation failed' }, 500);
   }
 });
 
 agent.post('/summarize/:taskId', async (c) => {
   try {
+    const credentials = requireAiCredentials(c);
     const taskId = c.req.param('taskId');
     if (!validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
-    const summary = await summarizePaper(taskId);
+    const summary = await summarizePaper(taskId, credentials);
     return c.json(summary);
   } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ error: 'AI key required', code: 'AI_NOT_CONFIGURED' }, 401);
+    }
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Summarization failed');
     return c.json({ error: 'Summarization failed' }, 500);
@@ -173,7 +179,8 @@ agent.post('/summarize/:taskId', async (c) => {
 agent.post('/briefing', async (c) => {
   try {
     const userId = c.get('userId') as string;
-    const message = await dailyBriefing(userId);
+    const credentials = c.get('aiCredentials');
+    const message = await dailyBriefing(userId, credentials);
     return c.json({ message });
   } catch (err) {
     const log = c.get('logger') ?? logger;
@@ -199,12 +206,19 @@ agent.post('/mock/start', async (c) => {
       parsed.data.topic ?? (await getInterleaveTopicForMock(parsed.data.collectionId, userId));
     const difficulty = parsed.data.difficulty ?? 'medium';
 
-    const result = await startMockInterview(topic, difficulty, parsed.data.collectionId, userId);
+    const credentials = c.get('aiCredentials');
+    const result = await startMockInterview(
+      topic,
+      difficulty,
+      parsed.data.collectionId,
+      userId,
+      credentials,
+    );
     return c.json(result, 201);
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to start mock interview');
-    return c.json(aiErrorBody('Failed to start mock interview', err), 500);
+    return c.json({ error: 'Failed to start mock interview' }, 500);
   }
 });
 
@@ -217,12 +231,13 @@ agent.post('/mock/respond', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
     }
 
-    const result = await respondToMock(parsed.data.sessionId, parsed.data.answer);
+    const credentials = c.get('aiCredentials');
+    const result = await respondToMock(parsed.data.sessionId, parsed.data.answer, credentials);
     return c.json(result);
   } catch (err) {
     const log = c.get('logger') ?? logger;
     log.error({ err }, 'Failed to process mock response');
-    return c.json(aiErrorBody('Failed to process response', err), 500);
+    return c.json({ error: 'Failed to process response' }, 500);
   }
 });
 
