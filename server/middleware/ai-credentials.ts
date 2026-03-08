@@ -17,6 +17,9 @@ export const aiCredentialsMiddleware: MiddlewareHandler<AppEnv> = async (c, next
       return c.json({ error: `Unsupported AI provider: ${providerRaw}` }, 400);
     }
     c.set('aiCredentials', { provider: providerRaw as AiProvider, apiKey });
+  } else if (process.env.ANTHROPIC_API_KEY) {
+    // Fall back to server-configured Anthropic key
+    c.set('aiCredentials', { provider: 'anthropic', apiKey: process.env.ANTHROPIC_API_KEY });
   }
 
   return next();
