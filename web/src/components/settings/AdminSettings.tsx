@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router';
 import { formatRelative } from '../../utils/format';
 import { SectionHeader } from './shared';
 import { logger } from '../../logger';
+import { getLearnStats, getLearnConfig, updateLearnConfig } from '../../learn-api';
+import type { LearnStats, LearnConfig } from '../../learn-types';
 
 interface Props {
   user: User;
@@ -35,6 +37,10 @@ export default function AdminSettings({ user }: Props) {
   const [mcpToggling, setMcpToggling] = useState(false);
   const [mcpAudit, setMcpAudit] = useState<McpAuditEntry[]>([]);
   const [mcpAuditOpen, setMcpAuditOpen] = useState(false);
+  const [learnStats, setLearnStats] = useState<LearnStats | null>(null);
+  const [learnConfig, setLearnConfig] = useState<LearnConfig | null>(null);
+  const [learnConfigSaving, setLearnConfigSaving] = useState(false);
+  const [learnConfigSaved, setLearnConfigSaved] = useState(false);
 
   useEffect(() => {
     getAdminUsers()
@@ -56,6 +62,16 @@ export default function AdminSettings({ user }: Props) {
       .then((s) => setMcpEnabled(s.enabled))
       .catch((e) => {
         logger.error('Failed to load MCP settings', { error: String(e) });
+      });
+    getLearnStats()
+      .then(setLearnStats)
+      .catch((e) => {
+        logger.error('Failed to load learn stats', { error: String(e) });
+      });
+    getLearnConfig()
+      .then(setLearnConfig)
+      .catch((e) => {
+        logger.error('Failed to load learn config', { error: String(e) });
       });
   }, []);
 
@@ -81,6 +97,25 @@ export default function AdminSettings({ user }: Props) {
     } catch (err) {
       logger.error('Failed to toggle user MCP', { userId, error: String(err) });
     }
+  };
+
+  const handleLearnConfigSave = async () => {
+    if (!learnConfig) return;
+    setLearnConfigSaving(true);
+    setLearnConfigSaved(false);
+    try {
+      await updateLearnConfig(learnConfig);
+      setLearnConfigSaved(true);
+      setTimeout(() => setLearnConfigSaved(false), 2000);
+    } catch (err) {
+      logger.error('Failed to save learn config', { error: String(err) });
+    } finally {
+      setLearnConfigSaving(false);
+    }
+  };
+
+  const updateConfigField = (key: string, value: string | number | boolean) => {
+    setLearnConfig((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   const loadAudit = async () => {
@@ -390,6 +425,114 @@ export default function AdminSettings({ user }: Props) {
           ))}
         </div>
       )}
+
+      {/* Learning Tracks Section */}
+      <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">
+          Learning Tracks
+        </h3>
+
+        {learnStats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Executions Today', value: learnStats.executionsToday },
+              { label: 'Total Executions', value: learnStats.executionsTotal },
+              {
+                label: 'Avg Execution (ms)',
+                value: Math.round(learnStats.avgExecutionMs),
+              },
+              {
+                label: 'Success Rate',
+                value: `${Math.round(learnStats.successRate * 100)}%`,
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl text-center"
+              >
+                <p className="text-2xl font-bold text-zinc-100">{s.value}</p>
+                <p className="text-xs text-zinc-500 mt-1">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {learnConfig && (
+          <div className="space-y-3">
+            {/* Feature enabled toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-zinc-200">Feature Enabled</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Enable or disable the learning tracks feature
+                </p>
+              </div>
+              <button
+                onClick={() => updateConfigField('enabled', !learnConfig.enabled)}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                  learnConfig.enabled
+                    ? 'text-green-400 bg-green-500/10 hover:bg-green-500/20'
+                    : 'text-red-400 bg-red-500/10 hover:bg-red-500/20'
+                }`}
+              >
+                {learnConfig.enabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+
+            {/* Numeric config fields */}
+            {[
+              {
+                key: 'maxExecutionTime',
+                label: 'Max Execution Time',
+                unit: 'seconds',
+              },
+              { key: 'maxMemory', label: 'Max Memory', unit: 'MB' },
+              {
+                key: 'maxConcurrentExecutions',
+                label: 'Max Concurrent Executions',
+                unit: '',
+              },
+              {
+                key: 'circuitBreakerThreshold',
+                label: 'Circuit Breaker Threshold',
+                unit: '',
+              },
+              {
+                key: 'circuitBreakerCooldown',
+                label: 'Circuit Breaker Cooldown',
+                unit: 'minutes',
+              },
+            ].map(({ key, label, unit }) => (
+              <div key={key} className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-zinc-200">{label}</p>
+                  {unit && <p className="text-xs text-zinc-500 mt-0.5">{unit}</p>}
+                </div>
+                <input
+                  type="number"
+                  value={Number(learnConfig[key] ?? 0)}
+                  onChange={(e) => updateConfigField(key, Number(e.target.value))}
+                  className="w-24 px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-200 focus:outline-none focus:border-zinc-500"
+                />
+              </div>
+            ))}
+
+            <button
+              onClick={handleLearnConfigSave}
+              disabled={learnConfigSaving}
+              className={`w-full py-2 text-sm font-medium rounded-lg transition-colors ${
+                learnConfigSaved
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : learnConfigSaving
+                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700'
+              }`}
+            >
+              {learnConfigSaved ? 'Saved' : learnConfigSaving ? 'Saving...' : 'Save Config'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* MCP Section */}
       <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-4">
