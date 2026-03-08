@@ -29,6 +29,24 @@ interface AiKeyRow {
   created_at: string;
 }
 
+async function getValidKeyRow(userId: string): Promise<AiKeyRow | null> {
+  const [row] = await sql<AiKeyRow[]>`
+    SELECT * FROM user_ai_keys
+    WHERE user_id = ${userId} AND expires_at > now()
+  `;
+  return row ?? null;
+}
+
+function rowToKeyInfo(row: AiKeyRow): SavedAiKeyInfo {
+  return {
+    provider: row.provider,
+    model: row.model,
+    keyPrefix: row.key_prefix,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  };
+}
+
 export async function saveAiKey(
   userId: string,
   provider: AiProvider,
@@ -58,45 +76,21 @@ export async function saveAiKey(
     throw new Error(`Failed to save AI key for user ${userId}: upsert returned no rows`);
   }
 
-  return {
-    provider: row.provider,
-    model: row.model,
-    keyPrefix: row.key_prefix,
-    expiresAt: row.expires_at,
-    createdAt: row.created_at,
-  };
+  return rowToKeyInfo(row);
 }
 
 export async function getAiKeyInfo(userId: string): Promise<SavedAiKeyInfo | null> {
-  const [row] = await sql<AiKeyRow[]>`
-    SELECT * FROM user_ai_keys
-    WHERE user_id = ${userId} AND expires_at > now()
-  `;
-  if (!row) return null;
-
-  return {
-    provider: row.provider,
-    model: row.model,
-    keyPrefix: row.key_prefix,
-    expiresAt: row.expires_at,
-    createdAt: row.created_at,
-  };
+  const row = await getValidKeyRow(userId);
+  return row ? rowToKeyInfo(row) : null;
 }
 
 export async function getDecryptedAiKey(userId: string): Promise<DecryptedAiKey | null> {
-  const [row] = await sql<AiKeyRow[]>`
-    SELECT * FROM user_ai_keys
-    WHERE user_id = ${userId} AND expires_at > now()
-  `;
+  const row = await getValidKeyRow(userId);
   if (!row) return null;
 
   try {
     const apiKey = decrypt(row.encrypted_key);
-    return {
-      provider: row.provider,
-      apiKey,
-      model: row.model,
-    };
+    return { provider: row.provider, apiKey, model: row.model };
   } catch (err) {
     logger.error(
       { err, userId, keyVersion: row.key_version, provider: row.provider },

@@ -15,19 +15,7 @@ import {
   getAiKeyStorageStatus,
 } from '../../api';
 import { SectionHeader } from './shared';
-
-const PROVIDER_OPTIONS: {
-  value: AiProvider;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: 'anthropic',
-    label: 'Anthropic',
-    description: 'Claude (claude-sonnet-4-6)',
-  },
-  { value: 'openai', label: 'OpenAI', description: 'GPT-4o' },
-];
+import ProviderPicker from '../ProviderPicker';
 
 const EXPIRY_OPTIONS = [
   { value: 30, label: '30 days' },
@@ -166,13 +154,10 @@ export default function AiSettings() {
     }
   }
 
-  function daysUntilExpiry(): number | null {
-    if (!serverKeyInfo) return null;
-    const diff = new Date(serverKeyInfo.expiresAt).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  }
-
-  const expiryWarning = daysUntilExpiry() !== null && daysUntilExpiry()! <= 7;
+  const daysRemaining = serverKeyInfo
+    ? Math.max(0, Math.ceil((new Date(serverKeyInfo.expiresAt).getTime() - Date.now()) / 86400000))
+    : null;
+  const expiryWarning = daysRemaining !== null && daysRemaining <= 7;
 
   return (
     <div className="space-y-5">
@@ -240,7 +225,7 @@ export default function AiSettings() {
                     Expires:
                   </span>{' '}
                   {new Date(serverKeyInfo.expiresAt).toLocaleDateString()}
-                  {expiryWarning && ` (${daysUntilExpiry()} days remaining)`}
+                  {expiryWarning && ` (${daysRemaining} days remaining)`}
                 </p>
               </div>
               <button
@@ -259,22 +244,7 @@ export default function AiSettings() {
           <>
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-400">Provider</label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {PROVIDER_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleProviderChange(opt.value)}
-                    className={`p-3 rounded-lg border text-left transition-colors ${
-                      provider === opt.value
-                        ? 'border-zinc-500 bg-zinc-800'
-                        : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
-                    }`}
-                  >
-                    <p className="text-sm font-medium text-zinc-200">{opt.label}</p>
-                    <p className="text-xs text-zinc-500">{opt.description}</p>
-                  </button>
-                ))}
-              </div>
+              <ProviderPicker value={provider} onChange={handleProviderChange} />
             </div>
 
             {/* Expiry selection (server mode only) */}

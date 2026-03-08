@@ -52,3 +52,12 @@ export function hasAiConfig(): boolean {
 export function isServerMode(): boolean {
   return getAiConfig()?.storageMode === 'server';
 }
+
+export const PROVIDER_OPTIONS: {
+  value: AiProvider;
+  label: string;
+  description: string;
+}[] = [
+  { value: 'anthropic', label: 'Anthropic', description: 'Claude (claude-sonnet-4-6)' },
+  { value: 'openai', label: 'OpenAI', description: 'GPT-4o' },
+];

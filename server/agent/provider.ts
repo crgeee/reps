@@ -16,7 +16,6 @@ interface CompletionMessage {
 
 export interface CompletionOpts {
   credentials: AiCredentials;
-  model?: string;
   system: string;
   messages: CompletionMessage[];
   maxTokens: number;
@@ -29,7 +28,7 @@ const DEFAULT_MODELS: Record<AiProvider, string> = {
 
 async function callAnthropic(opts: CompletionOpts): Promise<string> {
   const client = new Anthropic({ apiKey: opts.credentials.apiKey });
-  const model = opts.model ?? DEFAULT_MODELS.anthropic;
+  const model = opts.credentials.model ?? DEFAULT_MODELS.anthropic;
 
   const response = await client.messages.create({
     model,
@@ -47,7 +46,7 @@ async function callAnthropic(opts: CompletionOpts): Promise<string> {
 
 async function callOpenAI(opts: CompletionOpts): Promise<string> {
   const client = new OpenAI({ apiKey: opts.credentials.apiKey });
-  const model = opts.model ?? DEFAULT_MODELS.openai;
+  const model = opts.credentials.model ?? DEFAULT_MODELS.openai;
 
   const response = await client.chat.completions.create({
     model,

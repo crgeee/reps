@@ -24,15 +24,17 @@ async function getNotifiableUsers(
   `;
 }
 
+function getServerCredentials(): AiCredentials | undefined {
+  const key = process.env.ANTHROPIC_API_KEY;
+  return key ? { provider: 'anthropic', apiKey: key } : undefined;
+}
+
 export function startCronJobs(): void {
   // Daily briefing + email digest at 8:00 AM every day
   cron.schedule('0 8 * * *', async () => {
     logger.info('Running daily briefings');
     try {
-      const serverKey = process.env.ANTHROPIC_API_KEY;
-      const credentials: AiCredentials | undefined = serverKey
-        ? { provider: 'anthropic', apiKey: serverKey }
-        : undefined;
+      const credentials = getServerCredentials();
       const users = await getNotifiableUsers('notify_daily');
       for (const user of users) {
         try {
@@ -52,10 +54,7 @@ export function startCronJobs(): void {
   cron.schedule('0 20 * * 0', async () => {
     logger.info('Running weekly insights');
     try {
-      const serverKey = process.env.ANTHROPIC_API_KEY;
-      const credentials: AiCredentials | undefined = serverKey
-        ? { provider: 'anthropic', apiKey: serverKey }
-        : undefined;
+      const credentials = getServerCredentials();
       const users = await getNotifiableUsers('notify_weekly');
       for (const user of users) {
         try {
