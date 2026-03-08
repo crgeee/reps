@@ -9,7 +9,7 @@ import Spinner from '../components/Spinner';
 import CollectionSwitcher from '../components/CollectionSwitcher';
 import FocusWidget from '../components/FocusWidget';
 import Footer from '../components/Footer';
-import { Home, ListTodo, Plus, BarChart3 } from 'lucide-react';
+import { Home, ListTodo, Plus, BarChart3, BookOpen } from 'lucide-react';
 
 export interface ProtectedContext {
   tasks: Task[];
@@ -46,12 +46,14 @@ const NAV_ITEMS: { path: string; label: string; end?: boolean }[] = [
   { path: '/', label: 'Dashboard', end: true },
   { path: '/tasks', label: 'Tasks' },
   { path: '/progress', label: 'Progress' },
+  { path: '/learn', label: 'Learn' },
   { path: '/calendar', label: 'Calendar' },
 ];
 
 const BOTTOM_NAV_ITEMS: { path: string; label: string; Icon: typeof Home; end?: boolean }[] = [
   { path: '/', label: 'Home', Icon: Home, end: true },
   { path: '/tasks', label: 'Tasks', Icon: ListTodo },
+  { path: '/learn', label: 'Learn', Icon: BookOpen },
   { path: '/add', label: 'Add', Icon: Plus },
   { path: '/progress', label: 'Progress', Icon: BarChart3 },
 ];

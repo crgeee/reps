@@ -20,6 +20,9 @@ const ExportView = lazy(() => import('./components/ExportView'));
 const Settings = lazy(() => import('./components/Settings'));
 const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
 const AdminLogs = lazy(() => import('./components/AdminLogs'));
+const TrackList = lazy(() => import('./components/learn/TrackList'));
+const TrackDetail = lazy(() => import('./components/learn/TrackDetail'));
+const ExerciseView = lazy(() => import('./components/learn/ExerciseView'));
 
 function LazyFallback() {
   return (
@@ -148,6 +151,30 @@ export const router = createBrowserRouter([
         element: (
           <Lazy>
             <AdminLogs />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/learn',
+        element: (
+          <Lazy>
+            <TrackList />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/learn/:slug',
+        element: (
+          <Lazy>
+            <TrackDetail />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/learn/:slug/:moduleSlug/exercise',
+        element: (
+          <Lazy>
+            <ExerciseView />
           </Lazy>
         ),
       },
