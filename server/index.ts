@@ -42,7 +42,7 @@ app.use(
   cors({
     origin: [corsOrigin],
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Authorization', 'Content-Type', 'X-AI-Key', 'X-AI-Provider'],
+    allowHeaders: ['Authorization', 'Content-Type', 'X-AI-Key', 'X-AI-Provider', 'X-AI-Model'],
     credentials: true,
     maxAge: 86400,
   }),

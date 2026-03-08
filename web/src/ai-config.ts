@@ -3,6 +3,7 @@ export type AiProvider = 'anthropic' | 'openai';
 export interface AiConfig {
   provider: AiProvider;
   apiKey: string;
+  model?: string;
 }
 
 const STORAGE_KEY = 'reps_ai_config';
@@ -13,7 +14,7 @@ export function getAiConfig(): AiConfig | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed?.provider && parsed?.apiKey) {
-      return { provider: parsed.provider, apiKey: parsed.apiKey };
+      return { provider: parsed.provider, apiKey: parsed.apiKey, model: parsed.model };
     }
     return null;
   } catch {

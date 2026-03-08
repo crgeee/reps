@@ -6,23 +6,48 @@ import { SectionHeader } from './shared';
 const PROVIDER_OPTIONS: {
   value: AiProvider;
   label: string;
-  description: string;
+  models: { value: string; label: string; description: string }[];
 }[] = [
   {
     value: 'anthropic',
     label: 'Anthropic',
-    description: 'Claude (claude-sonnet-4-6)',
+    models: [
+      { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Best balance' },
+      {
+        value: 'claude-haiku-4-5-20251001',
+        label: 'Claude Haiku 4.5',
+        description: 'Fastest & cheapest',
+      },
+    ],
   },
-  { value: 'openai', label: 'OpenAI', description: 'GPT-4o' },
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    models: [
+      { value: 'gpt-4o', label: 'GPT-4o', description: 'Best balance' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Fastest & cheapest' },
+    ],
+  },
 ];
 
 export default function AiSettings() {
   const existing = getAiConfig();
   const [provider, setProvider] = useState<AiProvider>(existing?.provider ?? 'anthropic');
+  const providerConfig = PROVIDER_OPTIONS.find((p) => p.value === provider)!;
+  const defaultModel = providerConfig.models[0]!.value;
+  const [model, setModel] = useState(existing?.model ?? defaultModel);
   const [apiKey, setApiKey] = useState(existing?.apiKey ?? '');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testError, setTestError] = useState('');
   const [saved, setSaved] = useState(!!existing);
+
+  function handleProviderChange(newProvider: AiProvider) {
+    setProvider(newProvider);
+    const newConfig = PROVIDER_OPTIONS.find((p) => p.value === newProvider)!;
+    setModel(newConfig.models[0]!.value);
+    setSaved(false);
+    setTestStatus('idle');
+  }
 
   function handleClear() {
     clearAiConfig();
@@ -34,7 +59,7 @@ export default function AiSettings() {
 
   async function handleTest() {
     if (!apiKey.trim()) return;
-    setAiConfig({ provider, apiKey: apiKey.trim() });
+    setAiConfig({ provider, apiKey: apiKey.trim(), model });
     setSaved(true);
     setTestStatus('testing');
     setTestError('');
@@ -64,11 +89,7 @@ export default function AiSettings() {
             {PROVIDER_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => {
-                  setProvider(opt.value);
-                  setSaved(false);
-                  setTestStatus('idle');
-                }}
+                onClick={() => handleProviderChange(opt.value)}
                 className={`p-3 rounded-lg border text-left transition-colors ${
                   provider === opt.value
                     ? 'border-zinc-500 bg-zinc-800'
@@ -76,7 +97,32 @@ export default function AiSettings() {
                 }`}
               >
                 <p className="text-sm font-medium text-zinc-200">{opt.label}</p>
-                <p className="text-xs text-zinc-500">{opt.description}</p>
+                <p className="text-xs text-zinc-500">{opt.models[0]!.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Model selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400">Model</label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {providerConfig.models.map((m) => (
+              <button
+                key={m.value}
+                onClick={() => {
+                  setModel(m.value);
+                  setSaved(false);
+                  setTestStatus('idle');
+                }}
+                className={`p-3 rounded-lg border text-left transition-colors ${
+                  model === m.value
+                    ? 'border-zinc-500 bg-zinc-800'
+                    : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                }`}
+              >
+                <p className="text-sm font-medium text-zinc-200">{m.label}</p>
+                <p className="text-xs text-zinc-500">{m.description}</p>
               </button>
             ))}
           </div>

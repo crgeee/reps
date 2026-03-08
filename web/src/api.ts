@@ -38,6 +38,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (aiConfig) {
       aiHeaders['X-AI-Key'] = aiConfig.apiKey;
       aiHeaders['X-AI-Provider'] = aiConfig.provider;
+      if (aiConfig.model) aiHeaders['X-AI-Model'] = aiConfig.model;
     }
   }
 
