@@ -16,7 +16,7 @@ export async function initiateDeviceAuth(): Promise<DeviceAuthInitiation> {
   const deviceCode = generateDeviceCode();
   const deviceCodeHash = hashToken(deviceCode);
   const expiresAt = new Date(Date.now() + DEVICE_CODE_EXPIRY_MINUTES * 60 * 1000);
-  const appUrl = process.env.APP_URL ?? 'https://reps-prep.duckdns.org';
+  const appUrl = process.env.APP_URL ?? 'https://reps.sh';
 
   await sql`
     INSERT INTO device_auth_codes (user_code, device_code_hash, expires_at)

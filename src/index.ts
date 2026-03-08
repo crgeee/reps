@@ -372,7 +372,7 @@ program
 program
   .command('login')
   .description('Authenticate via device flow (opens browser)')
-  .option('-u, --url <url>', 'API URL', 'https://reps-prep.duckdns.org')
+  .option('-u, --url <url>', 'API URL', 'https://reps.sh')
   .action(async (opts) => {
     const apiUrl = opts.url;
     console.log(chalk.dim(`Connecting to ${apiUrl}...`));

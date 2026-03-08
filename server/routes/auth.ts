@@ -64,7 +64,7 @@ auth.get('/verify', async (c) => {
 
   const result = await verifyMagicLink(token, userAgent, ipAddress ?? undefined);
   if (!result) {
-    const appUrl = process.env.APP_URL ?? 'https://reps-prep.duckdns.org';
+    const appUrl = process.env.APP_URL ?? 'https://reps.sh';
     return c.redirect(`${appUrl}/#login?error=invalid`);
   }
 
@@ -77,7 +77,7 @@ auth.get('/verify', async (c) => {
     maxAge: COOKIE_MAX_AGE,
   });
 
-  const appUrl = process.env.APP_URL ?? 'https://reps-prep.duckdns.org';
+  const appUrl = process.env.APP_URL ?? 'https://reps.sh';
   return c.redirect(`${appUrl}/`);
 });
 

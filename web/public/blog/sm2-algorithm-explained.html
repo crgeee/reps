@@ -8,15 +8,15 @@
     <meta name="description" content="A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation. Understand how tools like Anki schedule your reviews." />
 
     <!-- Canonical -->
-    <link rel="canonical" href="https://reps-prep.duckdns.org/blog/sm2-algorithm-explained" />
+    <link rel="canonical" href="https://reps.sh/blog/sm2-algorithm-explained" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="article" />
     <meta property="og:title" content="SM-2 Algorithm Explained: How Spaced Repetition Actually Works" />
     <meta property="og:description" content="A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation." />
-    <meta property="og:url" content="https://reps-prep.duckdns.org/blog/sm2-algorithm-explained" />
+    <meta property="og:url" content="https://reps.sh/blog/sm2-algorithm-explained" />
     <meta property="og:site_name" content="reps" />
-    <meta property="og:image" content="https://reps-prep.duckdns.org/og-image.png" />
+    <meta property="og:image" content="https://reps.sh/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -24,7 +24,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="SM-2 Algorithm Explained: How Spaced Repetition Actually Works" />
     <meta name="twitter:description" content="A deep dive into the SM-2 spaced repetition algorithm: the history, the math, the formulas, and a full TypeScript implementation." />
-    <meta name="twitter:image" content="https://reps-prep.duckdns.org/og-image.png" />
+    <meta name="twitter:image" content="https://reps.sh/og-image.png" />
 
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -67,21 +67,21 @@
       "author": {
         "@type": "Organization",
         "name": "reps",
-        "url": "https://reps-prep.duckdns.org"
+        "url": "https://reps.sh"
       },
       "publisher": {
         "@type": "Organization",
         "name": "reps",
-        "url": "https://reps-prep.duckdns.org"
+        "url": "https://reps.sh"
       },
       "datePublished": "2026-03-02",
       "dateModified": "2026-03-02",
       "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": "https://reps-prep.duckdns.org/blog/sm2-algorithm-explained"
+        "@id": "https://reps.sh/blog/sm2-algorithm-explained"
       },
-      "url": "https://reps-prep.duckdns.org/blog/sm2-algorithm-explained",
-      "image": "https://reps-prep.duckdns.org/og-image.png",
+      "url": "https://reps.sh/blog/sm2-algorithm-explained",
+      "image": "https://reps.sh/og-image.png",
       "keywords": ["SM-2 algorithm", "spaced repetition", "SuperMemo", "Anki", "TypeScript", "interview prep"]
     }
     </script>
@@ -108,7 +108,7 @@
         <!-- Introduction -->
         <div class="prose prose-invert max-w-none">
           <p class="text-lg text-zinc-300 leading-relaxed mb-6">
-            You have probably heard that spaced repetition is the most efficient way to memorize information long-term. Tools like Anki, SuperMemo, and <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> all use it. But when someone says "spaced repetition," what they usually mean is a specific algorithm running under the hood, deciding <em>when</em> you should see each card again.
+            You have probably heard that spaced repetition is the most efficient way to memorize information long-term. Tools like Anki, SuperMemo, and <a href="https://reps.sh" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> all use it. But when someone says "spaced repetition," what they usually mean is a specific algorithm running under the hood, deciding <em>when</em> you should see each card again.
           </p>
           <p class="text-zinc-300 leading-relaxed mb-6">
             That algorithm, more often than not, is <strong class="text-white">SM-2</strong>.
@@ -129,7 +129,7 @@
             SM-2 became the engine behind SuperMemo 2, one of the first commercial spaced repetition programs. Wozniak went on to develop more sophisticated versions &mdash; SM-3 through SM-18 &mdash; but SM-2 was the one that escaped into the wild. When Damien Elmes created Anki in 2006, he chose SM-2 as its scheduling algorithm. Since Anki is open source, SM-2 became the de facto standard for spaced repetition worldwide.
           </p>
           <p class="text-zinc-300 leading-relaxed mb-6">
-            Today, despite being nearly 40 years old, SM-2 remains the most widely deployed spaced repetition algorithm in existence. Anki alone has tens of millions of users. Countless other apps &mdash; including <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> &mdash; use it or a close variant.
+            Today, despite being nearly 40 years old, SM-2 remains the most widely deployed spaced repetition algorithm in existence. Anki alone has tens of millions of users. Countless other apps &mdash; including <a href="https://reps.sh" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> &mdash; use it or a close variant.
           </p>
 
           <!-- The Algorithm -->
@@ -371,7 +371,7 @@ EF' = 2.36 + (0.1 - (5-5) * (0.08 + (5-5) * 0.02))
           <!-- TypeScript Implementation -->
           <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="implementation">Full TypeScript Implementation</h2>
           <p class="text-zinc-300 leading-relaxed mb-4">
-            Here is a clean, complete implementation of SM-2 in TypeScript. This is the exact algorithm that <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> uses to schedule interview prep reviews.
+            Here is a clean, complete implementation of SM-2 in TypeScript. This is the exact algorithm that <a href="https://reps.sh" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> uses to schedule interview prep reviews.
           </p>
 
           <div class="bg-zinc-900 rounded-lg p-4 mb-6 overflow-x-auto">
@@ -459,7 +459,7 @@ EF' = 2.36 + (0.1 - (5-5) * (0.08 + (5-5) * 0.02))
           <!-- Why SM-2 for Interview Prep -->
           <h2 class="text-2xl font-bold text-white mt-12 mb-4" id="interview-prep">Why SM-2 Is Still the Right Choice for Interview Prep</h2>
           <p class="text-zinc-300 leading-relaxed mb-6">
-            If FSRS is measurably better, why does <a href="https://reps-prep.duckdns.org" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> use SM-2? Context matters.
+            If FSRS is measurably better, why does <a href="https://reps.sh" class="text-emerald-400 hover:text-emerald-300 underline">reps</a> use SM-2? Context matters.
           </p>
           <p class="text-zinc-300 leading-relaxed mb-6">
             FSRS shines when you have a large collection &mdash; thousands of flashcards &mdash; and you need to optimize for minimal daily review time while maintaining high retention across all of them. This is the language-learning scenario: 5,000 vocabulary words, 20 reviews a day, over multiple years.
@@ -488,7 +488,7 @@ EF' = 2.36 + (0.1 - (5-5) * (0.08 + (5-5) * 0.02))
         <div class="mt-12 bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
           <h2 class="text-xl font-bold text-white mb-2">Track your interview prep with SM-2</h2>
           <p class="text-zinc-400 mb-6">reps uses the SM-2 algorithm to schedule your reviews, combined with AI-generated interview questions and answer evaluation.</p>
-          <a href="https://reps-prep.duckdns.org" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-6 py-3 rounded-lg transition-colors">
+          <a href="https://reps.sh" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-6 py-3 rounded-lg transition-colors">
             Try reps free
           </a>
         </div>
@@ -500,7 +500,7 @@ EF' = 2.36 + (0.1 - (5-5) * (0.08 + (5-5) * 0.02))
     <footer class="border-t border-zinc-800 mt-16">
       <div class="max-w-3xl mx-auto px-6 py-8 flex items-center justify-between text-sm text-zinc-500">
         <p>&copy; 2026 reps. All rights reserved.</p>
-        <a href="/" class="hover:text-zinc-300 transition-colors">reps-prep.duckdns.org</a>
+        <a href="/" class="hover:text-zinc-300 transition-colors">reps.sh</a>
       </div>
     </footer>
   </body>

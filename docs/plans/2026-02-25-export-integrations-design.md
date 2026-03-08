@@ -38,7 +38,7 @@ New route file: `server/routes/export.ts`
 - Auth via 64-char hex token in URL path
 - Returns `Content-Type: text/calendar`
 - Each incomplete task with `next_review` becomes an all-day VEVENT
-- `UID: {task.id}@reps-prep.duckdns.org` for stable dedup
+- `UID: {task.id}@reps.sh` for stable dedup
 - `SUMMARY: Review: {title}`
 - `DESCRIPTION: Topic: {topic}\nReps: {repetitions}\nEase: {easeFactor}`
 - `VALARM` 15-minute display reminder
@@ -83,7 +83,7 @@ New "Export & Integrations" view (`web/src/components/ExportView.tsx`):
 
 - Calendar subscription section:
   - "Generate Subscribe URL" button (calls `POST /export/calendar/token`)
-  - Displays `webcal://reps-prep.duckdns.org/export/calendar/{token}.ics`
+  - Displays `webcal://reps.sh/export/calendar/{token}.ics`
   - Copy button for the URL
   - Brief instructions for Apple Calendar / Google Calendar
   - "Regenerate" button to invalidate old URL

@@ -10,7 +10,7 @@ async function migrateUsers(): Promise<void> {
   console.log('Starting multi-user data migration...');
 
   // 1. Determine default user email
-  const email = process.env.DIGEST_EMAIL_TO ?? 'admin@reps-prep.duckdns.org';
+  const email = process.env.DIGEST_EMAIL_TO ?? 'admin@reps.sh';
   console.log(`  Default user email: ${email}`);
 
   // 2. Create default user (or find existing)
