@@ -6,6 +6,7 @@ export type AiProvider = 'anthropic' | 'openai';
 export interface AiCredentials {
   provider: AiProvider;
   apiKey: string;
+  model?: string;
 }
 
 interface CompletionMessage {

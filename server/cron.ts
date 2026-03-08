@@ -4,6 +4,7 @@ import { dailyBriefing, weeklyInsight } from './agent/coach.js';
 import { sendDailyDigest } from './agent/email.js';
 import { cleanExpiredSessions } from './auth/sessions.js';
 import { cleanExpiredDeviceCodes } from './auth/device-flow.js';
+import { cleanExpiredAiKeys } from './auth/ai-keys.js';
 import { logger } from './logger.js';
 import type { AiCredentials } from './agent/provider.js';
 
@@ -74,9 +75,13 @@ export function startCronJobs(): void {
     try {
       const sessionCount = await cleanExpiredSessions();
       const deviceCount = await cleanExpiredDeviceCodes();
-      logger.info({ sessionCount, deviceCount }, 'Cleaned expired sessions and device codes');
+      const aiKeyCount = await cleanExpiredAiKeys();
+      logger.info(
+        { sessionCount, deviceCount, aiKeyCount },
+        'Cleaned expired sessions, device codes, and AI keys',
+      );
     } catch (err) {
-      logger.error({ err }, 'Session cleanup failed');
+      logger.error({ err }, 'Cleanup failed');
     }
   });
 

@@ -1,4 +1,4 @@
-import { getAiConfig } from './ai-config';
+import { getAiConfig, type SavedAiKeyInfo } from './ai-config';
 import type {
   Task,
   CreateTaskInput,
@@ -35,9 +35,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const aiHeaders: Record<string, string> = {};
   if (path.startsWith('/agent/')) {
     const aiConfig = getAiConfig();
-    if (aiConfig) {
+    if (aiConfig && aiConfig.storageMode !== 'server') {
       aiHeaders['X-AI-Key'] = aiConfig.apiKey;
       aiHeaders['X-AI-Provider'] = aiConfig.provider;
+      if (aiConfig.model) aiHeaders['X-AI-Model'] = aiConfig.model;
     }
   }
 
@@ -617,4 +618,30 @@ export function getNginxErrors(
   const query = new URLSearchParams({ hours: String(hours) });
   if (search) query.set('search', search);
   return request<{ entries: NginxErrorEntry[] }>(`/logs/nginx-errors?${query}`);
+}
+
+// Server AI Key Storage
+
+export async function getServerAiKey(): Promise<SavedAiKeyInfo> {
+  return request<SavedAiKeyInfo>('/users/me/ai-key');
+}
+
+export async function saveServerAiKey(input: {
+  provider: string;
+  apiKey: string;
+  model?: string | null;
+  expiryDays: number;
+}): Promise<SavedAiKeyInfo> {
+  return request<SavedAiKeyInfo>('/users/me/ai-key', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteServerAiKey(): Promise<void> {
+  await request<unknown>('/users/me/ai-key', { method: 'DELETE' });
+}
+
+export async function getAiKeyStorageStatus(): Promise<{ encryptionAvailable: boolean }> {
+  return request<{ encryptionAvailable: boolean }>('/users/me/ai-key/status');
 }

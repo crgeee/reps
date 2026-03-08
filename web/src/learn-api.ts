@@ -16,9 +16,10 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const aiHeaders: Record<string, string> = {};
   const aiConfig = getAiConfig();
-  if (aiConfig) {
+  if (aiConfig && aiConfig.storageMode !== 'server') {
     aiHeaders['X-AI-Key'] = aiConfig.apiKey;
     aiHeaders['X-AI-Provider'] = aiConfig.provider;
+    if (aiConfig.model) aiHeaders['X-AI-Model'] = aiConfig.model;
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {

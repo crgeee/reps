@@ -15,7 +15,7 @@ export default function AiKeyModal({ onClose, onConfigured }: Props) {
 
   async function handleSubmit() {
     if (!apiKey.trim()) return;
-    setAiConfig({ provider, apiKey: apiKey.trim() });
+    setAiConfig({ provider, apiKey: apiKey.trim(), storageMode: 'browser' });
     setStatus('testing');
     setError('');
     try {
