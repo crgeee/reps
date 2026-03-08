@@ -28,6 +28,7 @@ import type {
   LogStats,
   LogErrorSummary,
   NginxErrorEntry,
+  TaskAlert,
 } from './types';
 
 // Auth
@@ -603,4 +604,27 @@ export async function deleteServerAiKey(): Promise<void> {
 
 export async function getAiKeyStorageStatus(): Promise<{ encryptionAvailable: boolean }> {
   return request<{ encryptionAvailable: boolean }>('/users/me/ai-key/status');
+}
+
+// Notifications
+
+export async function testPushNotification(): Promise<void> {
+  await request<unknown>('/notifications/test', { method: 'POST' });
+}
+
+// Task Alerts
+
+export async function getTaskAlerts(taskId: string): Promise<TaskAlert[]> {
+  return request<TaskAlert[]>(`/tasks/${taskId}/alerts`);
+}
+
+export async function createTaskAlert(taskId: string, alertAt: string): Promise<TaskAlert> {
+  return request<TaskAlert>(`/tasks/${taskId}/alerts`, {
+    method: 'POST',
+    body: JSON.stringify({ alertAt }),
+  });
+}
+
+export async function deleteTaskAlert(taskId: string, alertId: string): Promise<void> {
+  await request<unknown>(`/tasks/${taskId}/alerts/${alertId}`, { method: 'DELETE' });
 }
