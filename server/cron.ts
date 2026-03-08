@@ -98,6 +98,37 @@ export function startCronJobs(): void {
         }
       }
       logger.info({ count: users.length }, 'Daily briefings complete');
+
+      // Review-due push notifications (separate from AI briefing)
+      const reviewDueUsers = await sql<{ id: string }[]>`
+        SELECT DISTINCT u.id FROM users u
+        JOIN tasks t ON t.user_id = u.id
+        WHERE u.notify_review_due = true AND u.email_verified = true
+          AND t.next_review <= CURRENT_DATE AND t.completed = false
+      `;
+      for (const user of reviewDueUsers) {
+        try {
+          const [{ count }] = await sql<[{ count: string }]>`
+            SELECT COUNT(*)::text AS count FROM tasks
+            WHERE user_id = ${user.id} AND next_review <= CURRENT_DATE AND completed = false
+          `;
+          const n = parseInt(count, 10);
+          if (n > 0) {
+            await send(
+              user.id,
+              'reps — reviews due',
+              `You have ${n} task${n === 1 ? '' : 's'} due for review`,
+              {
+                url: '/tasks?filter=due',
+                tag: 'review-due',
+                ttl: 14400,
+              },
+            );
+          }
+        } catch (err) {
+          logger.error({ err, userId: user.id }, 'Review-due notification failed');
+        }
+      }
     } catch (err) {
       logger.error({ err }, 'Daily briefing batch failed');
     }

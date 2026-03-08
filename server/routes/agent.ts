@@ -14,6 +14,7 @@ import {
 } from '../agent/mock.js';
 import { createCompletion } from '../agent/provider.js';
 import type { AiCredentials } from '../agent/provider.js';
+import { send } from '../agent/notify.js';
 import { validateUuid, uuidStr, mockStartSchema, mockRespondSchema } from '../validation.js';
 import type { Task, Note } from '../../src/types.js';
 import { logger } from '../logger.js';
@@ -118,6 +119,25 @@ agent.post('/evaluate', async (c) => {
     }
 
     const result = await evaluateAnswer(parsed.data.taskId, parsed.data.answer, credentials);
+
+    // Notify user if AI completion notifications are enabled
+    const userId = c.get('userId') as string;
+    const taskId = parsed.data.taskId;
+    const [userPrefs] = await sql<[{ notify_ai_complete: boolean }]>`
+      SELECT notify_ai_complete FROM users WHERE id = ${userId}
+    `;
+    if (userPrefs?.notify_ai_complete) {
+      // Fire and forget — don't block the response
+      send(userId, 'reps — evaluation ready', `Your answer has been scored`, {
+        url: `/tasks?highlight=${taskId}`,
+        tag: 'ai-complete',
+        ttl: 3600,
+      }).catch((err) => {
+        const log = c.get('logger') ?? logger;
+        log.error({ err }, 'AI complete notification failed');
+      });
+    }
+
     return c.json(result);
   } catch (err) {
     if (err instanceof AiNotConfiguredError) {
