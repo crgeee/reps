@@ -24,15 +24,22 @@ export function getAiConfig(): AiConfig | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed?.provider && (parsed?.apiKey || parsed?.storageMode === 'server')) {
+      const provider: AiProvider = parsed.provider;
+      const providerConfig = PROVIDER_OPTIONS.find((p) => p.value === provider);
+      const validModel =
+        parsed.model && providerConfig?.models.some((m: ModelOption) => m.value === parsed.model)
+          ? parsed.model
+          : undefined;
       return {
-        provider: parsed.provider,
+        provider,
         apiKey: parsed.apiKey ?? '',
-        model: parsed.model,
+        model: validModel,
         storageMode: parsed.storageMode ?? 'browser',
       };
     }
     return null;
-  } catch {
+  } catch (err) {
+    console.error('Failed to read AI config from localStorage:', err);
     return null;
   }
 }
@@ -62,10 +69,10 @@ export interface ModelOption {
 export interface ProviderOption {
   value: AiProvider;
   label: string;
-  models: ModelOption[];
+  models: [ModelOption, ...ModelOption[]];
 }
 
-export const PROVIDER_OPTIONS: ProviderOption[] = [
+export const PROVIDER_OPTIONS: [ProviderOption, ...ProviderOption[]] = [
   {
     value: 'anthropic',
     label: 'Anthropic',
@@ -90,9 +97,13 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
 ];
 
 export function getProviderConfig(provider: AiProvider): ProviderOption {
-  return PROVIDER_OPTIONS.find((p) => p.value === provider)!;
+  return PROVIDER_OPTIONS.find((p) => p.value === provider) ?? PROVIDER_OPTIONS[0];
 }
 
 export function getDefaultModel(provider: AiProvider): string {
-  return getProviderConfig(provider).models[0]!.value;
+  return getProviderConfig(provider).models[0].value;
+}
+
+export function isValidModel(provider: AiProvider, model: string): boolean {
+  return getProviderConfig(provider).models.some((m) => m.value === model);
 }
