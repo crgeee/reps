@@ -9,6 +9,7 @@ import { logger } from './logger.js';
 import type { AppEnv } from './types.js';
 import { authMiddleware } from './middleware/auth.js';
 import { rateLimiter } from './middleware/rate-limit.js';
+import { aiCredentialsMiddleware } from './middleware/ai-credentials.js';
 import { etag } from './middleware/etag.js';
 import { requestLogger } from './middleware/logger.js';
 import authRoutes from './routes/auth.js';
@@ -39,7 +40,7 @@ app.use(
   cors({
     origin: [corsOrigin],
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Authorization', 'Content-Type'],
+    allowHeaders: ['Authorization', 'Content-Type', 'X-AI-Key', 'X-AI-Provider'],
     credentials: true,
     maxAge: 86400,
   }),
@@ -88,6 +89,9 @@ app.use('/*', authMiddleware);
 
 // ETag caching for GET responses
 app.use('/*', etag);
+
+// Extract AI credentials from BYOK headers
+app.use('/agent/*', aiCredentialsMiddleware);
 
 // Stricter rate limit for agent routes — 10 req/min
 app.use('/agent/*', rateLimiter(10, 60_000));

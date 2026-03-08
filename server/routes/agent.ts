@@ -12,6 +12,7 @@ import {
   listMockSessions,
   getInterleaveTopicForMock,
 } from '../agent/mock.js';
+import { createCompletion } from '../agent/provider.js';
 import { validateUuid, uuidStr, mockStartSchema, mockRespondSchema } from '../validation.js';
 import type { Task, Note } from '../../src/types.js';
 import { logger } from '../logger.js';
@@ -86,6 +87,26 @@ function rowToTask(row: TaskRow, notes: Note[]): Task {
 }
 
 // --- routes ---
+
+agent.get('/test-key', async (c) => {
+  const credentials = c.get('aiCredentials');
+  if (!credentials) {
+    return c.json({ error: 'No AI key configured', code: 'AI_NOT_CONFIGURED' }, 401);
+  }
+
+  try {
+    await createCompletion({
+      credentials,
+      system: 'Reply with exactly: ok',
+      messages: [{ role: 'user', content: 'test' }],
+      maxTokens: 5,
+    });
+    return c.json({ status: 'ok', provider: credentials.provider });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return c.json({ error: `Key validation failed: ${message}`, code: 'AI_KEY_INVALID' }, 401);
+  }
+});
 
 agent.post('/evaluate', async (c) => {
   try {
