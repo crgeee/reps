@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# Prevent concurrent deploys
+LOCKFILE="/tmp/reps-deploy.lock"
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+  echo "✗ Another deploy is running — skipping"
+  exit 1
+fi
+
 # Ensure node/npm are available (nvm may not be loaded in non-login shells)
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"

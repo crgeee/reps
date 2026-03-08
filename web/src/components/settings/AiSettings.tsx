@@ -32,6 +32,15 @@ const DISCLOSURE = {
     'Your API key is encrypted (AES-256) and stored on our server. It auto-expires after the period you select. The server decrypts your key only when making AI calls on your behalf — the same access level it has when you send the key via your browser. Administrators cannot read your key from the database without the separate encryption key.',
 } as const;
 
+function KeyInfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+      <span className="text-sm text-zinc-500">{label}</span>
+      <span className="text-sm text-zinc-200">{children}</span>
+    </div>
+  );
+}
+
 export default function AiSettings() {
   const existing = getAiConfig();
   const [storageMode, setStorageMode] = useState<AiStorageMode>(existing?.storageMode ?? 'browser');
@@ -42,6 +51,7 @@ export default function AiSettings() {
   const [apiKey, setApiKey] = useState(
     existing?.storageMode === 'server' ? '' : (existing?.apiKey ?? ''),
   );
+  const [showKey, setShowKey] = useState(false);
   const [expiryDays, setExpiryDays] = useState<30 | 90 | 365>(30);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testError, setTestError] = useState('');
@@ -55,14 +65,24 @@ export default function AiSettings() {
   useEffect(() => {
     getAiKeyStorageStatus()
       .then((s) => setEncryptionAvailable(s.encryptionAvailable))
-      .catch(() => setEncryptionAvailable(false));
+      .catch((err) => {
+        console.error('Failed to check AI key storage status:', err);
+        setEncryptionAvailable(false);
+      });
 
     if (initialStorageMode === 'server') {
       getServerAiKey()
         .then(setServerKeyInfo)
-        .catch(() => setServerKeyInfo(null));
+        .catch((err) => {
+          console.error('Failed to fetch server AI key:', err);
+          setServerKeyInfo(null);
+        });
     }
   }, [initialStorageMode]);
+
+  const hasSavedKey = storageMode === 'browser' ? saved : !!serverKeyInfo;
+  const modelLabel =
+    getProviderConfig(provider).models.find((m) => m.value === model)?.label ?? model;
 
   function handleProviderChange(newProvider: AiProvider) {
     setProvider(newProvider);
@@ -82,6 +102,7 @@ export default function AiSettings() {
     clearAiConfig();
     setApiKey('');
     setSaved(false);
+    setShowKey(false);
     setTestStatus('idle');
     setTestError('');
     if (storageMode === 'server') {
@@ -100,6 +121,7 @@ export default function AiSettings() {
     if (!apiKey.trim()) return;
     setAiConfig({ provider, apiKey: apiKey.trim(), model, storageMode: 'browser' });
     setSaved(true);
+    setShowKey(false);
     setTestStatus('testing');
     setTestError('');
     try {
@@ -122,7 +144,6 @@ export default function AiSettings() {
       // Temporarily set browser config so testAiKey sends the key via headers
       setAiConfig({ provider, apiKey: apiKey.trim(), model, storageMode: 'browser' });
       await testAiKey();
-      // Key works — now encrypt and store on server
       const info = await saveServerAiKey({
         provider,
         apiKey: apiKey.trim(),
@@ -133,6 +154,7 @@ export default function AiSettings() {
       setAiConfig({ provider, apiKey: '', model, storageMode: 'server' });
       setSaved(true);
       setApiKey('');
+      setShowKey(false);
       setTestStatus('success');
     } catch (err) {
       clearAiConfig();
@@ -175,80 +197,106 @@ export default function AiSettings() {
           interviews.
         </p>
 
-        {/* Storage mode toggle */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-400">Key Storage</label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button
-              onClick={() => handleModeChange('browser')}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                storageMode === 'browser'
-                  ? 'border-zinc-500 bg-zinc-800'
-                  : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
-              }`}
-            >
-              <p className="text-sm font-medium text-zinc-200">Browser only</p>
-              <p className="text-xs text-zinc-500">Stored in this browser</p>
-            </button>
-            <button
-              onClick={() => handleModeChange('server')}
-              disabled={encryptionAvailable === false}
-              className={`p-3 rounded-lg border text-left transition-colors ${
-                storageMode === 'server'
-                  ? 'border-zinc-500 bg-zinc-800'
-                  : encryptionAvailable === false
-                    ? 'border-zinc-800 bg-zinc-900/50 opacity-50 cursor-not-allowed'
-                    : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
-              }`}
-            >
-              <p className="text-sm font-medium text-zinc-200">Save to account</p>
-              <p className="text-xs text-zinc-500">
-                {encryptionAvailable === false
-                  ? 'Not available — server encryption not configured'
-                  : 'Encrypted, works across devices'}
-              </p>
-            </button>
-          </div>
-        </div>
-
-        {/* Server key info (when saved) */}
-        {storageMode === 'server' && serverKeyInfo && (
-          <div className="p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-zinc-300">
-                  <span className="text-zinc-500">Key:</span>{' '}
-                  <span className="font-mono">{serverKeyInfo.keyPrefix}</span>
-                </p>
-                <p className="text-sm text-zinc-300">
-                  <span className="text-zinc-500">Provider:</span>{' '}
-                  {serverKeyInfo.provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}
-                  {serverKeyInfo.model && (
-                    <span className="text-zinc-500"> ({serverKeyInfo.model})</span>
-                  )}
-                </p>
-                <p className={`text-sm ${expiryWarning ? 'text-amber-400' : 'text-zinc-300'}`}>
-                  <span className={expiryWarning ? 'text-amber-400/70' : 'text-zinc-500'}>
-                    Expires:
-                  </span>{' '}
-                  {new Date(serverKeyInfo.expiresAt).toLocaleDateString()}
-                  {expiryWarning && ` (${daysRemaining} days remaining)`}
-                </p>
+        {/* Saved key info — shown when a key is configured */}
+        {hasSavedKey && (
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-zinc-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium text-zinc-200">AI Key Configured</span>
               </div>
               <button
-                onClick={handleRemoveServerKey}
+                onClick={storageMode === 'server' ? handleRemoveServerKey : handleClear}
                 disabled={serverLoading}
-                className="px-3 py-1.5 text-sm text-zinc-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                className="text-xs text-zinc-500 hover:text-red-400 transition-colors disabled:opacity-50"
               >
-                Remove from server
+                Remove
               </button>
+            </div>
+            <div className="px-4 py-1">
+              <KeyInfoRow label="Provider">
+                {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}
+              </KeyInfoRow>
+              <KeyInfoRow label="Model">{modelLabel}</KeyInfoRow>
+              <KeyInfoRow label="Storage">
+                {storageMode === 'browser' ? 'Browser only' : 'Encrypted on server'}
+              </KeyInfoRow>
+              {storageMode === 'browser' && existing?.apiKey && (
+                <KeyInfoRow label="Key">
+                  <button
+                    onClick={() => setShowKey(!showKey)}
+                    className="font-mono text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    {showKey ? existing.apiKey : `${existing.apiKey.slice(0, 8)}...`}
+                    <span className="ml-2 text-zinc-600">{showKey ? 'hide' : 'show'}</span>
+                  </button>
+                </KeyInfoRow>
+              )}
+              {storageMode === 'server' && serverKeyInfo && (
+                <>
+                  <KeyInfoRow label="Key">
+                    <span className="font-mono text-xs">{serverKeyInfo.keyPrefix}</span>
+                  </KeyInfoRow>
+                  <KeyInfoRow label="Expires">
+                    <span className={expiryWarning ? 'text-amber-400' : ''}>
+                      {new Date(serverKeyInfo.expiresAt).toLocaleDateString()}
+                      {expiryWarning && ` (${daysRemaining}d left)`}
+                    </span>
+                  </KeyInfoRow>
+                </>
+              )}
             </div>
           </div>
         )}
 
-        {/* Provider selection (when no server key saved, or browser mode) */}
-        {!(storageMode === 'server' && serverKeyInfo) && (
+        {/* Setup form — shown when no key is saved */}
+        {!hasSavedKey && (
           <>
+            {/* Storage mode toggle */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-400">Key Storage</label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  onClick={() => handleModeChange('browser')}
+                  className={`p-3 rounded-lg border text-left transition-colors ${
+                    storageMode === 'browser'
+                      ? 'border-zinc-500 bg-zinc-800'
+                      : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                  }`}
+                >
+                  <p className="text-sm font-medium text-zinc-200">Browser only</p>
+                  <p className="text-xs text-zinc-500">Stored in this browser</p>
+                </button>
+                <button
+                  onClick={() => handleModeChange('server')}
+                  disabled={encryptionAvailable === false}
+                  className={`p-3 rounded-lg border text-left transition-colors ${
+                    storageMode === 'server'
+                      ? 'border-zinc-500 bg-zinc-800'
+                      : encryptionAvailable === false
+                        ? 'border-zinc-800 bg-zinc-900/50 opacity-50 cursor-not-allowed'
+                        : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                  }`}
+                >
+                  <p className="text-sm font-medium text-zinc-200">Save to account</p>
+                  <p className="text-xs text-zinc-500">
+                    {encryptionAvailable === false
+                      ? 'Not available — server encryption not configured'
+                      : 'Encrypted, works across devices'}
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* Provider */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-400">Provider</label>
               <ProviderPicker value={provider} onChange={handleProviderChange} />
@@ -304,17 +352,28 @@ export default function AiSettings() {
             {/* API Key input */}
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-zinc-400">API Key</span>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => {
-                  setApiKey(e.target.value);
-                  setSaved(false);
-                  setTestStatus('idle');
-                }}
-                placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
-                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors font-mono text-sm"
-              />
+              <div className="relative">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    setSaved(false);
+                    setTestStatus('idle');
+                  }}
+                  placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
+                  className="w-full px-3 py-2 pr-16 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors font-mono text-sm"
+                />
+                {apiKey && (
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    {showKey ? 'Hide' : 'Show'}
+                  </button>
+                )}
+              </div>
             </label>
 
             {/* Actions */}
@@ -336,35 +395,11 @@ export default function AiSettings() {
                   {serverLoading ? 'Saving...' : 'Encrypt & Save to Account'}
                 </button>
               )}
-              {saved && storageMode === 'browser' && (
-                <button
-                  onClick={handleClear}
-                  className="px-4 py-2 text-sm text-zinc-500 hover:text-red-400 transition-colors"
-                >
-                  Remove Key
-                </button>
-              )}
             </div>
           </>
         )}
 
         {/* Status */}
-        {testStatus === 'success' && (
-          <div className="flex items-center gap-2 text-sm text-emerald-400">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            {storageMode === 'server'
-              ? 'Key encrypted and saved — AI features are active'
-              : 'Key verified — AI features are active'}
-          </div>
-        )}
         {testStatus === 'error' && (
           <div className="text-sm text-red-400">
             <p>{storageMode === 'server' ? 'Save failed' : 'Key validation failed'}</p>
