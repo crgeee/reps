@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Outlet, Navigate, NavLink, Link, useOutletContext } from 'react-router';
+import { Outlet, Navigate, NavLink, Link, useOutletContext, useLocation } from 'react-router';
 import type { Task, Collection, Tag, User, CollectionStatus, CustomTopic } from '../types';
 import { formatStatusLabel } from '../types';
 import { getTasks, getCollections, getTags, getCustomTopics } from '../api';
@@ -73,6 +73,12 @@ export default function ProtectedLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [initialTopicFilter, setInitialTopicFilter] = useState<string | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const { pathname } = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   const handleCollectionChange = useCallback((id: string | null) => {
     if (id) {

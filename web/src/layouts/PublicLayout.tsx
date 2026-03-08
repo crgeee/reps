@@ -1,7 +1,13 @@
-import { Outlet, Link } from 'react-router';
+import { useEffect } from 'react';
+import { Outlet, Link, useLocation } from 'react-router';
 import Footer from '../components/Footer';
 
 export default function PublicLayout() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex-1">
