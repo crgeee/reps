@@ -994,7 +994,7 @@ ssh hetzner "cd /var/www/reps && git pull && npm ci && cd web && npm ci && cd ..
 
 **Step 3: Verify**
 
-Visit https://reps-prep.duckdns.org — confirm Board nav item appears, columns render, drag-and-drop works.
+Visit https://reps.sh — confirm Board nav item appears, columns render, drag-and-drop works.
 
 **Step 4: Commit any follow-up fixes if needed.**
 

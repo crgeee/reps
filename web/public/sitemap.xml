@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://reps-prep.duckdns.org/</loc>
+    <loc>https://reps.sh/</loc>
     <lastmod>2026-03-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://reps-prep.duckdns.org/blog/</loc>
+    <loc>https://reps.sh/blog/</loc>
     <lastmod>2026-03-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://reps-prep.duckdns.org/blog/spaced-repetition-coding-interviews.html</loc>
+    <loc>https://reps.sh/blog/spaced-repetition-coding-interviews.html</loc>
     <lastmod>2026-03-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://reps-prep.duckdns.org/blog/sm2-algorithm-explained.html</loc>
+    <loc>https://reps.sh/blog/sm2-algorithm-explained.html</loc>
     <lastmod>2026-03-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://reps-prep.duckdns.org/blog/open-source-todoist-alternatives.html</loc>
+    <loc>https://reps.sh/blog/open-source-todoist-alternatives.html</loc>
     <lastmod>2026-03-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

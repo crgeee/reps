@@ -60,10 +60,10 @@ export default function PrivacyPolicy() {
         <p className="text-zinc-400">
           Questions about this policy? Reach out at{' '}
           <a
-            href="mailto:privacy@reps-prep.duckdns.org"
+            href="mailto:privacy@reps.sh"
             className="text-amber-500 hover:text-amber-400 transition-colors"
           >
-            privacy@reps-prep.duckdns.org
+            privacy@reps.sh
           </a>
         </p>
       </section>

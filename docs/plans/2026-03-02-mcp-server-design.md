@@ -215,7 +215,7 @@ Daily cost ceiling: if a key triggers >50 Claude API calls in 24 hours, auto-dis
   "mcpServers": {
     "reps": {
       "type": "streamable-http",
-      "url": "https://reps-prep.duckdns.org/mcp",
+      "url": "https://reps.sh/mcp",
       "headers": {
         "Authorization": "Bearer reps_mcp_..."
       }

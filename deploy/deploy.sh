@@ -83,7 +83,7 @@ fi
 # Re-apply SSL cert (Certbot modifies the config in-place)
 if command -v certbot &>/dev/null; then
   echo "→ Re-applying SSL certificate..."
-  if ! sudo certbot --nginx -d reps-prep.duckdns.org --non-interactive --agree-tos --email crgeee@gmail.com; then
+  if ! sudo certbot --nginx -d reps.sh --non-interactive --agree-tos --email chrisrgonz@pm.me; then
     echo "✗ Certbot failed — rolling back nginx config"
     sudo cp /etc/nginx/sites-available/reps.bak /etc/nginx/sites-available/reps
     sudo systemctl reload nginx
@@ -108,7 +108,7 @@ else
   exit 1
 fi
 
-if curl -sf https://reps-prep.duckdns.org/ > /dev/null 2>&1; then
+if curl -sf https://reps.sh/ > /dev/null 2>&1; then
   echo "  ✓ HTTPS healthy"
 else
   echo "  ⚠ HTTPS not reachable — check SSL certificate"

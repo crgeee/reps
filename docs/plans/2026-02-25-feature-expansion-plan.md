@@ -804,7 +804,7 @@ export async function sendDailyDigest(): Promise<void> {
 
   try {
     await client.emails.send({
-      from: 'reps <noreply@reps-prep.duckdns.org>',
+      from: 'reps <noreply@reps.sh>',
       to,
       subject: `reps: ${data.dueToday.length} review${data.dueToday.length === 1 ? '' : 's'} due today`,
       html,

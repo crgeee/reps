@@ -25,7 +25,7 @@ export async function sendMagicLink(email: string): Promise<void> {
     VALUES (${email.toLowerCase()}, ${tokenHash}, ${expiresAt.toISOString()})
   `;
 
-  const appUrl = process.env.APP_URL ?? 'https://reps-prep.duckdns.org';
+  const appUrl = process.env.APP_URL ?? 'https://reps.sh';
   const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`;
   const fromAddress = process.env.RESEND_FROM ?? 'reps <noreply@reps.sh>';
 
