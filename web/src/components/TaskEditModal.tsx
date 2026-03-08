@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type {
   Task,
@@ -8,6 +8,7 @@ import type {
   RecurrenceUnit,
   CollectionStatus,
   CustomTopic,
+  TaskAlert,
 } from '../types';
 import {
   TOPICS,
@@ -17,7 +18,15 @@ import {
   PRIORITY_COLORS,
   formatStatusLabel,
 } from '../types';
-import { updateTask, deleteTask, addNote, createTag } from '../api';
+import {
+  updateTask,
+  deleteTask,
+  addNote,
+  createTag,
+  getTaskAlerts,
+  createTaskAlert,
+  deleteTaskAlert,
+} from '../api';
 import { logger } from '../logger';
 import { maybeCreateCustomTopic } from '../lib/custom-topics';
 import TagPicker from './TagPicker';
@@ -68,6 +77,38 @@ export default function TaskEditModal({
   const [notes, setNotes] = useState(task.notes);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<TaskAlert[]>([]);
+  const [alertDate, setAlertDate] = useState('');
+  const [alertTime, setAlertTime] = useState('');
+  const [alertLoading, setAlertLoading] = useState(false);
+
+  useEffect(() => {
+    if (task?.id) {
+      getTaskAlerts(task.id)
+        .then(setAlerts)
+        .catch(() => {});
+    }
+  }, [task?.id]);
+
+  const handleAddAlert = async () => {
+    if (!task || !alertDate || !alertTime) return;
+    setAlertLoading(true);
+    try {
+      const alertAt = new Date(`${alertDate}T${alertTime}`).toISOString();
+      const alert = await createTaskAlert(task.id, alertAt);
+      setAlerts((prev) => [...prev, alert].sort((a, b) => a.alertAt.localeCompare(b.alertAt)));
+      setAlertDate('');
+      setAlertTime('');
+    } finally {
+      setAlertLoading(false);
+    }
+  };
+
+  const handleDeleteAlert = async (alertId: string) => {
+    if (!task) return;
+    await deleteTaskAlert(task.id, alertId);
+    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+  };
 
   // Derive statuses from collection
   const activeCollection = collectionId ? collections.find((c) => c.id === collectionId) : null;
@@ -360,6 +401,50 @@ export default function TaskEditModal({
             Notes
           </label>
           <NotesList notes={notes} onAddNote={handleAddNote} />
+        </div>
+
+        {/* Task Alerts */}
+        <div className="space-y-2">
+          <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+            Reminders
+          </label>
+          {alerts
+            .filter((a) => !a.sent)
+            .map((alert) => (
+              <div
+                key={alert.id}
+                className="flex items-center justify-between text-sm bg-zinc-800/50 rounded px-3 py-2"
+              >
+                <span className="text-zinc-300">{new Date(alert.alertAt).toLocaleString()}</span>
+                <button
+                  onClick={() => handleDeleteAlert(alert.id)}
+                  className="text-zinc-500 hover:text-red-400"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={alertDate}
+              onChange={(e) => setAlertDate(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-300"
+            />
+            <input
+              type="time"
+              value={alertTime}
+              onChange={(e) => setAlertTime(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-300"
+            />
+            <button
+              onClick={handleAddAlert}
+              disabled={!alertDate || !alertTime || alertLoading}
+              className="text-sm text-blue-400 hover:text-blue-300 disabled:text-zinc-600"
+            >
+              Add
+            </button>
+          </div>
         </div>
 
         {/* SM-2 info */}
