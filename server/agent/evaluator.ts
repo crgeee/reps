@@ -25,7 +25,11 @@ interface NoteRow {
   created_at: string;
 }
 
-export async function evaluateAnswer(taskId: string, answer: string, credentials: AiCredentials): Promise<EvaluationResult> {
+export async function evaluateAnswer(
+  taskId: string,
+  answer: string,
+  credentials: AiCredentials,
+): Promise<EvaluationResult> {
   const [task] = await sql<TaskRow[]>`
     SELECT id, topic, title FROM tasks WHERE id = ${taskId}
   `;

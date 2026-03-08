@@ -65,8 +65,6 @@ export async function createCompletion(opts: CompletionOpts): Promise<string> {
     case 'openai':
       return callOpenAI(opts);
     default:
-      throw new Error(
-        `Unsupported AI provider: ${opts.credentials.provider as string}`,
-      );
+      throw new Error(`Unsupported AI provider: ${opts.credentials.provider as string}`);
   }
 }

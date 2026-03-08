@@ -27,7 +27,9 @@ class AiNotConfiguredError extends Error {
   }
 }
 
-function requireAiCredentials(c: any): AiCredentials {
+function requireAiCredentials(c: {
+  get: (key: 'aiCredentials') => AiCredentials | undefined;
+}): AiCredentials {
   const credentials = c.get('aiCredentials');
   if (!credentials) throw new AiNotConfiguredError();
   return credentials;

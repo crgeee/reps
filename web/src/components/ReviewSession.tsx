@@ -33,7 +33,9 @@ function isAiKeyError(error: string | null): boolean {
 function AiSetupPrompt({ onSetup }: { onSetup: () => void }) {
   return (
     <div className="text-sm space-y-2">
-      <p className="text-zinc-400">AI features require an API key to generate questions and evaluate answers.</p>
+      <p className="text-zinc-400">
+        AI features require an API key to generate questions and evaluate answers.
+      </p>
       <button
         onClick={onSetup}
         className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"

@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  getAiConfig,
-  setAiConfig,
-  clearAiConfig,
-  type AiProvider,
-} from '../../ai-config';
+import { getAiConfig, setAiConfig, clearAiConfig, type AiProvider } from '../../ai-config';
 import { testAiKey } from '../../api';
 import { SectionHeader } from './shared';
 
@@ -23,13 +18,9 @@ const PROVIDER_OPTIONS: {
 
 export default function AiSettings() {
   const existing = getAiConfig();
-  const [provider, setProvider] = useState<AiProvider>(
-    existing?.provider ?? 'anthropic',
-  );
+  const [provider, setProvider] = useState<AiProvider>(existing?.provider ?? 'anthropic');
   const [apiKey, setApiKey] = useState(existing?.apiKey ?? '');
-  const [testStatus, setTestStatus] = useState<
-    'idle' | 'testing' | 'success' | 'error'
-  >('idle');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testError, setTestError] = useState('');
   const [saved, setSaved] = useState(!!existing);
 
@@ -61,9 +52,8 @@ export default function AiSettings() {
       <SectionHeader icon="sparkles" title="AI Provider" />
       <div className="p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-5">
         <p className="text-sm text-zinc-400">
-          Connect your own AI provider to enable question generation, answer
-          evaluation, and mock interviews. Your API key is stored in your browser
-          only and never saved on our servers.
+          Connect your own AI provider to enable question generation, answer evaluation, and mock
+          interviews. Your API key is stored in your browser only and never saved on our servers.
         </p>
 
         {/* Provider selection */}
@@ -84,9 +74,7 @@ export default function AiSettings() {
                     : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
                 }`}
               >
-                <p className="text-sm font-medium text-zinc-200">
-                  {opt.label}
-                </p>
+                <p className="text-sm font-medium text-zinc-200">{opt.label}</p>
                 <p className="text-xs text-zinc-500">{opt.description}</p>
               </button>
             ))}
@@ -138,11 +126,7 @@ export default function AiSettings() {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             Key verified — AI features are active
           </div>
@@ -150,18 +134,15 @@ export default function AiSettings() {
         {testStatus === 'error' && (
           <div className="text-sm text-red-400">
             <p>Key validation failed</p>
-            {testError && (
-              <p className="text-xs text-red-400/70 mt-1">{testError}</p>
-            )}
+            {testError && <p className="text-xs text-red-400/70 mt-1">{testError}</p>}
           </div>
         )}
 
         {/* Privacy notice */}
         <div className="pt-3 border-t border-zinc-800">
           <p className="text-xs text-zinc-600">
-            Your API key is stored in your browser's local storage and sent
-            directly with each AI request. It is never saved to our database or
-            accessible to server administrators.
+            Your API key is stored in your browser's local storage and sent directly with each AI
+            request. It is never saved to our database or accessible to server administrators.
           </p>
         </div>
       </div>

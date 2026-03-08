@@ -33,7 +33,10 @@ export function isBlockedHost(host: string): boolean {
   return false;
 }
 
-export async function summarizePaper(taskId: string, credentials: AiCredentials): Promise<PaperSummary> {
+export async function summarizePaper(
+  taskId: string,
+  credentials: AiCredentials,
+): Promise<PaperSummary> {
   const [task] = await sql<{ id: string; title: string }[]>`
     SELECT id, title FROM tasks WHERE id = ${taskId}
   `;
