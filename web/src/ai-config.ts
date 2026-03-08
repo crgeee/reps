@@ -53,11 +53,45 @@ export function isServerMode(): boolean {
   return getAiConfig()?.storageMode === 'server';
 }
 
-export const PROVIDER_OPTIONS: {
-  value: AiProvider;
+export interface ModelOption {
+  value: string;
   label: string;
   description: string;
-}[] = [
-  { value: 'anthropic', label: 'Anthropic', description: 'Claude (claude-sonnet-4-6)' },
-  { value: 'openai', label: 'OpenAI', description: 'GPT-4o' },
+}
+
+export interface ProviderOption {
+  value: AiProvider;
+  label: string;
+  models: ModelOption[];
+}
+
+export const PROVIDER_OPTIONS: ProviderOption[] = [
+  {
+    value: 'anthropic',
+    label: 'Anthropic',
+    models: [
+      { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Best balance' },
+      {
+        value: 'claude-haiku-4-5-20251001',
+        label: 'Claude Haiku 4.5',
+        description: 'Fastest & cheapest',
+      },
+    ],
+  },
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    models: [
+      { value: 'gpt-4o', label: 'GPT-4o', description: 'Best balance' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Fastest & cheapest' },
+    ],
+  },
 ];
+
+export function getProviderConfig(provider: AiProvider): ProviderOption {
+  return PROVIDER_OPTIONS.find((p) => p.value === provider)!;
+}
+
+export function getDefaultModel(provider: AiProvider): string {
+  return getProviderConfig(provider).models[0]!.value;
+}
