@@ -5,6 +5,7 @@ import { sendDailyDigest } from './agent/email.js';
 import { cleanExpiredSessions } from './auth/sessions.js';
 import { cleanExpiredDeviceCodes } from './auth/device-flow.js';
 import { cleanExpiredAiKeys } from './auth/ai-keys.js';
+import { send } from './agent/notify.js';
 import { logger } from './logger.js';
 import type { AiCredentials } from './agent/provider.js';
 
@@ -29,6 +30,59 @@ function getServerCredentials(): AiCredentials | undefined {
   return key ? { provider: 'anthropic', apiKey: key } : undefined;
 }
 
+interface DueAlert {
+  id: string;
+  user_id: string;
+  task_id: string;
+  task_title: string;
+}
+
+async function checkTaskAlerts(): Promise<void> {
+  const dueAlerts = await sql<DueAlert[]>`
+    SELECT ta.id, ta.user_id, ta.task_id, t.title AS task_title
+    FROM task_alerts ta
+    JOIN tasks t ON t.id = ta.task_id
+    JOIN users u ON u.id = ta.user_id
+    WHERE ta.sent = false AND ta.alert_at <= NOW() AND u.notify_task_alerts = true
+    LIMIT 100
+  `;
+
+  if (dueAlerts.length === 0) return;
+
+  // Group by user to batch notifications
+  const byUser = new Map<string, DueAlert[]>();
+  for (const alert of dueAlerts) {
+    const list = byUser.get(alert.user_id) ?? [];
+    list.push(alert);
+    byUser.set(alert.user_id, list);
+  }
+
+  for (const [userId, alerts] of byUser) {
+    try {
+      if (alerts.length === 1) {
+        await send(userId, 'reps — reminder', alerts[0].task_title, {
+          url: `/tasks?highlight=${alerts[0].task_id}`,
+          tag: 'task-alert',
+          ttl: 3600,
+        });
+      } else {
+        const titles = alerts.map((a) => a.task_title).join(', ');
+        await send(userId, 'reps — reminders', `${alerts.length} tasks: ${titles}`, {
+          url: '/tasks',
+          tag: 'task-alert',
+          ttl: 3600,
+        });
+      }
+    } catch (err) {
+      logger.error({ err, userId }, 'Failed to send task alerts');
+    }
+  }
+
+  const alertIds = dueAlerts.map((a) => a.id);
+  await sql`UPDATE task_alerts SET sent = true WHERE id = ANY(${alertIds})`;
+  logger.info({ count: dueAlerts.length }, 'Task alerts processed');
+}
+
 export function startCronJobs(): void {
   // Daily briefing + email digest at 8:00 AM every day
   cron.schedule('0 8 * * *', async () => {
@@ -45,6 +99,37 @@ export function startCronJobs(): void {
         }
       }
       logger.info({ count: users.length }, 'Daily briefings complete');
+
+      // Review-due push notifications (separate from AI briefing)
+      const reviewDueUsers = await sql<{ id: string }[]>`
+        SELECT DISTINCT u.id FROM users u
+        JOIN tasks t ON t.user_id = u.id
+        WHERE u.notify_review_due = true AND u.email_verified = true
+          AND t.next_review <= CURRENT_DATE AND t.completed = false
+      `;
+      for (const user of reviewDueUsers) {
+        try {
+          const [{ count }] = await sql<[{ count: string }]>`
+            SELECT COUNT(*)::text AS count FROM tasks
+            WHERE user_id = ${user.id} AND next_review <= CURRENT_DATE AND completed = false
+          `;
+          const n = parseInt(count, 10);
+          if (n > 0) {
+            await send(
+              user.id,
+              'reps — reviews due',
+              `You have ${n} task${n === 1 ? '' : 's'} due for review`,
+              {
+                url: '/tasks?filter=due',
+                tag: 'review-due',
+                ttl: 14400,
+              },
+            );
+          }
+        } catch (err) {
+          logger.error({ err, userId: user.id }, 'Review-due notification failed');
+        }
+      }
     } catch (err) {
       logger.error({ err }, 'Daily briefing batch failed');
     }
@@ -84,7 +169,16 @@ export function startCronJobs(): void {
     }
   });
 
+  // Check task alerts every minute
+  cron.schedule('* * * * *', async () => {
+    try {
+      await checkTaskAlerts();
+    } catch (err) {
+      logger.error({ err }, 'Task alert check failed');
+    }
+  });
+
   logger.info(
-    'Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM)',
+    'Scheduled: daily briefing + digest (8:00 AM), weekly insight (Sun 8:00 PM), session cleanup (3:00 AM), task alerts (every min)',
   );
 }

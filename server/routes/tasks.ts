@@ -810,4 +810,114 @@ tasks.post('/sync', async (c) => {
   return c.json({ upserted });
 });
 
+// --- alert schemas ---
+
+const createAlertSchema = z.object({
+  alertAt: z.string().datetime(),
+});
+
+interface AlertRow {
+  id: string;
+  task_id: string;
+  user_id: string;
+  alert_at: string;
+  sent: boolean;
+  created_at: string;
+}
+
+function rowToAlert(row: AlertRow) {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    alertAt: row.alert_at,
+    sent: row.sent,
+    createdAt: row.created_at,
+  };
+}
+
+// POST /tasks/:id/alerts
+tasks.post('/:id/alerts', async (c) => {
+  const userId = c.get('userId') as string;
+  const taskId = c.req.param('id');
+  if (!validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  const raw = await c.req.json();
+  const parsed = createAlertSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400);
+  }
+
+  const alertAt = new Date(parsed.data.alertAt);
+  const now = new Date();
+  if (alertAt <= now) {
+    return c.json({ error: 'alertAt must be in the future' }, 400);
+  }
+
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+  if (alertAt > oneYearFromNow) {
+    return c.json({ error: 'alertAt must be within 1 year' }, 400);
+  }
+
+  // Verify task belongs to user
+  const userWhere = userId ? sql`AND user_id = ${userId}` : sql``;
+  const [task] = await sql<TaskRow[]>`SELECT id FROM tasks WHERE id = ${taskId} ${userWhere}`;
+  if (!task) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
+
+  // Check limit: max 20 active (unsent) alerts per task
+  const [{ count }] = await sql<{ count: number }[]>`
+    SELECT COUNT(*)::int AS count FROM task_alerts
+    WHERE task_id = ${taskId} AND user_id = ${userId} AND sent = false
+  `;
+  if (count >= 20) {
+    return c.json({ error: 'Maximum 20 active alerts per task' }, 400);
+  }
+
+  const [row] = await sql<AlertRow[]>`
+    INSERT INTO task_alerts (task_id, user_id, alert_at)
+    VALUES (${taskId}, ${userId}, ${parsed.data.alertAt})
+    RETURNING *
+  `;
+
+  return c.json(rowToAlert(row), 201);
+});
+
+// GET /tasks/:id/alerts
+tasks.get('/:id/alerts', async (c) => {
+  const userId = c.get('userId') as string;
+  const taskId = c.req.param('id');
+  if (!validateUuid(taskId)) return c.json({ error: 'Invalid ID format' }, 400);
+
+  const rows = await sql<AlertRow[]>`
+    SELECT * FROM task_alerts
+    WHERE task_id = ${taskId} AND user_id = ${userId}
+    ORDER BY alert_at ASC
+  `;
+
+  return c.json(rows.map(rowToAlert));
+});
+
+// DELETE /tasks/:id/alerts/:alertId
+tasks.delete('/:id/alerts/:alertId', async (c) => {
+  const userId = c.get('userId') as string;
+  const taskId = c.req.param('id');
+  const alertId = c.req.param('alertId');
+  if (!validateUuid(taskId)) return c.json({ error: 'Invalid task ID format' }, 400);
+  if (!validateUuid(alertId)) return c.json({ error: 'Invalid alert ID format' }, 400);
+
+  const [row] = await sql<{ id: string }[]>`
+    DELETE FROM task_alerts
+    WHERE id = ${alertId} AND task_id = ${taskId} AND user_id = ${userId}
+    RETURNING id
+  `;
+
+  if (!row) {
+    return c.json({ error: 'Alert not found' }, 404);
+  }
+
+  return c.json({ deleted: true, id: row.id });
+});
+
 export default tasks;

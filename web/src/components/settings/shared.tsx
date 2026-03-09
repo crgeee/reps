@@ -85,21 +85,25 @@ export function ToggleRow({
   description,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   description: string;
   checked: boolean;
   onChange: (val: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
-    <label className="flex items-center justify-between cursor-pointer group">
+    <label
+      className={`flex items-center justify-between group ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
       <div>
         <p className="text-sm text-zinc-200 group-hover:text-zinc-100 transition-colors">{label}</p>
         <p className="text-xs text-zinc-500">{description}</p>
       </div>
       <div
         className={`relative w-10 h-6 rounded-full transition-colors ${checked ? 'bg-zinc-100' : 'bg-zinc-700'}`}
-        onClick={() => onChange(!checked)}
+        onClick={() => !disabled && onChange(!checked)}
       >
         <div
           className={`absolute top-1 w-4 h-4 rounded-full transition-all ${checked ? 'left-5 bg-zinc-900' : 'left-1 bg-zinc-400'}`}

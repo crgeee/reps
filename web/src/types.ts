@@ -244,6 +244,10 @@ export interface User {
   theme: string;
   notifyDaily: boolean;
   notifyWeekly: boolean;
+  notifyReviewDue: boolean;
+  notifyStreak: boolean;
+  notifyAiComplete: boolean;
+  notifyTaskAlerts: boolean;
   dailyReviewGoal: number;
   timeFormat: string;
   dateFormat: string;
@@ -252,6 +256,14 @@ export interface User {
   mcpEnabled: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TaskAlert {
+  id: string;
+  taskId: string;
+  alertAt: string;
+  sent: boolean;
+  createdAt: string;
 }
 
 export interface AdminUser extends User {

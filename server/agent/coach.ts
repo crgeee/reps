@@ -48,7 +48,9 @@ export async function dailyBriefing(userId?: string, credentials?: AiCredentials
     }
   }
 
-  await send('reps — daily briefing', message);
+  if (userId) {
+    await send(userId, 'reps — daily briefing', message);
+  }
 
   try {
     await sql`
@@ -118,7 +120,9 @@ export async function weeklyInsight(userId?: string, credentials?: AiCredentials
     }
   }
 
-  await send('reps — weekly insight', message);
+  if (userId) {
+    await send(userId, 'reps — weekly insight', message);
+  }
 
   try {
     await sql`
