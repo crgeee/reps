@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { getTrack, getModule, generateExercise, runCode, submitCode } from '../../learn-api.js';
+import ModelSwitcher from './ModelSwitcher.js';
 import type {
   Exercise,
   ExecutionResult,
@@ -343,6 +344,7 @@ export default function ExerciseView() {
             )}
             AI Exercise
           </button>
+          <ModelSwitcher />
         </div>
       </div>
 
